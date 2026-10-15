@@ -1,59 +1,56 @@
-
-
 # ===== FIRST-TIME SETUP =====
 
-cd backend                                                   # Backend folder mein jaana
-npm init -y                                                  # package.json create; sirf pehli baar
+cd backend                                                   # Navigate to the backend folder
+npm init -y                                                  # Create package.json; first time only
 
 
 # ===== SERVER AND DATABASE =====
 
-npm install express                                          # API server aur routing | Version reference: 5.3.0
-npm install mongoose                                         # MongoDB models aur queries | Version reference: 9.11.2
+npm install express                                          # API server and routing | Version reference: 5.3.0
+npm install mongoose                                         # MongoDB models and queries | Version reference: 9.11.2
 
 
 # ===== VALIDATION AND CONFIGURATION =====
 
 npm install joi                                              # Request data validation | Version reference: 18.2.9
-npm install dotenv                                           # .env variables load karna | Version reference: 18.0.8
+npm install dotenv                                           # Load .env variables | Version reference: 18.0.8
 
 
 # ===== AUTHENTICATION =====
 
-npm install jsonwebtoken                                     # JWT generate aur verify | Version reference: 9.0.3
-npm install bcrypt                                           # Password hash aur compare | Version reference: 6.0.0
+npm install jsonwebtoken                                     # Generate and verify JWTs | Version reference: 9.0.3
+npm install bcrypt                                           # Hash and compare passwords | Version reference: 6.0.0
 npm install-scripts approve bcrypt
-npm install cookie-parser                                    # Request cookies read karna | Version reference: 1.4.7
+npm install cookie-parser                                    # Read request cookies | Version reference: 1.4.7
 
 
 # ===== ACCESS AND SECURITY =====
 
-npm install cors                                             # Frontend origins configure | Version reference: 2.8.6
+npm install cors                                             # Configure allowed frontend origins | Version reference: 2.8.6
 npm install helmet                                           # Security HTTP headers | Version reference: 8.3.0
-npm install express-rate-limit                               # Repeated requests limit | Version reference: 8.7.1
+npm install express-rate-limit                               # Limit repeated requests | Version reference: 8.7.1
 
 
 # ===== FILE UPLOADS =====
 
-npm install multer                                           # Multipart forms/files handle | Version reference: 2.4.0
-npm install cloudinary                                       # Cloudinary upload/delete | Version reference: 2.11.0
+npm install multer                                           # Handle multipart forms/files | Version reference: 2.4.0
+npm install cloudinary                                       # Upload/delete files on Cloudinary | Version reference: 2.11.0
 
 
 
 # ===== RUN SCRIPTS SETUP =====
 
-npm pkg set scripts.dev="nodemon server.js"                  # Development script
-npm pkg set scripts.start="node server.js"                   # Normal start script
-npm pkg set main="server.js"                                 # Entry metadata
+npm pkg set scripts.dev="nodemon server.js"                   # Development script
+npm pkg set scripts.start="node server.js"                    # Normal start script
+npm pkg set main="server.js"                                  # Entry metadata
 
 
 
 # ===== RUN BACKEND =====
-# server.js ka code ready hone ke baad.
-# Neeche se required command run karo, dono ek saath nahi.
+# Run after implementing server.js.
+# Use the required command below, not both at the same time.
 
-npm run dev                                                  # Development mein use karo prefer
-# Stop karne ke liye Ctrl+C
+npm run dev                                                  # Preferred for development server
+# Press Ctrl+C to stop
 
-npm start                                                    # production server start prefer
-
+npm start                                                    # Preferred for production server startup

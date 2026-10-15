@@ -1,31 +1,31 @@
 # ===== FIRST-TIME SETUP =====
 
 npm create vite@latest frontend -- --template react               # Latest React project generator
-cd frontend                                                       # Frontend folder mein jaana
-npm install                                                       # Template ke saare packages install
+cd frontend                                                      # Navigate to the frontend folder
+npm install                                                      # Install all template dependencies
 
 
 # ===== APPLICATION PACKAGES =====
-# Frontend folder ke andar run karo.
+# Run inside the frontend folder.
 
-npm install axios                                                 # Backend API requests | Version reference: 1.20.0
-npm install react-router-dom                                      # Pages aur layouts ki routing | Version reference: 7.18.4
-npm install react-toastify                                        # Success/error notifications | Version reference: 11.1.0
+npm install axios                                                # Backend API requests | Version reference: 1.20.0
+npm install react-router-dom                                     # Routing for pages and layouts | Version reference: 7.18.4
+npm install react-toastify                                       # Success/error notifications | Version reference: 11.1.0
 
 
 # ===== OPTIONAL UI PACKAGES =====
-# Inki styling/icons use karne par install karo.
+# Install if using their styling/icons.
 
-npm install bootstrap                                             # Responsive styling | Version reference: 5.3.8
-npm install @fortawesome/fontawesome-free                         # Icons | Version reference: 7.3.1
+npm install bootstrap                                            # Responsive styling | Version reference: 5.3.8
+npm install @fortawesome/fontawesome-free                        # Icons | Version reference: 7.3.1
 
 
 # ===== DEVELOPMENT =====
 
-npm run dev                                                       # Frontend development server
-# Stop karne ke liye Ctrl+C
+npm run dev                                                      # Frontend development server
+# Press Ctrl+C to stop
 
 
 # ===== COMPLETION CHECKS =====
 
-npm run build                                                     # Production build
+npm run build                                                    # Production build
