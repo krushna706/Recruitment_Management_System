@@ -1,60 +1,59 @@
-# ===== FIRST-TIME BACKEND CREATION =====
 
-cd backend                                        # Backend folder mein jaana
-npm init -y                                       # package.json create
+
+# ===== FIRST-TIME SETUP =====
+
+cd backend                                                   # Backend folder mein jaana
+npm init -y                                                  # package.json create; sirf pehli baar
 
 
 # ===== SERVER AND DATABASE =====
 
-npm install express@latest                        # API server, routes aur middleware | 5.3.0
-npm install mongoose@latest                       # MongoDB models aur queries | 9.11.2
+npm install express                                          # API server aur routing | Version reference: 5.3.0
+npm install mongoose                                         # MongoDB models aur queries | Version reference: 9.11.2
 
 
 # ===== VALIDATION AND CONFIGURATION =====
 
-npm install joi@latest                            # Request data validation | 18.2.9
-npm install dotenv@latest                         # .env configuration load karna | 18.0.8
+npm install joi                                              # Request data validation | Version reference: 18.2.9
+npm install dotenv                                           # .env variables load karna | Version reference: 18.0.8
 
 
 # ===== AUTHENTICATION =====
 
-npm install jsonwebtoken@latest                   # JWT sign aur verify karna | 9.0.3
-npm install bcrypt@latest                         # Password hashing aur comparison | 6.0.0
-npm install cookie-parser@latest                  # Request cookies read karna | 1.4.7
+npm install jsonwebtoken                                     # JWT generate aur verify | Version reference: 9.0.3
+npm install bcrypt                                           # Password hash aur compare | Version reference: 6.0.0
+npm install-scripts approve bcrypt
+npm install cookie-parser                                    # Request cookies read karna | Version reference: 1.4.7
 
 
 # ===== ACCESS AND SECURITY =====
 
-npm install cors@latest                           # Allowed frontend origins configure | 2.8.6
-npm install helmet@latest                         # Security-related HTTP headers | 8.3.0
-npm install express-rate-limit@latest              # Repeated requests limit karna | 8.7.1
+npm install cors                                             # Frontend origins configure | Version reference: 2.8.6
+npm install helmet                                           # Security HTTP headers | Version reference: 8.3.0
+npm install express-rate-limit                               # Repeated requests limit | Version reference: 8.7.1
 
 
 # ===== FILE UPLOADS =====
 
-npm install multer@latest                         # Multipart form/file parsing | 2.4.0
-npm install cloudinary@latest                     # Cloudinary upload/delete operations | 2.11.0
-
-
-# ===== DEVELOPMENT TOOL =====
-
-npm install -D nodemon@latest                      # File change par server restart | 3.1.14
+npm install multer                                           # Multipart forms/files handle | Version reference: 2.4.0
+npm install cloudinary                                       # Cloudinary upload/delete | Version reference: 2.11.0
 
 
 
-# ===== BACKEND RUN SCRIPTS =====
+# ===== RUN SCRIPTS SETUP =====
 
-npm pkg set scripts.dev="nodemon server.js"        # Development command define
-npm pkg set scripts.start="node server.js"         # Production start command define
-npm pkg set main="server.js"                       # Package entry metadata update
-
-# server.js implementation ready hone ke baad:
-npm run dev                                       # Development server start
-# Server stop: Ctrl+C
-
-npm start                                         # Normal server start
+npm pkg set scripts.dev="nodemon server.js"                  # Development script
+npm pkg set scripts.start="node server.js"                   # Normal start script
+npm pkg set main="server.js"                                 # Entry metadata
 
 
-# ===== INSTALLED VERSIONS =====
 
-npm list --depth=0                                # Actual installed direct dependencies
+# ===== RUN BACKEND =====
+# server.js ka code ready hone ke baad.
+# Neeche se required command run karo, dono ek saath nahi.
+
+npm run dev                                                  # Development mein use karo prefer
+# Stop karne ke liye Ctrl+C
+
+npm start                                                    # production server start prefer
+
