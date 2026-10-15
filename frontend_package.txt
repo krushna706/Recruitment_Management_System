@@ -1,0 +1,46 @@
+# ===== FIRST-TIME FRONTEND CREATION =====
+
+npm create vite@latest frontend -- --template react # React project create | create-vite: 9.2.1
+npm install                                        # Generated package.json dependencies install
+
+
+# ===== REACT AND BUILD TOOLS =====
+
+npm install react@latest react-dom@latest          # React UI + DOM rendering | Dono: 19.3.1
+npm install -D vite@latest                         # Dev server aur production build | 8.3.4
+npm install -D @vitejs/plugin-react@latest          # Vite mein React support | 6.1.2
+
+# ESLint aur related plugins Vite template se aate hain.
+# Unka generated eslint.config.js aur dependencies retain karo.
+
+# ===== APPLICATION PACKAGES =====
+
+npm install axios@latest                          # Backend API requests | 1.20.0
+npm install react-router-dom@latest                # Pages, nested layouts aur routing | 7.18.4
+npm install react-toastify@latest                  # Success/error popup notifications | 11.1.0
+
+
+# ===== OPTIONAL UI PACKAGES =====
+# Bootstrap aur Font Awesome use karne par hi install karo.
+
+npm install bootstrap@latest                      # Responsive styling aur layout | 5.3.8
+npm install @fortawesome/fontawesome-free@latest   # Icons | 7.3.1
+
+
+# ===== DEVELOPMENT =====
+
+npm run dev                                       # Frontend development server start
+# Server stop: Ctrl+C
+
+
+# ===== PROJECT COMPLETION CHECKS =====
+
+npm run lint                                      # Configured lint rules check karna
+npm run build                                     # Production dist folder banana
+npm run preview                                   # Production build locally preview karna
+# Preview server production hosting nahi hai.
+
+
+# ===== INSTALLED VERSIONS =====
+
+npm list --depth=0                                # Actual installed direct dependencies

@@ -1,0 +1,60 @@
+# ===== FIRST-TIME BACKEND CREATION =====
+
+cd backend                                        # Backend folder mein jaana
+npm init -y                                       # package.json create
+
+
+# ===== SERVER AND DATABASE =====
+
+npm install express@latest                        # API server, routes aur middleware | 5.3.0
+npm install mongoose@latest                       # MongoDB models aur queries | 9.11.2
+
+
+# ===== VALIDATION AND CONFIGURATION =====
+
+npm install joi@latest                            # Request data validation | 18.2.9
+npm install dotenv@latest                         # .env configuration load karna | 18.0.8
+
+
+# ===== AUTHENTICATION =====
+
+npm install jsonwebtoken@latest                   # JWT sign aur verify karna | 9.0.3
+npm install bcrypt@latest                         # Password hashing aur comparison | 6.0.0
+npm install cookie-parser@latest                  # Request cookies read karna | 1.4.7
+
+
+# ===== ACCESS AND SECURITY =====
+
+npm install cors@latest                           # Allowed frontend origins configure | 2.8.6
+npm install helmet@latest                         # Security-related HTTP headers | 8.3.0
+npm install express-rate-limit@latest              # Repeated requests limit karna | 8.7.1
+
+
+# ===== FILE UPLOADS =====
+
+npm install multer@latest                         # Multipart form/file parsing | 2.4.0
+npm install cloudinary@latest                     # Cloudinary upload/delete operations | 2.11.0
+
+
+# ===== DEVELOPMENT TOOL =====
+
+npm install -D nodemon@latest                      # File change par server restart | 3.1.14
+
+
+
+# ===== BACKEND RUN SCRIPTS =====
+
+npm pkg set scripts.dev="nodemon server.js"        # Development command define
+npm pkg set scripts.start="node server.js"         # Production start command define
+npm pkg set main="server.js"                       # Package entry metadata update
+
+# server.js implementation ready hone ke baad:
+npm run dev                                       # Development server start
+# Server stop: Ctrl+C
+
+npm start                                         # Normal server start
+
+
+# ===== INSTALLED VERSIONS =====
+
+npm list --depth=0                                # Actual installed direct dependencies
