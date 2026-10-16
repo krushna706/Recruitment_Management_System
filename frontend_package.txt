@@ -18,6 +18,7 @@ npm install react-toastify                                       # Success/error
 
 npm install bootstrap                                            # Responsive styling | Version reference: 5.3.8
 npm install @fortawesome/fontawesome-free                        # Icons | Version reference: 7.3.1
+npm install @mui/material @emotion/react @emotion/styled
 
 
 # ===== DEVELOPMENT =====
