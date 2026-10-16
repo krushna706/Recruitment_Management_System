@@ -10,9 +10,13 @@ import About from "./website/About";
 import Careers from "./website/Careers";
 import Contact from "./website/Contact";
 
+import Login from "./auth/Login";
+import Signup from "./auth/Signup";
+import ForgotPassword from "./auth/ForgotPassword";
+
 import NotFound from "./components/NotFound";
 
-
+import "./css/website.css";
 
 function App() {
     return (
@@ -21,7 +25,12 @@ function App() {
             <ToastContainer position="top-right" autoClose={3000} />
 
             <Routes>
-                {/* Public website pages share the same layout */}
+                {/* Authentication pages use their own AuthLayout */}
+                <Route path="/manage" element={<Login />} />
+                <Route path="/manage/signup" element={<Signup />} />
+                <Route path="/manage/forgotpassword" element={<ForgotPassword />} />
+
+                {/* Public website pages share navbar and footer */}
                 <Route element={<WebsiteLayout />}>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/jobs" element={<Jobs />} />

@@ -3,7 +3,6 @@ import { Outlet } from "react-router-dom";
 import WebsiteNavbar from "../components/WebsiteNavbar";
 import WebsiteFooter from "../components/WebsiteFooter";
 
-import "../css/website.css";
 
 function WebsiteLayout() {
     return (
