@@ -1,16 +1,13 @@
-import React from 'react';
-import Hero from './Hero';
-import AboutSection from './AboutSection';
-import FeaturedJobs from './FeaturedJobs';
+import Hero from "./Hero";
+import AboutSection from "./AboutSection";
+import FeaturedJobs from "./FeaturedJobs";
 
-function HomePage() {
+export default function HomePage() {
     return (
-        <>
-          <Hero />
-          <AboutSection />
-          <FeaturedJobs />
-        </>
+        <div className="rms-home">
+            <Hero />
+            <AboutSection />
+            <FeaturedJobs />
+        </div>
     );
 }
-
-export default HomePage;
