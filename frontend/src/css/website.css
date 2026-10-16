@@ -2867,3 +2867,96 @@
         animation: none !important;
     }
 }
+
+/* ===== AUTH: RECOVERY STEPS ===== */
+
+.auth-recovery-steps li {
+    opacity: 0.65;
+    transition: opacity 180ms ease;
+}
+
+.auth-recovery-steps li.is-active {
+    opacity: 1;
+}
+
+.auth-recovery-steps .auth-feature-icon {
+    font-weight: 600;
+}
+
+.auth-recovery-steps li.is-active .auth-feature-icon {
+    border-color: rgb(255 255 255 / 35%);
+    background: rgb(255 255 255 / 16%);
+}
+
+
+/* ===== AUTH: SAVED SECURITY QUESTION ===== */
+
+.auth-recovery-question {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+
+    padding: 20px;
+    border: 1px solid var(--website-border);
+    border-radius: 12px;
+
+    background: var(--website-soft);
+}
+
+.auth-recovery-question .auth-feature-icon {
+    border-color: #d7e2fb;
+
+    color: var(--website-primary);
+    background: #ffffff;
+}
+
+.auth-recovery-question > div {
+    min-width: 0;
+}
+
+.auth-recovery-question p {
+    margin: 0 0 6px;
+
+    color: var(--website-muted);
+    font-size: 13px;
+    line-height: 22px;
+}
+
+.auth-recovery-question h2 {
+    margin: 0;
+
+    color: var(--website-text);
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 27px;
+    overflow-wrap: anywhere;
+}
+
+.auth-layout .auth-restart.MuiButton-root {
+    min-height: 44px;
+
+    color: var(--website-primary);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: none;
+}
+
+.auth-layout .auth-restart.MuiButton-root.Mui-disabled {
+    color: var(--website-muted);
+    opacity: 0.55;
+}
+
+@media (max-width: 575.98px) {
+    .auth-recovery-question {
+        gap: 12px;
+        padding: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-recovery-steps li {
+        transition: none;
+    }
+}
+

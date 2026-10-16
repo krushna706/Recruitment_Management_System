@@ -12,7 +12,7 @@ import Contact from "./website/Contact";
 
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
-import ForgotPassword from "./auth/ForgotPassword";
+import ForgotPassword  from "./auth/ForgotPassword";
 
 import NotFound from "./components/NotFound";
 
@@ -28,7 +28,7 @@ function App() {
                 {/* Authentication pages use their own AuthLayout */}
                 <Route path="/manage" element={<Login />} />
                 <Route path="/manage/signup" element={<Signup />} />
-                <Route path="/manage/forgotpassword" element={<ForgotPassword />} />
+                <Route path="/manage/forgot-password" element={<ForgotPassword  />} />
 
                 {/* Public website pages share navbar and footer */}
                 <Route element={<WebsiteLayout />}>
