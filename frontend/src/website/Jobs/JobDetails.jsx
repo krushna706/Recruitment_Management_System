@@ -393,7 +393,6 @@ function JobDetailsContent({ id, user }) {
     const profile = job ? jobProfiles[job.profile] : null;
 
     useEffect(() => {
-        titleRef.current?.focus({ preventScroll: true });
         window.scrollTo({ top: 0, behavior: "instant" });
     }, []);
 

@@ -21,6 +21,7 @@ const demoJobs = [
         minExperience: 0,
         maxExperience: 2,
         salary: "₹3–5 LPA",
+        postedAt: "2026-10-15",
         description:
             "Build responsive React interfaces and reusable components for web applications.",
     },
@@ -34,6 +35,7 @@ const demoJobs = [
         minExperience: 1,
         maxExperience: 3,
         salary: "₹5–8 LPA",
+        postedAt: "2026-10-13",
         description:
             "Develop REST APIs, manage databases and build reliable backend services.",
     },
@@ -47,6 +49,7 @@ const demoJobs = [
         minExperience: 0,
         maxExperience: 2,
         salary: "₹3–6 LPA",
+        postedAt: "2026-10-14",
         description:
             "Create user journeys, wireframes and accessible designs for digital products.",
     },
@@ -60,6 +63,7 @@ const demoJobs = [
         minExperience: 2,
         maxExperience: 5,
         salary: "₹6–10 LPA",
+        postedAt: "2026-10-12",
         description:
             "Build full-stack features and integrate APIs across modern web applications.",
     },
@@ -73,6 +77,7 @@ const demoJobs = [
         minExperience: 0,
         maxExperience: 1,
         salary: "₹10k–15k / month",
+        postedAt: "2026-10-16",
         description:
             "Support recruitment, coordinate interviews and learn practical HR operations.",
     },
@@ -86,6 +91,7 @@ const demoJobs = [
         minExperience: 1,
         maxExperience: 4,
         salary: "₹3–6 LPA",
+        postedAt: "2026-10-11",
         description:
             "Connect with prospective clients and develop lasting business relationships.",
     },
@@ -99,6 +105,7 @@ const demoJobs = [
         minExperience: 1,
         maxExperience: 3,
         salary: "₹4–7 LPA",
+        postedAt: "2026-10-14",
         description:
             "Test application features and help developers deliver reliable software.",
     },
@@ -112,6 +119,7 @@ const demoJobs = [
         minExperience: 0,
         maxExperience: 2,
         salary: "₹15k–25k / month",
+        postedAt: "2026-10-10",
         description:
             "Write useful website and marketing content with a consistent brand voice.",
     },
@@ -125,6 +133,7 @@ const demoJobs = [
         minExperience: 1,
         maxExperience: 3,
         salary: "₹3–5 LPA",
+        postedAt: "2026-10-13",
         description:
             "Support digital campaigns and improve audience engagement across channels.",
     },
@@ -138,6 +147,7 @@ const demoJobs = [
         minExperience: 0,
         maxExperience: 1,
         salary: "₹12k–18k / month",
+        postedAt: "2026-10-16",
         description:
             "Build frontend components with guidance and gain practical React experience.",
     },
@@ -151,6 +161,7 @@ const demoJobs = [
         minExperience: 0,
         maxExperience: 2,
         salary: "₹2.5–4 LPA",
+        postedAt: "2026-10-12",
         description:
             "Resolve customer queries and coordinate timely support with internal teams.",
     },
@@ -164,6 +175,7 @@ const demoJobs = [
         minExperience: 2,
         maxExperience: 4,
         salary: "₹4–7 LPA",
+        postedAt: "2026-10-09",
         description:
             "Coordinate project tasks, track delivery and keep teams informed.",
     },
@@ -172,9 +184,35 @@ const demoJobs = [
 const employmentTypes = [
     ...new Set(demoJobs.map((job) => job.employmentType)),
 ];
+
 const workModes = [...new Set(demoJobs.map((job) => job.workMode))];
 
 const PAGE_SIZE = 20;
+
+/* Calendar-day difference using the visitor's local date. */
+function getPostedLabel(dateString) {
+    const [year, month, day] = dateString.split("-").map(Number);
+
+    const postedDay = Date.UTC(year, month - 1, day);
+    const now = new Date();
+
+    const currentDay = Date.UTC(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+    );
+
+    const days = Math.floor(
+        (currentDay - postedDay) / (1000 * 60 * 60 * 24)
+    );
+
+    if (!Number.isFinite(days)) return "Date unavailable";
+    if (days < 0) return "Scheduled";
+    if (days === 0) return "Today";
+    if (days === 1) return "1 day ago";
+
+    return `${days} days ago`;
+}
 
 function matchesExperience(job, experience) {
     if (!experience) return true;
@@ -465,13 +503,30 @@ export default function Jobs() {
                                         key={job.id}
                                         className="rms-job-card jobs-position-card"
                                     >
-                                        <p className="rms-job-company">
-                                            {job.company}
-                                        </p>
+                                        {/* Company left, posting age right */}
+                                        <div className="jobs-card-topline">
+                                            <p className="rms-job-company">
+                                                {job.company}
+                                            </p>
 
-                                        {/* Department and title: same row */}
+                                            <time
+                                                className="jobs-posted"
+                                                dateTime={job.postedAt}
+                                                title={`Posted on ${job.postedAt}`}
+                                                aria-label={`Posted ${getPostedLabel(
+                                                    job.postedAt
+                                                )}`}
+                                            >
+                                                <i
+                                                    className="fa-regular fa-clock"
+                                                    aria-hidden="true"
+                                                />
+
+                                                {getPostedLabel(job.postedAt)}
+                                            </time>
+                                        </div>
+
                                         <div className="jobs-title-row">
-
                                             <h3 className="rms-job-title">
                                                 <Link
                                                     to={`/jobs/${job.id}`}
@@ -494,7 +549,7 @@ export default function Jobs() {
                                             {job.description}
                                         </p>
 
-                                        {/* Experience and salary: same row */}
+                                        {/* Experience and salary */}
                                         <dl className="rms-job-meta jobs-card-meta">
                                             <div>
                                                 <dt>
@@ -524,7 +579,7 @@ export default function Jobs() {
                                             </div>
                                         </dl>
 
-                                        {/* Location and button: same row */}
+                                        {/* Location and details button */}
                                         <div className="rms-job-footer">
                                             <p
                                                 className="rms-job-location"
@@ -546,9 +601,9 @@ export default function Jobs() {
                                             >
                                                 View Details
                                                 <i
-                                                className="fa-solid fa-arrow-right"
-                                                aria-hidden="true"
-                                            />
+                                                    className="fa-solid fa-arrow-right"
+                                                    aria-hidden="true"
+                                                />
                                             </Button>
                                         </div>
                                     </article>

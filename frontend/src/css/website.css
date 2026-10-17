@@ -5819,3 +5819,44 @@
         transition: none;
     }
 }
+
+/* ===== JOB CARD: COMPANY AND POSTED TIME ===== */
+
+.jobs-card-topline {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+
+    min-width: 0;
+    margin-bottom: 12px;
+}
+
+.jobs-position-card .jobs-card-topline .rms-job-company {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0;
+
+    overflow-wrap: anywhere;
+}
+
+.jobs-posted {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 5px;
+
+    margin-left: auto;
+
+    color: var(--website-muted);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 21px;
+    white-space: nowrap;
+}
+
+.jobs-posted i {
+    font-size: 11px;
+    color: var(--website-primary);
+}

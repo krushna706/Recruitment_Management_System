@@ -6,6 +6,7 @@ import WebsiteLayout from "./layouts/WebsiteLayout";
 import HomePage from "./website/Home/HomePage";
 import Jobs from "./website/Jobs/Jobs";
 import JobDetails from "./website/Jobs/JobDetails";
+import JobApply from "./website/Jobs/JobApply";
 import About from "./website/About";
 import Careers from "./website/Careers";
 import Contact from "./website/Contact";
@@ -35,6 +36,7 @@ function App() {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/jobs" element={<Jobs />} />
                     <Route path="/jobs/:id" element={<JobDetails />} />
+                    <Route path="/jobs/:id/apply" element={<JobApply />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/careers" element={<Careers />} />
                     <Route path="/contact" element={<Contact />} />

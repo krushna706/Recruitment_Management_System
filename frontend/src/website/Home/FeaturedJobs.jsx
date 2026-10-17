@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 
 const sampleJobs = [
@@ -11,6 +10,7 @@ const sampleJobs = [
         mode: "Hybrid",
         experience: "2–4 Years",
         salary: "₹6–10 LPA",
+        postedAt: "2026-10-15",
         description:
             "Develop scalable full-stack web applications using modern technologies.",
     },
@@ -23,6 +23,7 @@ const sampleJobs = [
         mode: "On-site",
         experience: "1–3 Years",
         salary: "₹4–7 LPA",
+        postedAt: "2026-10-16",
         description:
             "Build responsive interfaces and reusable frontend components.",
     },
@@ -35,6 +36,7 @@ const sampleJobs = [
         mode: "Remote",
         experience: "2–5 Years",
         salary: "₹7–12 LPA",
+        postedAt: "2026-10-14",
         description:
             "Develop secure REST APIs and maintain backend services.",
     },
@@ -47,6 +49,7 @@ const sampleJobs = [
         mode: "Hybrid",
         experience: "3–5 Years",
         salary: "₹8–14 LPA",
+        postedAt: "2026-10-13",
         description:
             "Build and maintain modern web applications and backend systems.",
     },
@@ -59,10 +62,82 @@ const sampleJobs = [
         mode: "On-site",
         experience: "1–3 Years",
         salary: "₹4–7 LPA",
+        postedAt: "2026-10-17",
         description:
             "Design intuitive user interfaces and engaging digital experiences.",
     },
 ];
+
+/*
+    Supports YYYY-MM-DD dates and ISO timestamps.
+    Missing or invalid dates are not displayed.
+*/
+function getPostingInfo(value) {
+    if (typeof value !== "string" || !value.trim()) {
+        return null;
+    }
+
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+    let postedDate;
+
+    if (dateOnly) {
+        const [year, month, day] = value.split("-").map(Number);
+
+        postedDate = new Date(year, month - 1, day);
+
+        if (
+            postedDate.getFullYear() !== year ||
+            postedDate.getMonth() !== month - 1 ||
+            postedDate.getDate() !== day
+        ) {
+            return null;
+        }
+    } else {
+        postedDate = new Date(value);
+    }
+
+    if (Number.isNaN(postedDate.getTime())) {
+        return null;
+    }
+
+    const now = new Date();
+
+    const today = Date.UTC(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+    );
+
+    const postedDay = Date.UTC(
+        postedDate.getFullYear(),
+        postedDate.getMonth(),
+        postedDate.getDate()
+    );
+
+    const days = Math.floor(
+        (today - postedDay) / (1000 * 60 * 60 * 24)
+    );
+
+    const label =
+        days < 0
+            ? "Scheduled"
+            : days === 0
+              ? "Today"
+              : days === 1
+                ? "1 day ago"
+                : `${days} days ago`;
+
+    return {
+        label,
+        dateTime: dateOnly ? value : postedDate.toISOString(),
+        fullDate: postedDate.toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        }),
+    };
+}
 
 export default function FeaturedJobs({ jobs = sampleJobs }) {
     const featuredJobs = Array.isArray(jobs) ? jobs.slice(0, 5) : [];
@@ -73,7 +148,6 @@ export default function FeaturedJobs({ jobs = sampleJobs }) {
             aria-labelledby="rms-featured-title"
         >
             <div className="website-shell">
-
                 {/* FEATURED JOBS HEADER */}
                 <div className="rms-featured-header">
                     <div>
@@ -118,27 +192,44 @@ export default function FeaturedJobs({ jobs = sampleJobs }) {
 
                             const experience =
                                 job.experience ||
-                                (
-                                    Number.isFinite(job.minExperience) &&
-                                    Number.isFinite(job.maxExperience)
-                                        ? `${job.minExperience}–${job.maxExperience} Years`
-                                        : "Not specified"
-                                );
+                                (Number.isFinite(job.minExperience) &&
+                                Number.isFinite(job.maxExperience)
+                                    ? `${job.minExperience}–${job.maxExperience} Years`
+                                    : "Not specified");
+
+                            const posting = getPostingInfo(job.postedAt);
 
                             return (
                                 <article
                                     key={jobId}
                                     className="rms-job-card jobs-position-card"
                                 >
+                                    {/* COMPANY AND POSTING TIME */}
+                                    <div className="jobs-card-topline">
+                                        <p className="rms-job-company">
+                                            {job.company ||
+                                                "Company not specified"}
+                                        </p>
 
-                                    {/* COMPANY NAME */}
-                                    <p className="rms-job-company">
-                                        {job.company || "Company not specified"}
-                                    </p>
+                                        {posting && (
+                                            <time
+                                                className="jobs-posted"
+                                                dateTime={posting.dateTime}
+                                                title={`Posting date: ${posting.fullDate}`}
+                                                aria-label={`Posting date: ${posting.fullDate}`}
+                                            >
+                                                <i
+                                                    className="fa-regular fa-clock"
+                                                    aria-hidden="true"
+                                                />
 
-                                    {/* DEPARTMENT AND TITLE */}
+                                                {posting.label}
+                                            </time>
+                                        )}
+                                    </div>
+
+                                    {/* JOB TITLE */}
                                     <div className="jobs-title-row">
-
                                         <h3 className="rms-job-title">
                                             <Link
                                                 to={jobUrl}
@@ -228,7 +319,6 @@ export default function FeaturedJobs({ jobs = sampleJobs }) {
                                             />
                                         </Link>
                                     </div>
-
                                 </article>
                             );
                         })}
@@ -276,7 +366,6 @@ export default function FeaturedJobs({ jobs = sampleJobs }) {
                         />
                     </Link>
                 </div>
-
             </div>
         </section>
     );
