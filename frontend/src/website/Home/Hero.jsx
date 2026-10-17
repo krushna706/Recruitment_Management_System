@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+
+import JobSearchBar from "../../components/JobSearchBar";
 
 const slides = [
     {
@@ -8,11 +9,8 @@ const slides = [
         title: "Your next career move",
         highlight: "starts here.",
         description:
-            "Discover opportunities across India and find a role that fits your skills, interests and ambitions.",
+            "Find opportunities that match your skills, experience and ambitions.",
         image: "/images/hero-1.avif",
-        primaryLabel: "Explore Jobs",
-        secondaryLabel: "About Us",
-        secondaryPath: "/about",
     },
     {
         id: 2,
@@ -20,11 +18,8 @@ const slides = [
         title: "Bring your talent.",
         highlight: "Build your future.",
         description:
-            "Explore roles in technology, business and design. Find an opportunity where your contribution matters.",
+            "Discover your next role in technology, business and design.",
         image: "/images/hero-2.avif",
-        primaryLabel: "Browse Openings",
-        secondaryLabel: "Explore Careers",
-        secondaryPath: "/careers",
     },
     {
         id: 3,
@@ -32,11 +27,8 @@ const slides = [
         title: "Build on your skills.",
         highlight: "Take the next step.",
         description:
-            "Starting your career or ready for a new challenge? Discover opportunities that help you move forward.",
+            "Starting out or moving forward? Find an opportunity that fits you.",
         image: "/images/hero-3.avif",
-        primaryLabel: "Find Your Role",
-        secondaryLabel: "Learn About Us",
-        secondaryPath: "/about",
     },
     {
         id: 4,
@@ -44,22 +36,18 @@ const slides = [
         title: "A fresh direction.",
         highlight: "A new beginning.",
         description:
-            "Explore on-site, remote and hybrid roles and find a way of working that matches your career plans.",
+            "Explore on-site, remote and hybrid roles across India.",
         image: "/images/hero-4.avif",
-        primaryLabel: "View Open Positions",
-        secondaryLabel: "Explore Careers",
-        secondaryPath: "/careers",
     },
 ];
 
-export default function Hero() {
+function Hero() {
     const [activeIndex, setActiveIndex] = useState(0);
 
     const [isPaused, setIsPaused] = useState(() =>
         window.matchMedia("(prefers-reduced-motion: reduce)").matches
     );
 
-    // Automatically change slides every five seconds.
     useEffect(() => {
         if (isPaused) return;
 
@@ -70,17 +58,16 @@ export default function Hero() {
         return () => window.clearTimeout(timer);
     }, [activeIndex, isPaused]);
 
-    // Stop automatic rotation if reduced motion is enabled.
     useEffect(() => {
         const preference = window.matchMedia(
             "(prefers-reduced-motion: reduce)"
         );
 
-        const handleChange = (event) => {
+        function handleChange(event) {
             if (event.matches) {
                 setIsPaused(true);
             }
-        };
+        }
 
         preference.addEventListener("change", handleChange);
 
@@ -89,22 +76,14 @@ export default function Hero() {
         };
     }, []);
 
-    // Preload the next slide image.
     useEffect(() => {
         const nextImage = new Image();
         nextImage.src = slides[(activeIndex + 1) % slides.length].image;
     }, [activeIndex]);
 
-    const changeSlide = (index) => {
+    function changeSlide(index) {
         setActiveIndex((index + slides.length) % slides.length);
-    };
-
-    const handleFocus = (event) => {
-        // Pause for keyboard navigation, not ordinary mouse hover.
-        if (event.target.matches(":focus-visible")) {
-            setIsPaused(true);
-        }
-    };
+    }
 
     const slide = slides[activeIndex];
 
@@ -113,7 +92,6 @@ export default function Hero() {
             className="rms-hero"
             aria-label="Career opportunities"
             aria-roledescription="carousel"
-            onFocusCapture={handleFocus}
         >
             <div className="rms-hero-images" aria-hidden="true">
                 {slides.map((item, index) => (
@@ -152,35 +130,19 @@ export default function Hero() {
                     <p className="rms-hero-description">
                         {slide.description}
                     </p>
-
-                    <div className="rms-hero-actions">
-                        <Link
-                            to="/jobs"
-                            className="website-button website-button-primary"
-                        >
-                            {slide.primaryLabel}
-                            <i
-                                className="fa-solid fa-arrow-right"
-                                aria-hidden="true"
-                            />
-                        </Link>
-
-                        <Link
-                            to={slide.secondaryPath}
-                            className="website-button website-button-light-outline"
-                        >
-                            {slide.secondaryLabel}
-                        </Link>
-                    </div>
-
-                    <p className="rms-hero-location">
-                        <i
-                            className="fa-solid fa-location-dot"
-                            aria-hidden="true"
-                        />
-                        Opportunities across India
-                    </p>
                 </div>
+
+                <div className="rms-hero-search-wrap">
+                    <JobSearchBar />
+                </div>
+
+                <p className="rms-hero-search-note">
+                    <i
+                        className="fa-solid fa-location-dot"
+                        aria-hidden="true"
+                    />
+                    Discover opportunities across India
+                </p>
             </div>
 
             <div className="website-shell rms-hero-controls">
@@ -216,7 +178,9 @@ export default function Hero() {
                         aria-label={
                             isPaused ? "Play slideshow" : "Pause slideshow"
                         }
-                        onClick={() => setIsPaused((previous) => !previous)}
+                        onClick={() =>
+                            setIsPaused((previous) => !previous)
+                        }
                     >
                         <i
                             className={`fa-solid ${
@@ -252,3 +216,5 @@ export default function Hero() {
         </section>
     );
 }
+
+export default Hero;
