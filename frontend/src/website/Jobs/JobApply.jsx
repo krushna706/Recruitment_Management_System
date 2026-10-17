@@ -8,6 +8,8 @@ import {
     TextField,
 } from "@mui/material";
 
+// Temporary frontend data.
+// Replace with job data from the API during backend integration.
 const demoJobs = [
     {
         id: "frontend-developer",
@@ -187,7 +189,7 @@ function validateResume(file) {
     }
 
     if (file.size === 0) {
-        return "This file is empty. Please select another file.";
+        return "This file is empty. Please choose another file.";
     }
 
     if (file.size > MAX_RESUME_SIZE) {
@@ -195,6 +197,17 @@ function validateResume(file) {
     }
 
     return "";
+}
+
+function normalizeSkills(skills) {
+    return [
+        ...new Map(
+            skills
+                .map((skill) => skill.trim())
+                .filter(Boolean)
+                .map((skill) => [skill.toLowerCase(), skill])
+        ).values(),
+    ];
 }
 
 function ApplicationForm({ job, user }) {
@@ -240,7 +253,6 @@ function ApplicationForm({ job, user }) {
     const handleResumeChange = (event) => {
         const file = event.target.files?.[0];
 
-        // Allow selecting the same file again after removing it.
         event.target.value = "";
 
         if (!file) return;
@@ -248,10 +260,12 @@ function ApplicationForm({ job, user }) {
         const error = validateResume(file);
 
         setResume(error ? null : file);
+
         setErrors((previous) => ({
             ...previous,
             resume: error,
         }));
+
         setPreviewValidated(false);
     };
 
@@ -263,26 +277,17 @@ function ApplicationForm({ job, user }) {
     const handleSubmit = (event) => {
         event.preventDefault();
 
-        // Include a custom skill even if the user did not press Enter.
-        const uniqueSkills = [
-            ...new Map(
-                [...values.skills, skillInput]
-                    .map((skill) => skill.trim())
-                    .filter(Boolean)
-                    .map((skill) => [skill.toLowerCase(), skill])
-            ).values(),
-        ];
-
         const cleanedValues = {
             ...values,
             fullName: values.fullName.trim(),
             email: values.email.trim(),
             phone: values.phone.trim(),
-            skills: uniqueSkills,
+            skills: normalizeSkills([...values.skills, skillInput]),
         };
 
         setValues(cleanedValues);
         setSkillInput("");
+        setPreviewValidated(false);
 
         const nextErrors = {};
 
@@ -290,7 +295,8 @@ function ApplicationForm({ job, user }) {
             cleanedValues.fullName.length < 2 ||
             cleanedValues.fullName.length > 100
         ) {
-            nextErrors.fullName = "Enter your full name, using 2–100 characters.";
+            nextErrors.fullName =
+                "Enter your full name using 2–100 characters.";
         }
 
         if (
@@ -311,18 +317,19 @@ function ApplicationForm({ job, user }) {
         }
 
         if (!qualifications.includes(cleanedValues.qualification)) {
-            nextErrors.qualification = "Select your highest qualification.";
+            nextErrors.qualification =
+                "Select your highest qualification.";
         }
 
         if (!experienceOptions.includes(cleanedValues.experience)) {
             nextErrors.experience = "Select your total experience.";
         }
 
-        if (uniqueSkills.length === 0) {
+        if (cleanedValues.skills.length === 0) {
             nextErrors.skills = "Add at least one relevant skill.";
         } else if (
-            uniqueSkills.length > 15 ||
-            uniqueSkills.some((skill) => skill.length > 60)
+            cleanedValues.skills.length > 15 ||
+            cleanedValues.skills.some((skill) => skill.length > 60)
         ) {
             nextErrors.skills =
                 "Add up to 15 skills, with a maximum of 60 characters each.";
@@ -335,7 +342,6 @@ function ApplicationForm({ job, user }) {
         }
 
         setErrors(nextErrors);
-        setPreviewValidated(false);
 
         const firstError = Object.keys(nextErrors)[0];
 
@@ -353,9 +359,8 @@ function ApplicationForm({ job, user }) {
             return;
         }
 
-        // Frontend preview only.
-        // Connect the application API here during backend development.
-        // Send the job ID, validated fields and resume using FormData.
+        // Frontend validation only.
+        // Backend integration: send job ID, fields and resume via FormData.
         setPreviewValidated(true);
     };
 
@@ -373,52 +378,16 @@ function ApplicationForm({ job, user }) {
     });
 
     return (
-        <div className="job-apply-page">
-            <section className="about-hero">
-                <img
-                    className="about-hero-image"
-                    src="/images/about-banner.jpg"
-                    alt=""
-                />
-
-                <div className="website-shell about-hero-inner">
-                    <nav
-                        className="about-breadcrumb"
-                        aria-label="Breadcrumb"
+        <section
+            className="job-apply-page website-shell"
+            aria-labelledby="application-page-title"
+        >
+            <div className="job-apply-container">
+                <div className="job-apply-topbar">
+                    <Link
+                        to={jobPath}
+                        className="job-apply-back-link"
                     >
-                        <ol>
-                            <li>
-                                <Link to="/">Home</Link>
-                            </li>
-                            <li>
-                                <Link to="/jobs">Jobs</Link>
-                            </li>
-                            <li>
-                                <Link to={jobPath}>Job Details</Link>
-                            </li>
-                            <li aria-current="page">Apply</li>
-                        </ol>
-                    </nav>
-
-                    <div className="about-hero-content">
-                        <p className="website-section-label">
-                            TAKE THE NEXT STEP
-                        </p>
-
-                        <h1 className="website-section-title">
-                            Your next opportunity.
-                            <span>Start with your application.</span>
-                        </h1>
-                    </div>
-                </div>
-            </section>
-
-            <section
-                className="website-section website-shell"
-                aria-labelledby="application-title"
-            >
-                <div className="job-apply-container">
-                    <Link to={jobPath} className="auth-back-link">
                         <i
                             className="fa-solid fa-arrow-left"
                             aria-hidden="true"
@@ -426,359 +395,433 @@ function ApplicationForm({ job, user }) {
                         Back to job details
                     </Link>
 
-                    <div className="job-apply-grid">
-                        <article className="job-apply-card">
-                            <header className="job-apply-header">
-                                <p className="website-section-label">
-                                    YOUR APPLICATION
-                                </p>
+                    <span className="job-apply-topbar-label">
+                        Job application
+                    </span>
+                </div>
 
-                                <h2
-                                    id="application-title"
-                                    className="website-section-title"
-                                >
-                                    Let’s get to know you.
+                <header className="job-apply-page-heading">
+                    <p className="website-section-label">
+                        TAKE THE NEXT STEP
+                    </p>
+
+                    <h1
+                        id="application-page-title"
+                        className="website-section-title"
+                    >
+                        Your next chapter <span>starts here.</span>
+                    </h1>
+
+                    <p className="website-section-description">
+                        Tell us about yourself and share the experience
+                        you’ll bring to this role.
+                    </p>
+                </header>
+
+                <div className="job-apply-grid">
+                    <article
+                        className="job-apply-card"
+                        aria-labelledby="application-form-title"
+                    >
+                        <header className="job-apply-card-header">
+                            <div>
+                                <h2 id="application-form-title">
+                                    Application details
                                 </h2>
 
-                                <p className="website-section-description">
-                                    Share your details and resume for the{" "}
-                                    {job.title} position.
+                                <p>
+                                    Complete the information below to apply.
                                 </p>
-
-                                <p className="job-apply-required">
-                                    Fields marked with * are required.
-                                </p>
-                            </header>
-
-                            <form
-                                ref={formRef}
-                                className="job-apply-form"
-                                onSubmit={handleSubmit}
-                                noValidate
-                            >
-                                <fieldset className="job-apply-group">
-                                    <legend>Personal details</legend>
-
-                                    <div className="job-apply-fields">
-                                        <TextField
-                                            {...textFieldProps("fullName")}
-                                            label="Full name"
-                                            autoComplete="name"
-                                            slotProps={{
-                                                htmlInput: {
-                                                    maxLength: 100,
-                                                },
-                                            }}
-                                        />
-
-                                        <TextField
-                                            {...textFieldProps("email")}
-                                            label="Email address"
-                                            type="email"
-                                            autoComplete="email"
-                                            slotProps={{
-                                                htmlInput: {
-                                                    maxLength: 254,
-                                                },
-                                            }}
-                                        />
-
-                                        <TextField
-                                            {...textFieldProps("phone")}
-                                            label="Phone number"
-                                            type="tel"
-                                            autoComplete="tel"
-                                            slotProps={{
-                                                htmlInput: {
-                                                    maxLength: 25,
-                                                },
-                                            }}
-                                        />
-                                    </div>
-                                </fieldset>
-
-                                <fieldset className="job-apply-group">
-                                    <legend>Professional details</legend>
-
-                                    <div className="job-apply-fields">
-                                        <TextField
-                                            {...textFieldProps("qualification")}
-                                            label="Highest qualification"
-                                            select
-                                        >
-                                            {qualifications.map((item) => (
-                                                <MenuItem
-                                                    key={item}
-                                                    value={item}
-                                                >
-                                                    {item}
-                                                </MenuItem>
-                                            ))}
-                                        </TextField>
-
-                                        <TextField
-                                            {...textFieldProps("experience")}
-                                            label="Total experience"
-                                            select
-                                        >
-                                            {experienceOptions.map((item) => (
-                                                <MenuItem
-                                                    key={item}
-                                                    value={item}
-                                                >
-                                                    {item}
-                                                </MenuItem>
-                                            ))}
-                                        </TextField>
-
-                                        <Autocomplete
-                                            multiple
-                                            freeSolo
-                                            filterSelectedOptions
-                                            options={skillOptions}
-                                            value={values.skills}
-                                            inputValue={skillInput}
-                                            className="job-apply-full-width"
-                                            data-field="skills"
-                                            onInputChange={(_, value) => {
-                                                setSkillInput(value);
-                                                clearFeedback("skills");
-                                            }}
-                                            onChange={(_, selectedSkills) => {
-                                                setValues((previous) => ({
-                                                    ...previous,
-                                                    skills: selectedSkills,
-                                                }));
-                                                clearFeedback("skills");
-                                            }}
-                                            renderInput={(params) => (
-                                                <TextField
-                                                    {...params}
-                                                    label="Relevant skills"
-                                                    required
-                                                    className="website-text-field"
-                                                    error={Boolean(errors.skills)}
-                                                    helperText={
-                                                        errors.skills ||
-                                                        "Select a skill or type your own and press Enter."
-                                                    }
-                                                />
-                                            )}
-                                        />
-                                    </div>
-                                </fieldset>
-
-                                <fieldset
-                                    className="job-apply-group"
-                                    data-field="resume"
-                                >
-                                    <legend>Resume *</legend>
-
-                                    <div
-                                        className={`job-apply-upload ${
-                                            errors.resume ? "is-error" : ""
-                                        }`}
-                                    >
-                                        <span
-                                            className="job-apply-upload-icon"
-                                            aria-hidden="true"
-                                        >
-                                            <i
-                                                className={`fa-solid ${
-                                                    resume
-                                                        ? "fa-file-lines"
-                                                        : "fa-arrow-up-from-bracket"
-                                                }`}
-                                            />
-                                        </span>
-
-                                        <div className="job-apply-upload-copy">
-                                            <h3>
-                                                {resume
-                                                    ? resume.name
-                                                    : "Add your latest resume"}
-                                            </h3>
-
-                                            <p id="resume-help">
-                                                {resume
-                                                    ? `${(
-                                                          resume.size / 1024
-                                                      ).toFixed(0)} KB · Ready for review`
-                                                    : "PDF, DOC or DOCX · Maximum 5 MB"}
-                                            </p>
-                                        </div>
-
-                                        <div className="job-apply-upload-actions">
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept=".pdf,.doc,.docx"
-                                                hidden
-                                                onChange={handleResumeChange}
-                                            />
-
-                                            <Button
-                                                type="button"
-                                                variant="outlined"
-                                                className="website-button website-button-outline"
-                                                onClick={() =>
-                                                    fileInputRef.current?.click()
-                                                }
-                                                aria-describedby={
-                                                    errors.resume
-                                                        ? "resume-help resume-error"
-                                                        : "resume-help"
-                                                }
-                                            >
-                                                {resume
-                                                    ? "Change file"
-                                                    : "Choose file"}
-                                            </Button>
-
-                                            {resume && (
-                                                <Button
-                                                    type="button"
-                                                    className="job-apply-remove"
-                                                    onClick={removeResume}
-                                                >
-                                                    Remove
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {errors.resume && (
-                                        <p
-                                            id="resume-error"
-                                            className="job-apply-error"
-                                            role="alert"
-                                        >
-                                            {errors.resume}
-                                        </p>
-                                    )}
-                                </fieldset>
-
-                                {previewValidated && (
-                                    <Alert severity="info" role="status">
-                                        Your form passed the frontend checks.
-                                        No application has been submitted.
-                                        Submission will work after the backend
-                                        is connected.
-                                    </Alert>
-                                )}
-
-                                <div className="job-apply-submit-row">
-                                    <p>
-                                        Review your information before
-                                        submitting your application.
-                                    </p>
-
-                                    <Button
-                                        type="submit"
-                                        variant="contained"
-                                        disableElevation
-                                        className="website-button website-button-primary"
-                                        endIcon={
-                                            <i
-                                                className="fa-solid fa-arrow-right"
-                                                aria-hidden="true"
-                                            />
-                                        }
-                                    >
-                                        Submit Application
-                                    </Button>
-                                </div>
-                            </form>
-                        </article>
-
-                        <aside
-                            className="job-apply-sidebar"
-                            aria-labelledby="application-job-title"
-                        >
-                            <div className="job-apply-summary">
-                                <p className="website-section-label">
-                                    YOU’RE APPLYING FOR
-                                </p>
-
-                                <p className="rms-job-company">
-                                    {job.company}
-                                </p>
-
-                                <h2 id="application-job-title">
-                                    {job.title}
-                                </h2>
-
-                                <div className="rms-job-tags">
-                                    <span>{job.employmentType}</span>
-                                    <span>{job.workMode}</span>
-                                </div>
-
-                                <dl className="rms-job-meta">
-                                    <div>
-                                        <dt>
-                                            <i
-                                                className="fa-solid fa-location-dot"
-                                                aria-hidden="true"
-                                            />
-                                            Location
-                                        </dt>
-                                        <dd>{job.location}</dd>
-                                    </div>
-
-                                    <div>
-                                        <dt>
-                                            <i
-                                                className="fa-solid fa-briefcase"
-                                                aria-hidden="true"
-                                            />
-                                            Experience
-                                        </dt>
-                                        <dd>{job.experience}</dd>
-                                    </div>
-
-                                    <div>
-                                        <dt>
-                                            <i
-                                                className="fa-solid fa-indian-rupee-sign"
-                                                aria-hidden="true"
-                                            />
-                                            Salary
-                                        </dt>
-                                        <dd>{job.salary}</dd>
-                                    </div>
-                                </dl>
-
-                                <Link
-                                    to={jobPath}
-                                    className="job-apply-details-link"
-                                >
-                                    Review job description
-                                    <i
-                                        className="fa-solid fa-arrow-right"
-                                        aria-hidden="true"
-                                    />
-                                </Link>
                             </div>
 
-                            <div className="job-apply-tip">
+                            <span className="job-apply-required">
+                                * Required fields
+                            </span>
+                        </header>
+
+                        <form
+                            ref={formRef}
+                            className="job-apply-form"
+                            onSubmit={handleSubmit}
+                            noValidate
+                        >
+                            <fieldset className="job-apply-group">
+                                <legend>
+                                    <span
+                                        className="job-apply-section-number"
+                                        aria-hidden="true"
+                                    >
+                                        01
+                                    </span>
+                                    Personal details
+                                </legend>
+
+                                <p className="job-apply-group-description">
+                                    Use contact details where we can reach you.
+                                </p>
+
+                                <div className="job-apply-fields">
+                                    <TextField
+                                        {...textFieldProps("fullName")}
+                                        label="Full name"
+                                        autoComplete="name"
+                                        slotProps={{
+                                            htmlInput: {
+                                                maxLength: 100,
+                                            },
+                                        }}
+                                    />
+
+                                    <TextField
+                                        {...textFieldProps("phone")}
+                                        label="Phone number"
+                                        type="tel"
+                                        autoComplete="tel"
+                                        slotProps={{
+                                            htmlInput: {
+                                                maxLength: 25,
+                                            },
+                                        }}
+                                    />
+
+                                    <TextField
+                                        {...textFieldProps("email")}
+                                        className="website-text-field job-apply-full-width"
+                                        label="Email address"
+                                        type="email"
+                                        autoComplete="email"
+                                        slotProps={{
+                                            htmlInput: {
+                                                maxLength: 254,
+                                            },
+                                        }}
+                                    />
+                                </div>
+                            </fieldset>
+
+                            <fieldset className="job-apply-group">
+                                <legend>
+                                    <span
+                                        className="job-apply-section-number"
+                                        aria-hidden="true"
+                                    >
+                                        02
+                                    </span>
+                                    Professional background
+                                </legend>
+
+                                <p className="job-apply-group-description">
+                                    Highlight your education, experience
+                                    and relevant skills.
+                                </p>
+
+                                <div className="job-apply-fields">
+                                    <TextField
+                                        {...textFieldProps("qualification")}
+                                        label="Highest qualification"
+                                        select
+                                    >
+                                        {qualifications.map((item) => (
+                                            <MenuItem
+                                                key={item}
+                                                value={item}
+                                            >
+                                                {item}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+
+                                    <TextField
+                                        {...textFieldProps("experience")}
+                                        label="Total experience"
+                                        select
+                                    >
+                                        {experienceOptions.map((item) => (
+                                            <MenuItem
+                                                key={item}
+                                                value={item}
+                                            >
+                                                {item}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+
+                                    <Autocomplete
+                                        multiple
+                                        freeSolo
+                                        filterSelectedOptions
+                                        options={skillOptions}
+                                        value={values.skills}
+                                        inputValue={skillInput}
+                                        className="job-apply-full-width"
+                                        data-field="skills"
+                                        onInputChange={(_, value) => {
+                                            setSkillInput(value);
+                                            clearFeedback("skills");
+                                        }}
+                                        onChange={(_, selectedSkills) => {
+                                            setValues((previous) => ({
+                                                ...previous,
+                                                skills: normalizeSkills(
+                                                    selectedSkills
+                                                ),
+                                            }));
+
+                                            clearFeedback("skills");
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Relevant skills"
+                                                required
+                                                className="website-text-field"
+                                                error={Boolean(errors.skills)}
+                                                helperText={
+                                                    errors.skills ||
+                                                    "Select a skill or type your own and press Enter."
+                                                }
+                                            />
+                                        )}
+                                    />
+                                </div>
+                            </fieldset>
+
+                            <fieldset
+                                className="job-apply-group"
+                                data-field="resume"
+                            >
+                                <legend>
+                                    <span
+                                        className="job-apply-section-number"
+                                        aria-hidden="true"
+                                    >
+                                        03
+                                    </span>
+                                    Upload your resume *
+                                </legend>
+
+                                <p className="job-apply-group-description">
+                                    Add your latest resume with your
+                                    experience and achievements.
+                                </p>
+
+                                <div
+                                    className={`job-apply-upload ${
+                                        resume ? "has-file" : ""
+                                    } ${
+                                        errors.resume ? "is-error" : ""
+                                    }`}
+                                >
+                                    <span
+                                        className="job-apply-upload-icon"
+                                        aria-hidden="true"
+                                    >
+                                        <i
+                                            className={`fa-solid ${
+                                                resume
+                                                    ? "fa-file-lines"
+                                                    : "fa-arrow-up-from-bracket"
+                                            }`}
+                                        />
+                                    </span>
+
+                                    <div className="job-apply-upload-copy">
+                                        <h3>
+                                            {resume
+                                                ? resume.name
+                                                : "Choose your resume"}
+                                        </h3>
+
+                                        <p id="resume-help">
+                                            {resume
+                                                ? `${Math.max(
+                                                      1,
+                                                      Math.round(
+                                                          resume.size / 1024
+                                                      )
+                                                  )} KB · File selected`
+                                                : "PDF, DOC or DOCX · Maximum 5 MB"}
+                                        </p>
+                                    </div>
+
+                                    <div className="job-apply-upload-actions">
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".pdf,.doc,.docx"
+                                            hidden
+                                            onChange={handleResumeChange}
+                                        />
+
+                                        <Button
+                                            type="button"
+                                            variant="outlined"
+                                            className="website-button website-button-outline"
+                                            onClick={() =>
+                                                fileInputRef.current?.click()
+                                            }
+                                            aria-describedby={
+                                                errors.resume
+                                                    ? "resume-help resume-error"
+                                                    : "resume-help"
+                                            }
+                                        >
+                                            {resume
+                                                ? "Change file"
+                                                : "Browse files"}
+                                        </Button>
+
+                                        {resume && (
+                                            <Button
+                                                type="button"
+                                                className="job-apply-remove"
+                                                onClick={removeResume}
+                                            >
+                                                Remove
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {errors.resume && (
+                                    <p
+                                        id="resume-error"
+                                        className="job-apply-error"
+                                        role="alert"
+                                    >
+                                        {errors.resume}
+                                    </p>
+                                )}
+                            </fieldset>
+
+                            {previewValidated && (
+                                <Alert severity="info" role="status">
+                                    Your form passed the frontend checks.
+                                    No application has been submitted.
+                                    Submission will work after the backend
+                                    is connected.
+                                </Alert>
+                            )}
+
+                            <div className="job-apply-submit-row">
+                                <p>
+                                    Please review your details before
+                                    submitting.
+                                </p>
+
+                                <Button
+                                    type="submit"
+                                    variant="contained"
+                                    disableElevation
+                                    className="website-button website-button-primary"
+                                    endIcon={
+                                        <i
+                                            className="fa-solid fa-arrow-right"
+                                            aria-hidden="true"
+                                        />
+                                    }
+                                >
+                                    Submit Application
+                                </Button>
+                            </div>
+                        </form>
+                    </article>
+
+                    <aside
+                        className="job-apply-sidebar"
+                        aria-labelledby="application-job-title"
+                    >
+                        <div className="job-apply-summary">
+                            <div className="job-apply-summary-heading">
+                                <span
+                                    className="job-apply-summary-icon"
+                                    aria-hidden="true"
+                                >
+                                    <i className="fa-solid fa-briefcase" />
+                                </span>
+
+                                <p className="website-section-label">
+                                    YOUR NEXT OPPORTUNITY
+                                </p>
+                            </div>
+
+                            <p className="rms-job-company">
+                                {job.company}
+                            </p>
+
+                            <h2 id="application-job-title">
+                                {job.title}
+                            </h2>
+
+                            <div className="rms-job-tags">
+                                <span>{job.employmentType}</span>
+                                <span>{job.workMode}</span>
+                            </div>
+
+                            <dl className="rms-job-meta">
+                                <div>
+                                    <dt>
+                                        <i
+                                            className="fa-solid fa-location-dot"
+                                            aria-hidden="true"
+                                        />
+                                        Location
+                                    </dt>
+
+                                    <dd>{job.location}</dd>
+                                </div>
+
+                                <div>
+                                    <dt>
+                                        <i
+                                            className="fa-solid fa-briefcase"
+                                            aria-hidden="true"
+                                        />
+                                        Experience
+                                    </dt>
+
+                                    <dd>{job.experience}</dd>
+                                </div>
+
+                                <div>
+                                    <dt>
+                                        <i
+                                            className="fa-solid fa-indian-rupee-sign"
+                                            aria-hidden="true"
+                                        />
+                                        Salary
+                                    </dt>
+
+                                    <dd>{job.salary}</dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        <div className="job-apply-tips">
+                            <h3>
                                 <i
                                     className="fa-regular fa-lightbulb"
                                     aria-hidden="true"
                                 />
+                                Before you submit
+                            </h3>
 
-                                <div>
-                                    <h3>Make your application count.</h3>
-                                    <p>
-                                        Keep your resume up to date and
-                                        highlight skills relevant to this role.
-                                    </p>
-                                </div>
-                            </div>
-                        </aside>
-                    </div>
+                            <ul>
+                                <li>
+                                    Check your email and phone number.
+                                </li>
+                                <li>
+                                    Highlight skills that match the role.
+                                </li>
+                                <li>
+                                    Upload a clear, up-to-date resume.
+                                </li>
+                            </ul>
+                        </div>
+                    </aside>
                 </div>
-            </section>
-        </div>
+            </div>
+        </section>
     );
 }
 

@@ -649,10 +649,14 @@ function JobDetailsContent({ id, user }) {
 
                                         <div className="jd-summary-action">
                                             <Button
-                                                onClick={handleApply}
+                                                component={Link}
+                                                to={`/jobs/${encodeURIComponent(id)}/apply`}
+                                                variant="contained"
+                                                disableElevation
                                                 className="website-button website-button-primary"
                                             >
                                                 Apply Now
+                                                <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                                             </Button>
 
                                             <p>
