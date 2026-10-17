@@ -15,7 +15,6 @@ const demoJobs = [
         id: "frontend-developer",
         title: "Frontend Developer",
         company: "Demo Technologies",
-        department: "Engineering",
         location: "Bhubaneswar, Odisha",
         employmentType: "Full-time",
         workMode: "On-site",
@@ -29,7 +28,6 @@ const demoJobs = [
         id: "backend-developer",
         title: "Backend Developer",
         company: "Demo Technologies",
-        department: "Engineering",
         location: "Bengaluru, Karnataka",
         employmentType: "Full-time",
         workMode: "Hybrid",
@@ -43,7 +41,6 @@ const demoJobs = [
         id: "ui-ux-designer",
         title: "UI/UX Designer",
         company: "Sample Design Studio",
-        department: "Design",
         location: "Pune, Maharashtra",
         employmentType: "Full-time",
         workMode: "Hybrid",
@@ -57,7 +54,6 @@ const demoJobs = [
         id: "mern-developer",
         title: "MERN Stack Developer",
         company: "Sample Digital",
-        department: "Engineering",
         location: "Hyderabad, Telangana",
         employmentType: "Full-time",
         workMode: "Remote",
@@ -71,7 +67,6 @@ const demoJobs = [
         id: "hr-intern",
         title: "HR Intern",
         company: "Sample People Services",
-        department: "Human Resources",
         location: "Bhubaneswar, Odisha",
         employmentType: "Internship",
         workMode: "On-site",
@@ -85,7 +80,6 @@ const demoJobs = [
         id: "business-development",
         title: "Business Development Executive",
         company: "Sample Digital",
-        department: "Business",
         location: "Kolkata, West Bengal",
         employmentType: "Full-time",
         workMode: "On-site",
@@ -99,7 +93,6 @@ const demoJobs = [
         id: "qa-engineer",
         title: "QA Engineer",
         company: "Demo Technologies",
-        department: "Engineering",
         location: "Pune, Maharashtra",
         employmentType: "Contract",
         workMode: "Remote",
@@ -113,7 +106,6 @@ const demoJobs = [
         id: "content-writer",
         title: "Content Writer",
         company: "Sample Design Studio",
-        department: "Marketing",
         location: "Bengaluru, Karnataka",
         employmentType: "Part-time",
         workMode: "Remote",
@@ -127,7 +119,6 @@ const demoJobs = [
         id: "digital-marketing",
         title: "Digital Marketing Executive",
         company: "Sample Digital",
-        department: "Marketing",
         location: "Hyderabad, Telangana",
         employmentType: "Full-time",
         workMode: "Hybrid",
@@ -141,7 +132,6 @@ const demoJobs = [
         id: "react-intern",
         title: "React Developer Intern",
         company: "Demo Technologies",
-        department: "Engineering",
         location: "Bhubaneswar, Odisha",
         employmentType: "Internship",
         workMode: "On-site",
@@ -155,7 +145,6 @@ const demoJobs = [
         id: "customer-support",
         title: "Customer Support Executive",
         company: "Sample People Services",
-        department: "Operations",
         location: "Kolkata, West Bengal",
         employmentType: "Full-time",
         workMode: "On-site",
@@ -169,7 +158,6 @@ const demoJobs = [
         id: "project-coordinator",
         title: "Project Coordinator",
         company: "Sample Digital",
-        department: "Operations",
         location: "Pune, Maharashtra",
         employmentType: "Full-time",
         workMode: "Hybrid",
@@ -181,7 +169,6 @@ const demoJobs = [
     },
 ];
 
-const departments = [...new Set(demoJobs.map((job) => job.department))];
 const employmentTypes = [
     ...new Set(demoJobs.map((job) => job.employmentType)),
 ];
@@ -217,7 +204,6 @@ export default function Jobs() {
     const designation = (searchParams.get("designation") || "").trim();
     const location = (searchParams.get("location") || "").trim();
     const experience = searchParams.get("experience") || "";
-    const department = searchParams.get("department") || "";
     const employmentType = searchParams.get("employmentType") || "";
     const workMode = searchParams.get("workMode") || "";
 
@@ -225,7 +211,6 @@ export default function Jobs() {
         designation,
         location,
         experience,
-        department,
         employmentType,
         workMode,
     ]);
@@ -238,7 +223,6 @@ export default function Jobs() {
             const searchableText = [
                 job.title,
                 job.company,
-                job.department,
                 job.description,
             ]
                 .join(" ")
@@ -252,7 +236,6 @@ export default function Jobs() {
                 (!locationQuery ||
                     searchableLocation.includes(locationQuery)) &&
                 matchesExperience(job, experience) &&
-                (!department || job.department === department) &&
                 (!employmentType ||
                     job.employmentType === employmentType) &&
                 (!workMode || job.workMode === workMode)
@@ -262,7 +245,6 @@ export default function Jobs() {
         designation,
         location,
         experience,
-        department,
         employmentType,
         workMode,
     ]);
@@ -285,7 +267,6 @@ export default function Jobs() {
         designation ||
             location ||
             experience ||
-            department ||
             employmentType ||
             workMode
     );
@@ -311,7 +292,6 @@ export default function Jobs() {
             "designation",
             "location",
             "experience",
-            "department",
             "employmentType",
             "workMode",
         ].forEach((name) => nextParams.delete(name));
@@ -327,12 +307,6 @@ export default function Jobs() {
     };
 
     const filterOptions = [
-        {
-            name: "department",
-            label: "Department",
-            value: department,
-            options: departments,
-        },
         {
             name: "employmentType",
             label: "Job type",
@@ -497,12 +471,6 @@ export default function Jobs() {
 
                                         {/* Department and title: same row */}
                                         <div className="jobs-title-row">
-                                            <span
-                                                className="jobs-department"
-                                                title={job.department}
-                                            >
-                                                {job.department}
-                                            </span>
 
                                             <h3 className="rms-job-title">
                                                 <Link
@@ -577,6 +545,10 @@ export default function Jobs() {
                                                 aria-label={`View details for ${job.title}`}
                                             >
                                                 View Details
+                                                <i
+                                                className="fa-solid fa-arrow-right"
+                                                aria-hidden="true"
+                                            />
                                             </Button>
                                         </div>
                                     </article>

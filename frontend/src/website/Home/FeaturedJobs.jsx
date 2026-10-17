@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 
 const sampleJobs = [
@@ -5,56 +6,61 @@ const sampleJobs = [
         id: "sample-1",
         company: "Sample Tech Solutions",
         title: "MERN Stack Developer",
-        department: "Engineering",
         location: "Bengaluru, Karnataka",
         type: "Full Time",
         mode: "Hybrid",
         experience: "2–4 Years",
         salary: "₹6–10 LPA",
+        description:
+            "Develop scalable full-stack web applications using modern technologies.",
     },
     {
         id: "sample-2",
         company: "Sample Digital Labs",
         title: "Frontend React Developer",
-        department: "Engineering",
         location: "Pune, Maharashtra",
         type: "Full Time",
         mode: "On-site",
         experience: "1–3 Years",
         salary: "₹4–7 LPA",
+        description:
+            "Build responsive interfaces and reusable frontend components.",
     },
     {
         id: "sample-3",
         company: "Sample Cloud Systems",
         title: "Backend Node.js Developer",
-        department: "Engineering",
         location: "Hyderabad, Telangana",
         type: "Full Time",
         mode: "Remote",
         experience: "2–5 Years",
         salary: "₹7–12 LPA",
+        description:
+            "Develop secure REST APIs and maintain backend services.",
     },
     {
         id: "sample-4",
         company: "Sample Innovations",
         title: "Full Stack Developer",
-        department: "Engineering",
         location: "Mumbai, Maharashtra",
         type: "Full Time",
         mode: "Hybrid",
         experience: "3–5 Years",
         salary: "₹8–14 LPA",
+        description:
+            "Build and maintain modern web applications and backend systems.",
     },
     {
         id: "sample-5",
         company: "Sample Creative Studio",
         title: "UI/UX Designer",
-        department: "Design",
         location: "Bhubaneswar, Odisha",
         type: "Full Time",
         mode: "On-site",
         experience: "1–3 Years",
         salary: "₹4–7 LPA",
+        description:
+            "Design intuitive user interfaces and engaging digital experiences.",
     },
 ];
 
@@ -67,6 +73,8 @@ export default function FeaturedJobs({ jobs = sampleJobs }) {
             aria-labelledby="rms-featured-title"
         >
             <div className="website-shell">
+
+                {/* FEATURED JOBS HEADER */}
                 <div className="rms-featured-header">
                     <div>
                         <p className="website-section-label">
@@ -99,42 +107,71 @@ export default function FeaturedJobs({ jobs = sampleJobs }) {
                     </Link>
                 </div>
 
+                {/* FEATURED JOB CARDS */}
                 {featuredJobs.length > 0 ? (
-                    <div className="rms-jobs-grid">
+                    <div className="jobs-list-grid">
                         {featuredJobs.map((job) => {
                             const jobId = job._id || job.id;
-                            const jobUrl = `/jobs/${encodeURIComponent(jobId)}`;
+
+                            const jobUrl =
+                                `/jobs/${encodeURIComponent(jobId)}`;
+
+                            const experience =
+                                job.experience ||
+                                (
+                                    Number.isFinite(job.minExperience) &&
+                                    Number.isFinite(job.maxExperience)
+                                        ? `${job.minExperience}–${job.maxExperience} Years`
+                                        : "Not specified"
+                                );
 
                             return (
                                 <article
                                     key={jobId}
-                                    className="rms-job-card"
+                                    className="rms-job-card jobs-position-card"
                                 >
-                                    {/* Department, company and job title */}
-                                    <div className="rms-job-heading">
-                                        <p className="rms-job-department">
-                                            {job.department || "Career opportunity"}
-                                        </p>
 
-                                        <p className="rms-job-company">
-                                            {job.company || "Company not specified"}
-                                        </p>
+                                    {/* COMPANY NAME */}
+                                    <p className="rms-job-company">
+                                        {job.company || "Company not specified"}
+                                    </p>
+
+                                    {/* DEPARTMENT AND TITLE */}
+                                    <div className="jobs-title-row">
 
                                         <h3 className="rms-job-title">
-                                            <Link to={jobUrl}>
+                                            <Link
+                                                to={jobUrl}
+                                                title={job.title}
+                                            >
                                                 {job.title}
                                             </Link>
                                         </h3>
                                     </div>
 
-                                    {/* Employment type and work mode */}
+                                    {/* EMPLOYMENT TYPE AND WORK MODE */}
                                     <div className="rms-job-tags">
-                                        <span>{job.type}</span>
-                                        <span>{job.mode}</span>
+                                        <span>
+                                            {job.employmentType ||
+                                                job.type ||
+                                                "Not specified"}
+                                        </span>
+
+                                        <span>
+                                            {job.workMode ||
+                                                job.mode ||
+                                                "Not specified"}
+                                        </span>
                                     </div>
 
-                                    {/* Experience and salary */}
-                                    <dl className="rms-job-meta">
+                                    {/* JOB DESCRIPTION */}
+                                    <p className="jobs-card-description">
+                                        {job.description ||
+                                            "Explore this career opportunity and learn more about the position."}
+                                    </p>
+
+                                    {/* EXPERIENCE AND SALARY */}
+                                    <dl className="rms-job-meta jobs-card-meta">
                                         <div>
                                             <dt>
                                                 <i
@@ -144,9 +181,7 @@ export default function FeaturedJobs({ jobs = sampleJobs }) {
                                                 Experience
                                             </dt>
 
-                                            <dd>
-                                                {job.experience || "Not specified"}
-                                            </dd>
+                                            <dd>{experience}</dd>
                                         </div>
 
                                         <div>
@@ -164,31 +199,36 @@ export default function FeaturedJobs({ jobs = sampleJobs }) {
                                         </div>
                                     </dl>
 
-                                    {/* Location left, details button right */}
+                                    {/* LOCATION AND VIEW DETAILS */}
                                     <div className="rms-job-footer">
-                                        <p className="rms-job-location">
+                                        <p
+                                            className="rms-job-location"
+                                            title={job.location}
+                                        >
                                             <i
                                                 className="fa-solid fa-location-dot"
                                                 aria-hidden="true"
                                             />
 
                                             <span>
-                                                {job.location || "Not specified"}
+                                                {job.location ||
+                                                    "Not specified"}
                                             </span>
                                         </p>
 
                                         <Link
                                             to={jobUrl}
-                                            className="website-button website-button-outline rms-job-details"
-                                            aria-label={`View job details for ${job.title}`}
+                                            className="website-button website-button-outline jobs-details-button"
+                                            aria-label={`View details for ${job.title}`}
                                         >
-                                            Job Details
+                                            View Details
                                             <i
                                                 className="fa-solid fa-arrow-right"
                                                 aria-hidden="true"
                                             />
                                         </Link>
                                     </div>
+
                                 </article>
                             );
                         })}
@@ -208,13 +248,16 @@ export default function FeaturedJobs({ jobs = sampleJobs }) {
                     </div>
                 )}
 
+                {/* EXPLORE ALL JOBS CTA */}
                 <div className="rms-jobs-cta">
                     <div>
                         <p className="website-section-label">
                             YOUR NEXT CHAPTER
                         </p>
 
-                        <h3>Ready to find your next opportunity?</h3>
+                        <h3>
+                            Ready to find your next opportunity?
+                        </h3>
 
                         <p>
                             Explore available roles and find the one
@@ -233,6 +276,7 @@ export default function FeaturedJobs({ jobs = sampleJobs }) {
                         />
                     </Link>
                 </div>
+
             </div>
         </section>
     );

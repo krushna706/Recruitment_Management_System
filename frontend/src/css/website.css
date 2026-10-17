@@ -4377,7 +4377,6 @@
     grid-template-columns:
         minmax(0, 1fr)
         minmax(0, 1fr)
-        minmax(0, 1fr)
         auto;
     align-items: start;
     gap: 14px;
@@ -4898,4 +4897,74 @@
     .jobs-list-grid .jobs-position-card:hover {
         transform: none;
     }
+}
+
+
+
+/* =========================================================
+   SHARED JOB CARD TYPOGRAPHY
+   Same font styling for Home and Jobs pages
+   ========================================================= */
+
+/* Company Name */
+.website-layout .jobs-list-grid .rms-job-company {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 23px;
+}
+
+/* Department */
+.website-layout .jobs-list-grid .jobs-department {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 20px;
+}
+
+/* Job Title */
+.website-layout .jobs-list-grid .rms-job-title {
+    font-size: 21px;
+    font-weight: 700;
+    line-height: 30px;
+}
+
+/* Job Type and Work Mode */
+.website-layout .jobs-list-grid .rms-job-tags span {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 20px;
+}
+
+/* Job Description */
+.website-layout .jobs-list-grid .jobs-card-description {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 23px;
+}
+
+/* Experience and Salary Labels */
+.website-layout .jobs-list-grid .jobs-card-meta dt {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 21px;
+}
+
+/* Experience and Salary Values */
+.website-layout .jobs-list-grid .jobs-card-meta dd {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 24px;
+}
+
+/* Job Location */
+.website-layout .jobs-list-grid .rms-job-location {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 22px;
+}
+
+/* View Details Button */
+.website-layout .jobs-list-grid .jobs-details-button {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
 }
