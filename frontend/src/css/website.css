@@ -3125,13 +3125,13 @@
    19. AUTH — MATERIAL UI INPUTS AND FORM ACTIONS
    ========================================================= */
 
-.auth-layout .auth-text-field .MuiInputBase-root,
-.auth-layout .auth-text-field .MuiInputLabel-root,
-.auth-layout .auth-text-field .MuiFormHelperText-root {
+.website-layout :is(.auth-text-field, .website-text-field) .MuiInputBase-root,
+.website-layout :is(.auth-text-field, .website-text-field) .MuiInputLabel-root,
+.website-layout :is(.auth-text-field, .website-text-field) .MuiFormHelperText-root {
     font-family: inherit;
 }
 
-.auth-layout .auth-text-field .MuiOutlinedInput-root {
+.website-layout :is(.auth-text-field, .website-text-field) .MuiOutlinedInput-root {
     border-radius: 11px;
 
     color: var(--website-text);
@@ -3141,28 +3141,28 @@
     transition: box-shadow 180ms ease;
 }
 
-.auth-layout .auth-text-field .MuiOutlinedInput-notchedOutline {
+.website-layout :is(.auth-text-field, .website-text-field) .MuiOutlinedInput-notchedOutline {
     border-color: var(--website-border);
     transition: border-color 180ms ease;
 }
 
-.auth-layout
-    .auth-text-field
+.website-layout
+    :is(.auth-text-field, .website-text-field)
     .MuiOutlinedInput-root:hover
     .MuiOutlinedInput-notchedOutline {
     border-color: #aabbd8;
 }
 
-.auth-layout .auth-text-field .MuiInputLabel-root {
+.website-layout :is(.auth-text-field, .website-text-field) .MuiInputLabel-root {
     color: var(--website-muted);
     font-size: 16px;
 }
 
-.auth-layout .auth-text-field .MuiInputLabel-root.Mui-focused {
+.website-layout :is(.auth-text-field, .website-text-field) .MuiInputLabel-root.Mui-focused {
     color: var(--website-primary);
 }
 
-.auth-layout .auth-text-field .MuiOutlinedInput-root.Mui-focused {
+.website-layout :is(.auth-text-field, .website-text-field) .MuiOutlinedInput-root.Mui-focused {
     box-shadow: 0 0 0 3px rgb(38 93 245 / 10%);
 }
 
@@ -3173,7 +3173,7 @@
     border-color: var(--website-primary);
 }
 
-.auth-layout .auth-text-field .MuiFormHelperText-root {
+.website-layout :is(.auth-text-field, .website-text-field) .MuiFormHelperText-root {
     margin-top: 7px;
 
     color: var(--website-muted);
@@ -3183,8 +3183,8 @@
 
 /* Input validation states */
 
-.auth-layout .auth-text-field .MuiInputLabel-root.Mui-error,
-.auth-layout .auth-text-field .MuiFormHelperText-root.Mui-error {
+.website-layout :is(.auth-text-field, .website-text-field) .MuiInputLabel-root.Mui-error,
+.website-layout :is(.auth-text-field, .website-text-field) .MuiFormHelperText-root.Mui-error {
     color: #b42318;
 }
 
@@ -3195,7 +3195,7 @@
     border-color: #b42318;
 }
 
-.auth-layout .auth-text-field .MuiOutlinedInput-root.Mui-error.Mui-focused {
+.website-layout :is(.auth-text-field, .website-text-field) .MuiOutlinedInput-root.Mui-error.Mui-focused {
     box-shadow: 0 0 0 3px rgb(180 35 24 / 10%);
 }
 
@@ -3438,5 +3438,443 @@
     .about-value-card.is-active,
     .about-value-card.is-active .about-icon {
         transform: none;
+    }
+}
+
+
+/* =========================================================
+   CONTACT PAGE
+   About banner and shared MUI input styles are reused
+   ========================================================= */
+
+.contact-page {
+    width: 100%;
+}
+
+.contact-sr-only {
+    position: absolute;
+
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+
+    overflow: hidden;
+    clip-path: inset(50%);
+    border: 0;
+    white-space: nowrap;
+}
+
+
+/* ===== CONTACT BANNER ===== */
+
+.contact-page .contact-banner-description {
+    max-width: 650px;
+    margin-top: 20px;
+
+    color: #dce6f7;
+}
+
+
+/* ===== CONTACT MAIN LAYOUT ===== */
+
+.contact-main-section {
+    background:
+        radial-gradient(
+            circle at 100% 0,
+            rgb(38 93 245 / 4%),
+            transparent 36%
+        ),
+        #ffffff;
+}
+
+.contact-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+    gap: clamp(32px, 5vw, 80px);
+
+    max-width: 1320px;
+    margin-inline: auto;
+}
+
+.contact-information,
+.contact-form-card {
+    min-width: 0;
+}
+
+.contact-information > .website-section-title {
+    text-wrap: balance;
+}
+
+
+/* ===== CONTACT DETAILS ===== */
+
+.contact-details {
+    display: grid;
+    gap: 24px;
+
+    margin: 34px 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.contact-details li {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.contact-details li > div {
+    min-width: 0;
+}
+
+.contact-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+
+    width: 50px;
+    height: 50px;
+
+    border: 1px solid #dce6ff;
+    border-radius: 15px;
+
+    color: var(--website-primary);
+    background: var(--website-soft);
+
+    font-size: 20px;
+}
+
+.contact-details h3 {
+    margin: 0 0 3px;
+
+    color: var(--website-text);
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 26px;
+}
+
+.contact-details address,
+.contact-details a {
+    margin: 0;
+
+    color: var(--website-muted);
+    font-size: 16px;
+    font-style: normal;
+    line-height: 27px;
+
+    overflow-wrap: anywhere;
+}
+
+.contact-details a {
+    display: inline-flex;
+    align-items: center;
+
+    min-height: 44px;
+    text-decoration: none;
+
+    transition: color 180ms ease;
+}
+
+.contact-details a:hover {
+    color: var(--website-primary);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.contact-details .contact-map-link {
+    gap: 9px;
+    margin-top: 5px;
+
+    color: var(--website-primary);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.contact-map-link i {
+    flex-shrink: 0;
+    font-size: 12px;
+}
+
+
+/* ===== CONTACT CAREERS CARD ===== */
+
+.contact-careers {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+
+    padding: 30px;
+    border: 1px solid #244b85;
+    border-radius: 20px;
+
+    color: #ffffff;
+    background: linear-gradient(135deg, #142e5c, #1948ac);
+}
+
+.contact-careers::after {
+    content: "";
+
+    position: absolute;
+    z-index: -1;
+    top: -80px;
+    right: -80px;
+
+    width: 220px;
+    height: 220px;
+
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 50%;
+    box-shadow: 0 0 0 35px rgb(255 255 255 / 3%);
+
+    pointer-events: none;
+}
+
+.contact-careers .contact-icon {
+    margin-bottom: 20px;
+
+    border-color: rgb(255 255 255 / 18%);
+
+    color: #dce8ff;
+    background: rgb(255 255 255 / 10%);
+}
+
+.contact-careers h3 {
+    margin: 0 0 12px;
+
+    color: #ffffff;
+    font-size: 23px;
+    font-weight: 600;
+    line-height: 33px;
+}
+
+.contact-careers p {
+    margin: 0 0 24px;
+
+    color: #dce6f7;
+    font-size: 15px;
+    line-height: 26px;
+}
+
+.contact-careers a:focus-visible {
+    outline-color: #ffffff;
+}
+
+
+/* ===== CONTACT FORM CARD ===== */
+
+.contact-form-card {
+    position: relative;
+
+    padding: clamp(26px, 3vw, 44px);
+
+    border: 1px solid var(--website-border);
+    border-radius: 24px;
+
+    background: #ffffff;
+    box-shadow:
+        0 20px 60px rgb(24 46 83 / 7%),
+        0 3px 12px rgb(24 46 83 / 3%);
+}
+
+.contact-form-card::before {
+    content: "";
+
+    position: absolute;
+    top: -1px;
+    right: 40px;
+    left: 40px;
+
+    height: 3px;
+    border-radius: 0 0 4px 4px;
+
+    background: linear-gradient(
+        90deg,
+        #a9c6ff,
+        var(--website-primary),
+        #a9c6ff
+    );
+}
+
+.contact-form-heading {
+    margin-bottom: 32px;
+}
+
+.contact-form-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 24px;
+
+    border-radius: 16px;
+    font-size: 24px;
+}
+
+.contact-form-heading .website-section-title {
+    margin-bottom: 14px;
+}
+
+.contact-form {
+    display: grid;
+    gap: 24px;
+}
+
+.contact-form-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 20px;
+}
+
+/* Input appearance comes from the shared website-text-field rules. */
+
+.contact-form .website-text-field {
+    min-width: 0;
+}
+
+.contact-message-footer {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+
+    margin-top: 10px;
+
+    color: var(--website-muted);
+    font-size: 12px;
+    line-height: 21px;
+}
+
+.contact-message-footer > span:last-child {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.contact-preview-note {
+    margin: 0;
+    padding: 12px 14px;
+
+    border: 1px solid #dce6ff;
+    border-radius: 10px;
+
+    color: #39547f;
+    background: #f3f7ff;
+
+    font-size: 13px;
+    line-height: 23px;
+}
+
+.website-layout .contact-submit {
+    width: 100%;
+    min-height: 54px;
+
+    border-radius: 11px;
+}
+
+/* MUI endIcon already provides spacing. */
+
+.website-layout .contact-submit,
+.contact-careers .website-button {
+    gap: 0;
+}
+
+
+/* ===== CONTACT: TABLET ===== */
+
+@media (max-width: 991.98px) {
+    .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+
+        max-width: 760px;
+    }
+
+    .contact-form-card {
+        padding: 36px;
+    }
+}
+
+
+/* ===== CONTACT: MOBILE ===== */
+
+@media (max-width: 575.98px) {
+    .contact-page .contact-banner-description {
+        margin-top: 16px;
+    }
+
+    .contact-grid {
+        gap: 32px;
+    }
+
+    .contact-details {
+        gap: 22px;
+        margin-block: 28px;
+    }
+
+    .contact-details li {
+        gap: 14px;
+    }
+
+    .contact-icon {
+        width: 44px;
+        height: 44px;
+
+        border-radius: 13px;
+        font-size: 18px;
+    }
+
+    .contact-careers {
+        padding: 26px;
+        border-radius: 18px;
+    }
+
+    .contact-careers h3 {
+        font-size: 21px;
+        line-height: 31px;
+    }
+
+    .contact-careers .website-button {
+        width: 100%;
+    }
+
+    .contact-form-card {
+        padding: 28px 20px;
+        border-radius: 18px;
+    }
+
+    .contact-form-card::before {
+        right: 24px;
+        left: 24px;
+    }
+
+    .contact-form-icon {
+        width: 50px;
+        height: 50px;
+        margin-bottom: 20px;
+
+        font-size: 22px;
+    }
+
+    .contact-form-heading {
+        margin-bottom: 28px;
+    }
+
+    .contact-form,
+    .contact-form-row {
+        gap: 22px;
+    }
+
+    .contact-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .contact-message-footer {
+        flex-wrap: wrap;
+        gap: 5px 12px;
+    }
+
+    .contact-message-footer > span:last-child {
+        margin-left: auto;
     }
 }

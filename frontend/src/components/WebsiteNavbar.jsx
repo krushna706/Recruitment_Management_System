@@ -158,7 +158,7 @@ function WebsiteNavbar({ user = null, onLogout, authLoading = false }) {
 
                                 <Button
                                     component={Link}
-                                    to="/signup"
+                                    to="/manage/signup?from=website"
                                     className="website-button website-button-primary"
                                     variant="contained"
                                     disableElevation
