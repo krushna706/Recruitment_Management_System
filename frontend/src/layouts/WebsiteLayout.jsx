@@ -8,10 +8,10 @@ function WebsiteLayout() {
     return (
         <div className="website-layout">
 
-            <WebsiteNavbar />
+            <WebsiteNavbar /> 
 
             {/* Expands to keep the footer at the bottom */}
-            <main id="website-content" className="website-main" tabIndex={-1} >
+            <main className="website-main" >
                 <Outlet />
             </main>
 
