@@ -15,6 +15,7 @@ import Contact from "./website/Contact";
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
 import ForgotPassword from "./auth/ForgotPassword";
+import Profile from "./user/Profile";
 
 import UserDashboard from "./user/Dashboard";
 import MyApplications from "./user/MyApplications";
@@ -53,6 +54,7 @@ function App() {
                     <Route path="dashboard" element={<UserDashboard />} />
                     <Route path="my-applications" element={<MyApplications />} />
                     <Route path="my-applications/:id"element={<ApplicationStatus />} />
+                    <Route path="profile" element={<Profile />} />
                     <Route path="*" element={<NotFound />} />
                 </Route>
             </Routes>
