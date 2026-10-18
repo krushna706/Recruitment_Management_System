@@ -6135,3 +6135,397 @@
         width: 100%;
     }
 }
+
+
+/* =========================================================
+   MANAGE USERS
+   ========================================================= */
+
+.mu-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 210px auto;
+    align-items: start;
+    gap: 20px;
+    padding: 25px 28px;
+}
+
+.mu-filters > .MuiButton-root {
+    min-height: 48px;
+}
+
+.manage-users .mu-table {
+    min-width: 1100px;
+}
+
+.mu-table time {
+    color: #64748b;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.mu-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 29px;
+    padding: 3px 9px;
+    border: 1px solid #dfe8f8;
+    border-radius: 8px;
+    color: #345f9e;
+    background: #f0f5ff;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.mu-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 9px;
+    white-space: nowrap;
+}
+
+/* PROFILE AND CONFIRMATION DIALOGS */
+
+.mu-dialog .MuiDialog-paper {
+    border-radius: 18px;
+    background: #fff;
+}
+
+.mu-dialog .MuiTypography-root,
+.mu-dialog .MuiButton-root,
+.mu-dialog .MuiChip-root,
+.mu-dialog .MuiTableCell-root {
+    font-family: inherit;
+}
+
+.mu-dialog .MuiDialogTitle-root {
+    padding: 22px 26px;
+    color: #1e2b43;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 30px;
+}
+
+.mu-dialog .MuiDialogContent-root {
+    padding: 24px 26px;
+    border-color: #e4eaf3;
+}
+
+.mu-dialog .MuiDialogActions-root {
+    gap: 8px;
+    padding: 16px 26px;
+    background: #fafcff;
+}
+
+.mu-dialog .MuiButton-root {
+    min-height: 39px;
+    padding: 8px 16px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: none;
+}
+
+.mu-dialog .MuiChip-root {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* PROFILE BANNER */
+
+.mu-profile-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 23px;
+    border: 1px solid #dfe8fa;
+    border-radius: 15px;
+    background: linear-gradient(115deg, #edf4ff, #fafcff);
+}
+
+.mu-avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 62px;
+    height: 62px;
+    border: 1px solid #cadbf9;
+    border-radius: 17px;
+    color: #315eaf;
+    background: #dee9ff;
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.mu-profile-copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.mu-profile-copy h2 {
+    margin: 0;
+    color: #1e2b43;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 31px;
+    overflow-wrap: anywhere;
+}
+
+.mu-profile-copy p {
+    margin: 4px 0;
+    color: #576c8b;
+    font-size: 14px;
+    line-height: 23px;
+    overflow-wrap: anywhere;
+}
+
+.mu-profile-copy > span {
+    color: #77849a;
+    font-size: 11px;
+    line-height: 19px;
+}
+
+.mu-profile-banner > .MuiChip-root {
+    flex-shrink: 0;
+}
+
+/* DETAILS */
+
+.mu-section {
+    margin-top: 27px;
+}
+
+.mu-section + .mu-section {
+    padding-top: 24px;
+    border-top: 1px solid #e8edf5;
+}
+
+.mu-section h3 {
+    margin: 0 0 18px;
+    color: #24344e;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 25px;
+}
+
+.mu-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 24px;
+    margin: 0 0 18px;
+}
+
+.mu-detail dt {
+    margin-bottom: 5px;
+    color: #77859a;
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.mu-detail dd {
+    margin: 0;
+    color: #34455e;
+    font-size: 14px;
+    line-height: 23px;
+    overflow-wrap: anywhere;
+}
+
+.mu-muted {
+    margin: 0;
+    color: #718097;
+    font-size: 13px;
+    line-height: 23px;
+}
+
+.mu-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 17px;
+}
+
+.mu-section-heading h3 {
+    margin: 0;
+}
+
+/* APPLICATION HISTORY */
+
+.mu-history-container {
+    border: 1px solid #e2e9f3;
+    border-radius: 11px;
+}
+
+.mu-history-table {
+    min-width: 560px;
+}
+
+.mu-dialog .mu-history-table .MuiTableCell-head {
+    padding: 12px 15px;
+    color: #576a86;
+    background: #f2f6fc;
+    border-bottom: 1px solid #e2e9f3;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.mu-dialog .mu-history-table .MuiTableCell-body {
+    padding: 15px;
+    color: #5e708b;
+    border-bottom: 1px solid #edf1f7;
+    font-size: 12px;
+}
+
+.mu-dialog .mu-history-table tr:last-child .MuiTableCell-body {
+    border-bottom: 0;
+}
+
+.mu-history-table strong {
+    display: block;
+    color: #34455e;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 22px;
+}
+
+.mu-history-company {
+    display: block;
+    margin-top: 4px;
+    color: #78869a;
+    font-size: 11px;
+    line-height: 20px;
+}
+
+.mu-empty-history {
+    padding: 24px 18px;
+    border: 1px dashed #d8e2f1;
+    border-radius: 11px;
+    background: #fafcff;
+    text-align: center;
+}
+
+.mu-empty-history > i {
+    color: #7a95bf;
+    font-size: 23px;
+}
+
+.mu-empty-history p {
+    margin: 10px 0 0;
+    color: #6c7c94;
+    font-size: 13px;
+    line-height: 22px;
+}
+
+/* ACCOUNT ACCESS */
+
+.mu-access-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 19px;
+    border: 1px solid #e0e7f2;
+    border-radius: 12px;
+    background: #f8faff;
+}
+
+.mu-access-card strong {
+    display: block;
+    color: #354761;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 23px;
+}
+
+.mu-access-card p {
+    max-width: 440px;
+    margin: 5px 0 0;
+    color: #708098;
+    font-size: 12px;
+    line-height: 22px;
+}
+
+.mu-access-card > .MuiButton-root {
+    flex-shrink: 0;
+}
+
+.mu-confirm-text {
+    margin: 0 0 10px;
+    color: #354761;
+    font-size: 14px;
+    line-height: 25px;
+    overflow-wrap: anywhere;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 767.98px) {
+    .mu-filters {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .mu-filters > .MuiTextField-root:first-child {
+        grid-column: 1 / -1;
+    }
+
+    .mu-access-card {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 15px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .mu-filters {
+        grid-template-columns: 1fr;
+        padding: 21px 17px;
+    }
+
+    .mu-dialog .MuiDialog-paper {
+        width: calc(100% - 24px);
+        max-height: calc(100% - 24px);
+        margin: 12px;
+        border-radius: 14px;
+    }
+
+    .mu-dialog .MuiDialogTitle-root,
+    .mu-dialog .MuiDialogContent-root {
+        padding: 19px 17px;
+    }
+
+    .mu-dialog .MuiDialogActions-root {
+        padding: 14px 17px;
+    }
+
+    .mu-profile-banner {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 17px;
+    }
+
+    .mu-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 13px;
+        font-size: 17px;
+    }
+
+    .mu-profile-copy h2 {
+        font-size: 18px;
+        line-height: 27px;
+    }
+
+    .mu-profile-copy p {
+        font-size: 12px;
+        line-height: 21px;
+    }
+
+    .mu-detail-grid {
+        grid-template-columns: 1fr;
+        gap: 17px;
+    }
+}
