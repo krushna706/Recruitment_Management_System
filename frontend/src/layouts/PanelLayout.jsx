@@ -44,6 +44,9 @@ function PanelLayout({ user = null, onLogout }) {
         }
     };
 
+    const accountKey =
+        `${user?._id || user?.id || "guest"}-${user?.role || ""}`;
+
     return (
         <div
             className={`panel-layout ${
@@ -62,13 +65,14 @@ function PanelLayout({ user = null, onLogout }) {
 
             <div className="panel-body">
                 <PanelSidebar
+                    user={user}
                     isMobile={isMobile}
                     mobileOpen={mobileOpen}
                     collapsed={sidebarCollapsed}
                     onClose={() => setMobileOpen(false)}
                 />
 
-                <main className="panel-main">
+                <main className="panel-main" key={accountKey}>
                     <Outlet context={{ user }} />
                 </main>
             </div>

@@ -31,7 +31,7 @@ function PanelHeader({
     const profileOpen = Boolean(profileAnchor);
 
     const displayName = user?.name?.trim() || "Your Name";
-    const roleLabel = user?.role === "admin" ? "Admin" : "User";
+    const roleLabel = user?.roleLabel || "User";
     const initials = user?.name?.trim()
         ? getInitials(user.name)
         : "U";

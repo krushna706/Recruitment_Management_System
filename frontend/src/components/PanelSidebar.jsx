@@ -1,34 +1,10 @@
 import { Link, NavLink } from "react-router-dom";
-import {
-    Drawer,
-    IconButton,
-    useMediaQuery,
-} from "@mui/material";
+import { Drawer, IconButton, useMediaQuery } from "@mui/material";
 
-
-
-const navigationItems = [
-    {
-        label: "Dashboard",
-        path: "/manage/dashboard",
-        icon: "fa-solid fa-table-columns",
-        end: true,
-    },
-    {
-        label: "My Applications",
-        path: "/manage/my-applications",
-        icon: "fa-regular fa-file-lines",
-        end: false,
-    },
-    {
-        label: "Profile",
-        path: "/manage/profile",
-        icon: "fa-regular fa-user",
-        end: false,
-    },
-];
+import { getPanelNavigation } from "../config/panelConfig";
 
 function SidebarContent({
+    navigationItems,
     isMobile = false,
     collapsed = false,
     onClose,
@@ -55,7 +31,7 @@ function SidebarContent({
 
             <nav
                 className="panel-sidebar-nav"
-                aria-label="User panel navigation"
+                aria-label="Panel navigation"
             >
                 <p className="panel-nav-label">WORKSPACE</p>
 
@@ -93,30 +69,35 @@ function SidebarContent({
                     ))}
                 </ul>
             </nav>
-               <div className="panel-sidebar-bottom">
-                    <Link
-                        to="/"
-                        className="panel-sidebar-home"
-                        onClick={onClose}
-                        tabIndex={collapsed ? -1 : undefined}
+
+            <div className="panel-sidebar-bottom">
+                <Link
+                    to="/"
+                    className="panel-sidebar-home"
+                    onClick={onClose}
+                    tabIndex={collapsed ? -1 : undefined}
+                >
+                    <span
+                        className="panel-nav-icon"
+                        aria-hidden="true"
                     >
-                        <span className="panel-nav-icon" aria-hidden="true">
-                            <i className="fa-solid fa-arrow-left" />
-                        </span>
+                        <i className="fa-solid fa-arrow-left" />
+                    </span>
 
-                        <span>Back to website</span>
+                    <span>Back to website</span>
 
-                        <i
-                            className="fa-solid fa-arrow-up-right-from-square"
-                            aria-hidden="true"
-                        />
-                    </Link>
-                </div>
+                    <i
+                        className="fa-solid fa-arrow-up-right-from-square"
+                        aria-hidden="true"
+                    />
+                </Link>
+            </div>
         </>
     );
 }
 
 function PanelSidebar({
+    user,
     isMobile,
     mobileOpen,
     collapsed,
@@ -125,6 +106,8 @@ function PanelSidebar({
     const reduceMotion = useMediaQuery(
         "(prefers-reduced-motion: reduce)"
     );
+
+    const navigationItems = getPanelNavigation(user?.role);
 
     if (isMobile) {
         return (
@@ -140,11 +123,12 @@ function PanelSidebar({
                         id: "panel-sidebar",
                         className:
                             "panel-sidebar panel-sidebar-drawer",
-                        "aria-label": "User navigation",
+                        "aria-label": "Panel navigation",
                     },
                 }}
             >
                 <SidebarContent
+                    navigationItems={navigationItems}
                     isMobile
                     onClose={onClose}
                 />
@@ -158,10 +142,13 @@ function PanelSidebar({
             className={`panel-sidebar panel-sidebar-desktop ${
                 collapsed ? "is-collapsed" : ""
             }`}
-            aria-label="User navigation"
+            aria-label="Panel navigation"
             aria-hidden={collapsed ? "true" : undefined}
         >
-            <SidebarContent collapsed={collapsed} />
+            <SidebarContent
+                navigationItems={navigationItems}
+                collapsed={collapsed}
+            />
         </aside>
     );
 }
