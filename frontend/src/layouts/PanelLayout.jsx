@@ -69,7 +69,7 @@ function PanelLayout({ user = null, onLogout }) {
                 />
 
                 <main className="panel-main">
-                    <Outlet />
+                    <Outlet context={{ user }} />
                 </main>
             </div>
         </div>

@@ -16,7 +16,7 @@ import Login from "./auth/Login";
 import Signup from "./auth/Signup";
 import ForgotPassword from "./auth/ForgotPassword";
 
-import UserDashboard from "./user/UserDashboard";
+import UserDashboard from "./user/Dashboard";
 import MyApplications from "./user/MyApplications";
 import ApplicationStatus from "./user/ApplicationStatus";
 
@@ -50,7 +50,7 @@ function App() {
 
                 {/* User panel: frontend preview */}
                 <Route path="/manage" element={<PanelLayout />}>
-                    <Route path="user-dashboard" element={<UserDashboard />} />
+                    <Route path="dashboard" element={<UserDashboard />} />
                     <Route path="my-applications" element={<MyApplications />} />
                     <Route path="my-applications/:id"element={<ApplicationStatus />} />
                     <Route path="*" element={<NotFound />} />
