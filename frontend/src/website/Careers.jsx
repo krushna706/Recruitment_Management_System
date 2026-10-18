@@ -13,6 +13,7 @@ const careerPositions = [
         location: "Bhubaneswar, Odisha",
         experience: "0–2 years",
         employmentType: "Full-time",
+        employmentType: "On-Site",
         description:
             "Build responsive interfaces with React, translate designs into reusable components and improve the user experience.",
         isActive: true,
@@ -24,6 +25,7 @@ const careerPositions = [
         location: "Bhubaneswar, Odisha",
         experience: "1–3 years",
         employmentType: "Full-time",
+        employmentType: "Hybrid",
         description:
             "Develop REST APIs with Node.js and Express, work with MongoDB and contribute to reliable application services.",
         isActive: true,
@@ -35,6 +37,7 @@ const careerPositions = [
         location: "Bhubaneswar, Odisha",
         experience: "0–2 years",
         employmentType: "Full-time",
+        employmentType: "Remote",
         description:
             "Create clear user journeys, wireframes and interface designs while collaborating with the development team.",
         isActive: true,
@@ -249,6 +252,9 @@ export default function Careers() {
 
                                         <div className="rms-job-tags">
                                             <span>
+                                                {position.employmentType}
+                                            </span>
+                                             <span>
                                                 {position.employmentType}
                                             </span>
                                         </div>

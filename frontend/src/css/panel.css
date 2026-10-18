@@ -5720,3 +5720,17 @@
         transition: none;
     }
 }
+
+/* =========================================================
+   MANAGE JOBS / VACANCIES: REQUIRED FIELD INDICATORS
+   ========================================================= */
+
+.manage-jobs .MuiFormLabel-asterisk {
+    color: #c43d4b;
+}
+
+/* Vacancy skills field spans the full form width. */
+
+.manage-vacancies .mv-full-width {
+    grid-column: 1 / -1;
+}
