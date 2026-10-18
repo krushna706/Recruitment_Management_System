@@ -1828,3 +1828,1132 @@
         transition: none !important;
     }
 }
+
+
+
+
+/* =========================================================
+   APPLICATION PAGES: SHARED TYPOGRAPHY AND MUI INPUTS
+   ========================================================= */
+
+.my-applications-page,
+.application-status-page {
+    width: 100%;
+    min-width: 0;
+}
+
+.my-applications-page .panel-page-heading,
+.application-status-page .panel-page-heading {
+    margin-bottom: 20px;
+}
+
+.my-applications-page .panel-card-header,
+.application-status-page .panel-card-header {
+    padding: 18px 22px;
+    gap: 10px 16px;
+}
+
+.my-applications-page .panel-card-title,
+.application-status-page .panel-card-title {
+    margin-bottom: 3px;
+    font-size: 18px;
+    line-height: 26px;
+}
+
+.my-applications-page .panel-card-description,
+.application-status-page .panel-card-description {
+    font-size: 13px;
+    line-height: 21px;
+}
+
+.panel-layout .panel-field .MuiInputBase-root,
+.panel-layout .panel-field .MuiInputLabel-root,
+.panel-layout .panel-field .MuiFormHelperText-root {
+    font-family: inherit;
+    letter-spacing: normal;
+}
+
+.panel-layout .panel-field .MuiOutlinedInput-root {
+    border-radius: 10px;
+    color: var(--panel-text);
+    background: #ffffff;
+    font-size: 16px;
+}
+
+.panel-layout .panel-field .MuiOutlinedInput-notchedOutline {
+    border-color: var(--panel-border);
+}
+
+.panel-layout
+    .panel-field
+    .MuiOutlinedInput-root:hover
+    .MuiOutlinedInput-notchedOutline {
+    border-color: #aabbd8;
+}
+
+.panel-layout
+    .panel-field
+    .MuiOutlinedInput-root.Mui-focused
+    .MuiOutlinedInput-notchedOutline {
+    border-color: var(--panel-primary);
+}
+
+.panel-layout .panel-field .MuiInputLabel-root {
+    color: var(--panel-muted);
+}
+
+.panel-layout .panel-field .MuiInputLabel-root.Mui-focused {
+    color: var(--panel-primary);
+}
+
+.panel-layout .panel-field .MuiInputAdornment-root {
+    color: var(--panel-primary);
+    font-size: 15px;
+}
+
+
+/* =========================================================
+   MY APPLICATIONS: FILTERS AND SECTION HEADER
+   ========================================================= */
+
+.applications-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(210px, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+
+    margin-bottom: 20px;
+    padding: 20px 22px;
+}
+
+.panel-layout .applications-reset {
+    color: var(--panel-primary);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.panel-layout .applications-reset.Mui-disabled {
+    color: #7c8799;
+}
+
+.applications-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 25px;
+    min-height: 25px;
+    margin-left: 9px;
+    padding-inline: 7px;
+    border-radius: 7px;
+
+    color: var(--panel-primary);
+    background: var(--panel-soft);
+
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+.applications-sort-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.applications-sort-note i {
+    color: var(--panel-primary);
+}
+
+
+/* ===== FILTERS: RESPONSIVE ===== */
+
+@media (max-width: 767.98px) {
+    .applications-toolbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .applications-toolbar > :first-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .applications-toolbar {
+        gap: 16px 10px;
+        padding: 18px;
+    }
+
+    .panel-layout .applications-reset {
+        padding-inline: 7px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 359.98px) {
+    .applications-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .applications-toolbar > :first-child {
+        grid-column: auto;
+    }
+}
+
+
+/* =========================================================
+   MY APPLICATIONS: COMPACT TABLE
+   ========================================================= */
+
+.applications-results {
+    overflow: hidden;
+}
+
+.applications-table {
+    table-layout: fixed;
+}
+
+.applications-table .MuiTableCell-root {
+    padding: 16px 22px;
+
+    border-bottom: 1px solid #edf0f6;
+    color: var(--panel-text);
+
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 22px;
+    vertical-align: middle;
+}
+
+.applications-table .MuiTableHead-root .MuiTableCell-root {
+    padding-block: 12px;
+
+    color: #52627d;
+    background: #eaedf2;
+
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+}
+
+.applications-table .MuiTableCell-root:nth-child(1) {
+    width: 55%;
+}
+
+.applications-table .MuiTableCell-root:nth-child(2) {
+    width: 20%;
+}
+
+.applications-table .MuiTableCell-root:nth-child(3) {
+    width: 25%;
+}
+
+.applications-table .MuiTableBody-root .MuiTableRow-root:last-child
+    .MuiTableCell-root {
+    border-bottom: 0;
+}
+
+.applications-table .MuiTableBody-root .MuiTableRow-root {
+    transition: background-color 160ms ease;
+}
+
+.applications-table .MuiTableBody-root .MuiTableRow-root:focus-within {
+    background: #f8faff;
+}
+
+.applications-job {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    min-width: 0;
+}
+
+.applications-job-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+
+    width: 40px;
+    height: 40px;
+
+    border: 1px solid #e0e8fa;
+    border-radius: 11px;
+
+    color: var(--panel-primary);
+    background: #f1f5ff;
+    font-size: 16px;
+}
+
+.applications-job-copy {
+    min-width: 0;
+}
+
+.applications-job-copy h3 {
+    margin: 0 0 3px;
+
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 22px;
+    overflow-wrap: anywhere;
+}
+
+.applications-job-copy h3 a {
+    color: var(--panel-text);
+    text-decoration: none;
+}
+
+.applications-job-copy h3 a:hover {
+    color: var(--panel-primary);
+}
+
+.applications-job-copy > p {
+    margin: 0 0 5px;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    line-height: 19px;
+}
+
+.applications-job-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    line-height: 19px;
+}
+
+.applications-job-meta > span:first-child {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.applications-job-meta i {
+    color: var(--panel-primary);
+    font-size: 11px;
+}
+
+.applications-mode {
+    padding: 1px 7px;
+    border-radius: 5px;
+
+    color: #5d6c85;
+    background: #f0f3f8;
+
+    font-size: 11px;
+    line-height: 18px;
+}
+
+.applications-date {
+    color: var(--panel-text);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 21px;
+}
+
+.applications-row-action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.my-applications-page .panel-status {
+    padding: 4px 9px;
+    font-size: 11px;
+    line-height: 19px;
+}
+
+.applications-row-action .panel-text-link {
+    min-height: 36px;
+    font-size: 12px;
+}
+
+.applications-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    padding: 14px 22px;
+    border-top: 1px solid var(--panel-border);
+}
+
+.applications-pagination p {
+    margin: 0;
+    color: var(--panel-muted);
+    font-size: 12px;
+    line-height: 21px;
+}
+
+.applications-pagination .MuiPaginationItem-root {
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.applications-pagination .MuiPaginationItem-root.Mui-selected {
+    color: #ffffff;
+    background: var(--panel-primary);
+}
+
+.applications-mobile-list {
+    display: none;
+}
+
+@media (hover: hover) {
+    .applications-table .MuiTableBody-root .MuiTableRow-root:hover {
+        background: #f8faff;
+    }
+}
+
+
+/* ===== TABLE: SMALL DESKTOP / TABLET ===== */
+
+@media (min-width: 768px) and (max-width: 1199.98px) {
+    .applications-table .MuiTableCell-root {
+        padding-inline: 14px;
+    }
+
+    .applications-table .MuiTableCell-root:nth-child(1) {
+        width: 48%;
+    }
+
+    .applications-table .MuiTableCell-root:nth-child(2) {
+        width: 23%;
+    }
+
+    .applications-table .MuiTableCell-root:nth-child(3) {
+        width: 29%;
+    }
+
+    .applications-job-icon {
+        display: none;
+    }
+}
+
+
+/* ===== MOBILE: LABELLED APPLICATION CARDS ===== */
+
+@media (max-width: 767.98px) {
+    .applications-table-container {
+        display: none;
+    }
+
+    .applications-mobile-list {
+        display: grid;
+        margin: 0;
+        padding: 0 20px;
+        list-style: none;
+    }
+
+    .applications-mobile-list > li {
+        padding-block: 18px;
+    }
+
+    .applications-mobile-list > li + li {
+        border-top: 1px solid #edf0f6;
+    }
+
+    .applications-mobile-label {
+        display: block;
+        margin-bottom: 6px;
+
+        color: var(--panel-muted);
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 18px;
+    }
+
+    .applications-mobile-list .applications-job {
+        margin-bottom: 14px;
+    }
+
+    .applications-mobile-facts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        gap: 12px;
+
+        padding-top: 12px;
+        border-top: 1px dashed #e5eaf3;
+    }
+
+    .applications-mobile-details {
+        margin-top: 5px;
+        font-size: 12px;
+    }
+
+    .applications-pagination {
+        justify-content: center;
+        padding: 14px 16px;
+    }
+}
+
+
+/* =========================================================
+   APPLICATION DETAILS: HEADER AND JOB SUMMARY
+   ========================================================= */
+
+.application-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+
+    min-height: 40px;
+    margin-bottom: 10px;
+
+    color: var(--panel-muted);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.application-back-link i,
+.application-back-link:hover {
+    color: var(--panel-primary);
+}
+
+.application-overview {
+    position: relative;
+    overflow: hidden;
+
+    margin-bottom: 20px;
+    padding: 24px;
+
+    border: 1px solid #dce5f6;
+    border-radius: 16px;
+
+    background:
+        radial-gradient(
+            ellipse at 100% 0%,
+            rgb(38 93 245 / 7%),
+            transparent 60%
+        ),
+        #ffffff;
+
+    box-shadow: 0 6px 24px rgb(24 36 59 / 3%);
+}
+
+.application-overview::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+
+    height: 3px;
+    background: linear-gradient(
+        90deg,
+        var(--panel-primary),
+        #b7ccff
+    );
+
+    content: "";
+}
+
+.application-overview-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 18px;
+}
+
+.application-job-heading {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 0;
+}
+
+.application-job-heading > div {
+    min-width: 0;
+}
+
+.application-overview-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+
+    width: 52px;
+    height: 52px;
+
+    border: 1px solid #dce6fb;
+    border-radius: 14px;
+
+    color: var(--panel-primary);
+    background: var(--panel-soft);
+    font-size: 22px;
+}
+
+.application-field-label {
+    display: block;
+    margin: 0 0 4px;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 19px;
+}
+
+.application-overview h2 {
+    margin: 0 0 4px;
+
+    color: var(--panel-text);
+    font-size: 25px;
+    font-weight: 700;
+    line-height: 33px;
+    letter-spacing: -0.5px;
+
+    overflow-wrap: anywhere;
+}
+
+.application-company {
+    margin: 0;
+
+    color: var(--panel-muted);
+    font-size: 13px;
+    line-height: 21px;
+}
+
+.application-current-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.application-overview-facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+
+    margin: 20px 0 0;
+    padding-top: 18px;
+    border-top: 1px solid #e5ebf5;
+}
+
+.application-overview-facts dt {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    margin-bottom: 4px;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    line-height: 19px;
+}
+
+.application-overview-facts dt i {
+    color: var(--panel-primary);
+    font-size: 12px;
+}
+
+.application-overview-facts dd {
+    margin: 0;
+
+    color: var(--panel-text);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 22px;
+
+    overflow-wrap: anywhere;
+}
+
+.application-reference-row {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #e5ebf5;
+}
+
+.application-reference-row p {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    margin: 0;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.application-reference-row strong,
+.application-reference-row time {
+    color: var(--panel-text);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+
+/* ===== JOB SUMMARY: RESPONSIVE ===== */
+
+@media (max-width: 1199.98px) {
+    .application-overview-facts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .application-overview {
+        padding: 20px;
+    }
+
+    .application-job-heading {
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .application-overview-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
+        font-size: 18px;
+    }
+
+    .application-overview h2 {
+        font-size: 21px;
+        line-height: 29px;
+    }
+
+    .application-current-status {
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .application-current-status .application-field-label {
+        margin: 0;
+    }
+
+    .application-overview-facts {
+        gap: 16px 14px;
+    }
+}
+
+
+/* =========================================================
+   APPLICATION DETAILS: SUBMITTED INFORMATION
+   ========================================================= */
+
+.application-details-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
+    align-items: start;
+    gap: 20px;
+}
+
+.application-details-main {
+    display: grid;
+    gap: 18px;
+    min-width: 0;
+}
+
+.application-card-body {
+    padding: 22px;
+}
+
+.application-section-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+
+    color: var(--panel-primary);
+    background: var(--panel-soft);
+    font-size: 15px;
+}
+
+.application-detail-section + .application-detail-section {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid #e9edf5;
+}
+
+.application-detail-section > h3 {
+    margin: 0 0 14px;
+
+    color: var(--panel-text);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 22px;
+}
+
+.application-personal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 22px;
+    margin: 0;
+}
+
+.application-personal-grid dt {
+    margin-bottom: 4px;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    line-height: 19px;
+}
+
+.application-personal-grid dd {
+    margin: 0;
+
+    color: var(--panel-text);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 22px;
+
+    overflow-wrap: anywhere;
+}
+
+.application-skills {
+    margin-top: 16px;
+}
+
+.application-skills h4 {
+    margin: 0 0 8px;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 19px;
+}
+
+.application-skills > p {
+    margin: 0;
+
+    color: var(--panel-muted);
+    font-size: 13px;
+    line-height: 21px;
+}
+
+.application-skill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.application-skill-list .MuiChip-root {
+    height: auto;
+    min-height: 26px;
+    padding-block: 2px;
+    border-radius: 6px;
+
+    color: var(--panel-primary-dark);
+    background: var(--panel-soft);
+
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.application-skill-list .MuiChip-label {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.application-resume {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    padding: 15px;
+
+    border: 1px solid #e0e7f5;
+    border-radius: 11px;
+
+    background: #f8faff;
+}
+
+.application-resume-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+
+    color: var(--panel-primary);
+    background: #eaf0ff;
+    font-size: 18px;
+}
+
+.application-resume > div {
+    flex: 1 1 170px;
+    min-width: 0;
+}
+
+.application-resume h4 {
+    margin: 0 0 3px;
+
+    color: var(--panel-text);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 21px;
+
+    overflow-wrap: anywhere;
+}
+
+.application-resume p {
+    margin: 0;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+
+/* ===== SUBMITTED INFORMATION: RESPONSIVE ===== */
+
+@media (max-width: 1199.98px) {
+    .application-details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .my-applications-page .panel-card-header,
+    .application-status-page .panel-card-header {
+        padding: 17px 18px;
+    }
+
+    .application-card-body {
+        padding: 20px 18px;
+    }
+
+    .application-personal-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .application-resume .panel-button {
+        width: 100%;
+    }
+}
+
+
+/* =========================================================
+   APPLICATION DETAILS: INTERVIEW AND STATUS UPDATES
+   ========================================================= */
+
+.application-update {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+
+    padding: 20px;
+
+    border: 1px solid #dcdff8;
+    border-radius: 14px;
+
+    background: #f3f3ff;
+}
+
+.application-update > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.application-update-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+
+    color: #6545a5;
+    background: #e8e4fc;
+    font-size: 17px;
+}
+
+.application-update h2 {
+    margin: 0 0 12px;
+
+    color: var(--panel-text);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+}
+
+.application-update-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    margin: 0;
+}
+
+.application-update-facts dt {
+    margin-bottom: 3px;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    line-height: 19px;
+}
+
+.application-update-facts dd {
+    margin: 0;
+
+    color: #503b82;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 21px;
+}
+
+.application-update > div > p {
+    margin: 10px 0 0;
+
+    color: var(--panel-muted);
+    font-size: 13px;
+    line-height: 21px;
+}
+
+.application-feedback.MuiAlert-root {
+    border-radius: 12px;
+
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 22px;
+}
+
+.application-feedback strong {
+    display: block;
+    margin-bottom: 3px;
+    font-weight: 600;
+}
+
+@media (max-width: 575.98px) {
+    .application-update {
+        gap: 11px;
+        padding: 18px;
+    }
+
+    .application-update-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 15px;
+    }
+}
+
+
+/* =========================================================
+   APPLICATION DETAILS: COMPACT PROGRESS TIMELINE
+   ========================================================= */
+
+.application-stepper .MuiStepLabel-root {
+    padding-block: 5px;
+}
+
+.application-stepper .MuiStepLabel-label {
+    color: var(--panel-text);
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 22px;
+}
+
+.application-stepper .MuiStepLabel-label.Mui-active,
+.application-stepper .MuiStepLabel-label.Mui-completed {
+    font-weight: 600;
+}
+
+.application-stepper .MuiStepLabel-label.Mui-disabled {
+    color: var(--panel-muted);
+}
+
+.application-stepper .MuiStepIcon-root {
+    color: #d3dce9;
+    font-size: 23px;
+}
+
+.application-stepper .MuiStepIcon-root.Mui-active {
+    color: var(--panel-primary);
+}
+
+.application-stepper .MuiStepIcon-root.Mui-completed {
+    color: #208365;
+}
+
+.application-stepper .MuiStepIcon-root.Mui-error {
+    color: #b13232;
+}
+
+.application-stepper .MuiStepIcon-text {
+    font-family: inherit;
+}
+
+.application-stepper .MuiStepContent-root {
+    padding-bottom: 12px;
+    border-color: #e0e7f1;
+}
+
+.application-stepper .MuiStepConnector-line {
+    min-height: 10px;
+    border-color: #e0e7f1;
+}
+
+.application-stepper .MuiStepContent-last {
+    padding-bottom: 0;
+}
+
+.application-stepper time {
+    display: block;
+    margin-bottom: 4px;
+
+    color: var(--panel-muted);
+    font-size: 11px;
+    line-height: 18px;
+}
+
+.application-stepper p {
+    margin: 0;
+
+    color: var(--panel-muted);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.application-current-label {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: 5px;
+
+    color: var(--panel-primary);
+    background: var(--panel-soft);
+
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 17px;
+    vertical-align: middle;
+}
+
+
+/* ===== APPLICATION PAGES: REDUCED MOTION ===== */
+
+@media (prefers-reduced-motion: reduce) {
+    .my-applications-page *,
+    .application-status-page * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+

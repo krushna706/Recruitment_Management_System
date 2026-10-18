@@ -1,117 +1,12 @@
 import { Link, useOutletContext } from "react-router-dom";
 import { Button } from "@mui/material";
+import { demoApplications } from "./applicationData";
 
 // Frontend preview only.
 const demoUser = {
     name: "Krushna Chandra Mohanty",
 };
 
-const demoApplications = [
-    {
-        id: "application-1001",
-        title: "MERN Stack Developer",
-        company: "Sample Digital",
-        location: "Hyderabad, Telangana",
-        appliedAt: "2026-10-16T09:30:00+05:30",
-        status: "Under Review",
-        history: [
-            {
-                status: "Submitted",
-                at: "2026-10-16T09:30:00+05:30",
-            },
-            {
-                status: "Under Review",
-                at: "2026-10-18T10:15:00+05:30",
-            },
-        ],
-    },
-    {
-        id: "application-1002",
-        title: "Frontend Developer",
-        company: "Demo Technologies",
-        location: "Bhubaneswar, Odisha",
-        appliedAt: "2026-10-15T11:00:00+05:30",
-        status: "Shortlisted",
-        history: [
-            {
-                status: "Submitted",
-                at: "2026-10-15T11:00:00+05:30",
-            },
-            {
-                status: "Shortlisted",
-                at: "2026-10-17T15:45:00+05:30",
-            },
-        ],
-    },
-    {
-        id: "application-1003",
-        title: "React Developer Intern",
-        company: "Demo Technologies",
-        location: "Bhubaneswar, Odisha",
-        appliedAt: "2026-10-17T14:20:00+05:30",
-        status: "Submitted",
-        history: [
-            {
-                status: "Submitted",
-                at: "2026-10-17T14:20:00+05:30",
-            },
-        ],
-    },
-    {
-        id: "application-1004",
-        title: "Backend Developer",
-        company: "Demo Technologies",
-        location: "Bengaluru, Karnataka",
-        appliedAt: "2026-10-12T10:00:00+05:30",
-        status: "Rejected",
-        history: [
-            {
-                status: "Submitted",
-                at: "2026-10-12T10:00:00+05:30",
-            },
-            {
-                status: "Rejected",
-                at: "2026-10-16T16:30:00+05:30",
-            },
-        ],
-    },
-    {
-        id: "application-1005",
-        title: "QA Engineer",
-        company: "Demo Technologies",
-        location: "Pune, Maharashtra",
-        appliedAt: "2026-10-11T09:00:00+05:30",
-        status: "Interview",
-        history: [
-            {
-                status: "Submitted",
-                at: "2026-10-11T09:00:00+05:30",
-            },
-            {
-                status: "Interview",
-                at: "2026-10-17T12:00:00+05:30",
-            },
-        ],
-    },
-    {
-        id: "application-1006",
-        title: "UI/UX Designer",
-        company: "Sample Design Studio",
-        location: "Pune, Maharashtra",
-        appliedAt: "2026-10-09T10:30:00+05:30",
-        status: "Selected",
-        history: [
-            {
-                status: "Submitted",
-                at: "2026-10-09T10:30:00+05:30",
-            },
-            {
-                status: "Selected",
-                at: "2026-10-15T11:30:00+05:30",
-            },
-        ],
-    },
-];
 
 const statusConfig = {
     Submitted: {
