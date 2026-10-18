@@ -6,6 +6,7 @@ import UserProfile from "../user/Profile";
 
 // Admin panel
 import AdminDashboard from "../admin/Dashboard";
+import ManageJobs from "../admin/ManageJobs";
 import ManageVacancies from "../admin/ManageVacancies";
 import Applications from "../admin/Applications";
 import ManageUsers from "../admin/ManageUsers";
@@ -39,6 +40,9 @@ export function getPanelRole(role) {
 /*
     Add navigation only when a page should appear in the sidebar.
     Declare each unique path once.
+
+    Frontend permissions control navigation and page access.
+    Backend APIs must enforce authorization separately.
 */
 
 export const panelPages = [
@@ -58,12 +62,22 @@ export const panelPages = [
         allowedRoles: ["user"],
     },
     {
+        path: "manage-jobs",
+        component: ManageJobs,
+        allowedRoles: ["admin"],
+        navigation: {
+            label: "Manage Jobs",
+            icon: "fa-solid fa-briefcase",
+            end: false,
+        },
+    },
+    {
         path: "manage-vacancies",
         component: ManageVacancies,
         allowedRoles: ["admin"],
         navigation: {
             label: "Manage Vacancies",
-            icon: "fa-solid fa-briefcase",
+            icon: "fa-solid fa-building",
             end: false,
         },
     },

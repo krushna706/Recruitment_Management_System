@@ -4849,3 +4849,874 @@
         transition: none;
     }
 }
+
+
+
+/* =========================================================
+   MANAGE JOBS
+   ========================================================= */
+
+.manage-jobs {
+    --mj-primary: var(--panel-primary, #265df5);
+    --mj-text: var(--panel-text, #1e2b43);
+    --mj-muted: var(--panel-muted, #68768c);
+    --mj-border: var(--panel-border, #e2e8f1);
+
+    width: 100%;
+    min-width: 0;
+    color: var(--mj-text);
+}
+
+.manage-jobs,
+.manage-jobs * {
+    box-sizing: border-box;
+}
+
+/* PAGE HEADING */
+
+.manage-jobs .mj-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 26px;
+}
+
+.manage-jobs .mj-eyebrow {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--mj-primary);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    letter-spacing: 1.6px;
+}
+
+.manage-jobs .mj-heading h1 {
+    margin: 0;
+    color: var(--mj-text);
+    font-size: clamp(27px, 2.5vw, 34px);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.9px;
+}
+
+.manage-jobs .mj-heading p {
+    margin: 9px 0 0;
+    color: var(--mj-muted);
+    font-size: 15px;
+    line-height: 25px;
+}
+
+.manage-jobs .mj-heading > .MuiButton-root {
+    flex-shrink: 0;
+}
+
+.manage-jobs .mj-alert {
+    margin-bottom: 22px;
+}
+
+/* METRICS */
+
+.manage-jobs .mj-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 26px;
+}
+
+.manage-jobs .mj-tone-blue {
+    --mj-accent: #3266dc;
+    --mj-soft: #edf3ff;
+}
+
+.manage-jobs .mj-tone-green {
+    --mj-accent: #218166;
+    --mj-soft: #eaf7f0;
+}
+
+.manage-jobs .mj-tone-amber {
+    --mj-accent: #9b6b18;
+    --mj-soft: #fff5e2;
+}
+
+.manage-jobs .mj-tone-red {
+    --mj-accent: #bc515b;
+    --mj-soft: #fff0f1;
+}
+
+.manage-jobs .mj-metric {
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    padding: 21px 23px;
+    border: 1px solid var(--mj-border);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 5px 22px rgb(30 48 80 / 3%);
+}
+
+.manage-jobs .mj-metric::after {
+    position: absolute;
+    right: 23px;
+    bottom: 0;
+    left: 23px;
+    height: 3px;
+    border-radius: 4px 4px 0 0;
+    background: var(--mj-accent);
+    opacity: 0.7;
+    content: "";
+}
+
+.manage-jobs .mj-metric-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.manage-jobs .mj-metric-label {
+    color: #52627a;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 23px;
+}
+
+.manage-jobs .mj-metric-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 39px;
+    height: 39px;
+    border-radius: 11px;
+    color: var(--mj-accent);
+    background: var(--mj-soft);
+    font-size: 16px;
+}
+
+.manage-jobs .mj-metric > strong {
+    display: block;
+    color: var(--mj-text);
+    font-size: 35px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -1px;
+    font-variant-numeric: tabular-nums;
+}
+
+.manage-jobs .mj-metric > p {
+    margin: 7px 0 0;
+    color: var(--mj-muted);
+    font-size: 12px;
+    line-height: 21px;
+}
+
+/* SHARED CARD */
+
+.manage-jobs .mj-card {
+    overflow: hidden;
+    border: 1px solid var(--mj-border);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 6px 28px rgb(30 48 80 / 3%);
+}
+
+.manage-jobs .mj-form-card {
+    margin-bottom: 28px;
+    scroll-margin-top: 96px;
+}
+
+.manage-jobs .mj-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 23px 28px;
+    border-bottom: 1px solid var(--mj-border);
+    background: linear-gradient(110deg, #f5f8ff, #fff 80%);
+}
+
+.manage-jobs .mj-card-heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.manage-jobs .mj-header-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 45px;
+    height: 45px;
+    border: 1px solid #dce6fb;
+    border-radius: 13px;
+    color: var(--mj-primary);
+    background: #eaf1ff;
+    font-size: 18px;
+}
+
+.manage-jobs .mj-card-heading h2 {
+    margin: 0;
+    color: var(--mj-text);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 29px;
+    letter-spacing: -0.3px;
+}
+
+.manage-jobs .mj-card-heading p {
+    margin: 4px 0 0;
+    color: var(--mj-muted);
+    font-size: 13px;
+    line-height: 22px;
+}
+
+/* FORM SECTIONS */
+
+.manage-jobs .mj-form-body {
+    padding: 27px 28px 28px;
+}
+
+.manage-jobs .mj-form-section + .mj-form-section {
+    margin-top: 29px;
+    padding-top: 26px;
+    border-top: 1px solid #eaf0f7;
+}
+
+.manage-jobs .mj-section-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.manage-jobs .mj-section-number {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    margin-top: 1px;
+    border: 1px solid #e1e8f5;
+    border-radius: 9px;
+    color: #526e9c;
+    background: #f2f6fc;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.manage-jobs .mj-section-heading h3 {
+    margin: 0;
+    color: var(--mj-text);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+}
+
+.manage-jobs .mj-section-heading p {
+    margin: 3px 0 0;
+    color: var(--mj-muted);
+    font-size: 12px;
+    line-height: 21px;
+}
+
+.manage-jobs .mj-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 24px;
+}
+
+.manage-jobs .mj-description-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 24px;
+}
+
+/* MATERIAL UI FIELDS */
+
+.manage-jobs .MuiInputBase-root,
+.manage-jobs .MuiInputLabel-root,
+.manage-jobs .MuiFormHelperText-root,
+.manage-jobs .MuiButton-root,
+.manage-jobs .MuiChip-root,
+.manage-jobs .MuiTableCell-root,
+.manage-jobs .MuiTypography-root,
+.manage-jobs .MuiTablePagination-root {
+    font-family: inherit;
+}
+
+.manage-jobs .MuiTextField-root {
+    min-width: 0;
+}
+
+.manage-jobs .MuiOutlinedInput-root {
+    border-radius: 10px;
+    color: var(--mj-text);
+    background: #fff;
+    font-size: 14px;
+    transition: box-shadow 160ms ease;
+}
+
+.manage-jobs .MuiOutlinedInput-input {
+    padding: 14px;
+}
+
+.manage-jobs .MuiSelect-select {
+    padding-right: 36px;
+}
+
+.manage-jobs .MuiInputBase-multiline {
+    padding: 14px;
+}
+
+.manage-jobs .MuiInputBase-inputMultiline {
+    padding: 0;
+    font-size: 14px;
+    line-height: 25px;
+}
+
+.manage-jobs .MuiOutlinedInput-notchedOutline {
+    border-color: #d5deeb;
+}
+
+.manage-jobs .MuiOutlinedInput-root:hover
+.MuiOutlinedInput-notchedOutline {
+    border-color: #9babca;
+}
+
+.manage-jobs .MuiOutlinedInput-root.Mui-focused {
+    box-shadow: 0 0 0 3px rgb(38 93 245 / 7%);
+}
+
+.manage-jobs .MuiOutlinedInput-root.Mui-focused
+.MuiOutlinedInput-notchedOutline {
+    border-color: var(--mj-primary);
+}
+
+.manage-jobs .MuiOutlinedInput-root.Mui-error
+.MuiOutlinedInput-notchedOutline {
+    border-color: #d32f2f;
+}
+
+.manage-jobs .MuiInputLabel-root {
+    color: #62718a;
+    font-size: 14px;
+}
+
+.manage-jobs .MuiInputLabel-root.Mui-focused {
+    color: var(--mj-primary);
+}
+
+.manage-jobs .MuiInputLabel-root.Mui-error {
+    color: #d32f2f;
+}
+
+.manage-jobs .MuiInputBase-input::placeholder {
+    color: #8290a5;
+    opacity: 1;
+}
+
+.manage-jobs .MuiFormHelperText-root {
+    margin-top: 6px;
+    margin-left: 2px;
+    font-size: 12px;
+    line-height: 19px;
+}
+
+/* PUBLISHING */
+
+.manage-jobs .mj-publish-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+    gap: 24px;
+}
+
+.manage-jobs .mj-featured-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 0;
+    padding: 13px 17px;
+    border: 1px solid #e1e8f3;
+    border-radius: 11px;
+    background: #f9fbff;
+}
+
+.manage-jobs .mj-featured-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #354760;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 22px;
+}
+
+.manage-jobs .mj-featured-heading i {
+    color: #ae8124;
+}
+
+.manage-jobs .mj-featured-option p {
+    margin: 3px 0 0;
+    color: var(--mj-muted);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.manage-jobs .mj-featured-option .MuiFormControlLabel-root {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.manage-jobs .mj-featured-option .MuiFormControlLabel-label {
+    color: #52627b;
+    font-size: 12px;
+}
+
+.manage-jobs .mj-status-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 19px;
+    padding: 13px 16px;
+    border: 1px solid #e3ebfa;
+    border-radius: 10px;
+    color: #4c6386;
+    background: #f3f7ff;
+}
+
+.manage-jobs .mj-status-note > i {
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+.manage-jobs .mj-status-note p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 22px;
+}
+
+/* BUTTONS AND FORM FOOTER */
+
+.manage-jobs .mj-form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 19px 28px;
+    border-top: 1px solid var(--mj-border);
+    background: #fafcff;
+}
+
+.manage-jobs .mj-form-footer > p {
+    margin: 0;
+    color: var(--mj-muted);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.manage-jobs .mj-form-footer > p > span {
+    color: #bd4655;
+}
+
+.manage-jobs .mj-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.manage-jobs .MuiButton-root {
+    min-height: 42px;
+    padding: 9px 19px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 22px;
+    text-transform: none;
+}
+
+.manage-jobs .MuiButton-containedPrimary:not(.Mui-disabled) {
+    color: #fff;
+    background: var(--mj-primary);
+    box-shadow: 0 4px 10px rgb(38 93 245 / 12%);
+}
+
+.manage-jobs .MuiButton-containedPrimary:not(.Mui-disabled):hover {
+    background: #204fc8;
+}
+
+.manage-jobs .MuiButton-outlinedPrimary:not(.Mui-disabled) {
+    border-color: #cddaf3;
+    color: var(--mj-primary);
+}
+
+.manage-jobs .MuiButton-outlinedPrimary:not(.Mui-disabled):hover {
+    border-color: var(--mj-primary);
+    background: #f1f5ff;
+}
+
+.manage-jobs .MuiButton-startIcon > i {
+    font-size: 14px;
+}
+
+/* JOB LIST */
+
+.manage-jobs .mj-result-count {
+    flex-shrink: 0;
+    padding: 7px 11px;
+    border: 1px solid #e0e7f2;
+    border-radius: 8px;
+    color: #5b6e8d;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 20px;
+}
+
+.manage-jobs .mj-table-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 210px;
+    gap: 20px;
+    padding: 25px 28px;
+}
+
+.manage-jobs .mj-table {
+    min-width: 900px;
+}
+
+.manage-jobs .mj-table .MuiTableCell-head {
+    padding: 14px 23px;
+    border-top: 1px solid var(--mj-border);
+    border-bottom: 1px solid var(--mj-border);
+    color: #51627d;
+    background: #f1f5fc;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 21px;
+    white-space: nowrap;
+}
+
+.manage-jobs .mj-table .MuiTableCell-body {
+    padding: 19px 23px;
+    border-bottom: 1px solid #eaf0f6;
+    font-size: 13px;
+}
+
+.manage-jobs .mj-table .MuiTableRow-root:last-child
+.MuiTableCell-body {
+    border-bottom: 0;
+}
+
+.manage-jobs .mj-job-cell {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+}
+
+.manage-jobs .mj-company-avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 43px;
+    height: 43px;
+    border: 1px solid #dce6f9;
+    border-radius: 12px;
+    color: #3d64a9;
+    background: #eef4ff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.manage-jobs .mj-job-cell strong {
+    display: block;
+    max-width: 280px;
+    color: var(--mj-text);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 23px;
+    overflow-wrap: anywhere;
+}
+
+.manage-jobs .mj-job-cell p {
+    margin: 3px 0 0;
+    color: var(--mj-muted);
+    font-size: 13px;
+    line-height: 21px;
+}
+
+.manage-jobs .mj-job-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 7px;
+}
+
+.manage-jobs .mj-job-tags:empty {
+    display: none;
+}
+
+.manage-jobs .mj-job-tags > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    color: #5b6c87;
+    background: #f1f4f9;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 17px;
+}
+
+.manage-jobs .mj-job-tags > .mj-featured-tag {
+    color: #95691a;
+    background: #fff6e2;
+}
+
+.manage-jobs .mj-featured-tag i {
+    font-size: 9px;
+}
+
+.manage-jobs .mj-cell-primary {
+    display: block;
+    color: #35465f;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 23px;
+}
+
+.manage-jobs .mj-cell-secondary {
+    display: block;
+    margin-top: 4px;
+    color: var(--mj-muted);
+    font-size: 12px;
+    line-height: 21px;
+}
+
+.manage-jobs .MuiChip-root {
+    height: 27px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.manage-jobs .mj-table .MuiButton-root {
+    min-height: 34px;
+    padding: 5px 13px;
+    font-size: 12px;
+}
+
+.manage-jobs .mj-table .MuiTableRow-root.Mui-selected {
+    background: #edf4ff;
+}
+
+.manage-jobs .mj-table .MuiTableRow-root.Mui-selected:hover {
+    background: #e5efff;
+}
+
+.manage-jobs .MuiTablePagination-root {
+    border-top: 1px solid var(--mj-border);
+    color: var(--mj-muted);
+}
+
+.manage-jobs .MuiTablePagination-selectLabel,
+.manage-jobs .MuiTablePagination-displayedRows {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 12px;
+}
+
+/* EMPTY STATE */
+
+.manage-jobs .mj-empty {
+    padding: 42px 15px;
+    text-align: center;
+}
+
+.manage-jobs .mj-empty > span {
+    display: grid;
+    place-items: center;
+    width: 62px;
+    height: 62px;
+    margin: 0 auto 17px;
+    border: 1px solid #e0e9f9;
+    border-radius: 18px;
+    color: #6c89b9;
+    background: #f0f5ff;
+    font-size: 24px;
+}
+
+.manage-jobs .mj-empty h3 {
+    margin: 0 0 8px;
+    color: var(--mj-text);
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 26px;
+}
+
+.manage-jobs .mj-empty p {
+    margin: 0;
+    color: var(--mj-muted);
+    font-size: 13px;
+    line-height: 22px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1199.98px) {
+    .manage-jobs .mj-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .manage-jobs .mj-publish-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .manage-jobs .mj-form-grid,
+    .manage-jobs .mj-description-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .manage-jobs .mj-card-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .manage-jobs .mj-table-toolbar {
+        grid-template-columns: minmax(0, 1fr) 170px;
+    }
+
+    .manage-jobs .mj-heading p {
+        max-width: 340px;
+        font-size: 14px;
+        line-height: 23px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .manage-jobs .mj-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 17px;
+    }
+
+    .manage-jobs .mj-metrics {
+        gap: 12px;
+    }
+
+    .manage-jobs .mj-metric {
+        padding: 17px 15px;
+        border-radius: 13px;
+    }
+
+    .manage-jobs .mj-metric-top {
+        align-items: flex-start;
+        gap: 7px;
+    }
+
+    .manage-jobs .mj-metric-label {
+        font-size: 12px;
+        line-height: 20px;
+    }
+
+    .manage-jobs .mj-metric-icon {
+        width: 29px;
+        height: 29px;
+        border-radius: 8px;
+        font-size: 13px;
+    }
+
+    .manage-jobs .mj-metric > strong {
+        font-size: 29px;
+    }
+
+    .manage-jobs .mj-metric > p {
+        font-size: 11px;
+        line-height: 19px;
+    }
+
+    .manage-jobs .mj-card {
+        border-radius: 14px;
+    }
+
+    .manage-jobs .mj-card-header,
+    .manage-jobs .mj-form-body,
+    .manage-jobs .mj-table-toolbar {
+        padding: 21px 17px;
+    }
+
+    .manage-jobs .mj-card-heading {
+        align-items: flex-start;
+        gap: 11px;
+    }
+
+    .manage-jobs .mj-header-icon {
+        width: 37px;
+        height: 37px;
+        border-radius: 10px;
+        font-size: 15px;
+    }
+
+    .manage-jobs .mj-card-heading h2 {
+        font-size: 18px;
+        line-height: 26px;
+    }
+
+    .manage-jobs .mj-card-heading p {
+        font-size: 12px;
+        line-height: 21px;
+    }
+
+    .manage-jobs .mj-section-heading h3 {
+        font-size: 15px;
+    }
+
+    .manage-jobs .mj-featured-option {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .manage-jobs .mj-table-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .manage-jobs .mj-form-footer {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 13px;
+        padding: 17px;
+    }
+
+    .manage-jobs .mj-form-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .manage-jobs .MuiButton-root {
+        padding-inline: 13px;
+    }
+
+    .manage-jobs .MuiTablePagination-toolbar {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        padding: 8px;
+    }
+
+    .manage-jobs .MuiTablePagination-spacer {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .manage-jobs .MuiOutlinedInput-root {
+        transition: none;
+    }
+}

@@ -342,17 +342,14 @@ function Dashboard({
 
                 <Button
                     component={Link}
-                    to="/manage/manage-vacancies"
+                    to="/manage/manage-jobs"
                     variant="outlined"
                     className="panel-button panel-button-outline"
                     startIcon={
-                        <i
-                            className="fa-solid fa-briefcase"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-briefcase" aria-hidden="true" />
                     }
                 >
-                    Manage Vacancies
+                    Manage Jobs
                 </Button>
             </header>
 
