@@ -441,20 +441,6 @@ function ManageVacancies() {
                     </p>
                 </div>
 
-                <Button
-                    type="button"
-                    variant="contained"
-                    disableElevation
-                    onClick={handleNewVacancy}
-                    startIcon={
-                        <i
-                            className="fa-solid fa-plus"
-                            aria-hidden="true"
-                        />
-                    }
-                >
-                    Add vacancy
-                </Button>
             </header>
 
             {initialData.error && (
