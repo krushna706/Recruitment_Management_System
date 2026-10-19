@@ -6989,3 +6989,104 @@
         line-height: 25px;
     }
 }
+
+
+
+/* =========================================================
+   ADMIN PROFILE
+   Reuses mj-* and mu-* panel styles.
+   ========================================================= */
+
+.admin-profile .admin-profile-banner {
+    margin-bottom: 26px;
+    padding: 28px;
+}
+
+.admin-profile .admin-profile-banner .mu-avatar {
+    width: 76px;
+    height: 76px;
+    border-radius: 21px;
+    font-size: 26px;
+}
+
+.admin-profile .admin-profile-banner .mu-profile-copy h2 {
+    font-size: 25px;
+    line-height: 34px;
+}
+
+.admin-profile-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+    align-items: start;
+    gap: 24px;
+}
+
+.admin-profile-grid > * {
+    min-width: 0;
+}
+
+.admin-profile .admin-account-details {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin: 0;
+}
+
+.admin-profile .admin-account-details .mu-detail {
+    padding: 15px 0;
+    border-bottom: 1px solid #e9eef6;
+}
+
+.admin-profile .admin-account-details .mu-detail:first-child {
+    padding-top: 0;
+}
+
+.admin-profile .admin-account-details .mu-detail:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+.admin-profile .MuiInputBase-root:has(input[readonly]) {
+    background: #f7f9fc;
+}
+
+@media (max-width: 1199.98px) {
+    .admin-profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-profile .admin-account-details {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .admin-profile .admin-account-details .mu-detail {
+        padding: 0;
+        border-bottom: 0;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .admin-profile .admin-profile-banner {
+        padding: 20px 17px;
+    }
+
+    .admin-profile .admin-profile-banner .mu-avatar {
+        width: 54px;
+        height: 54px;
+        border-radius: 15px;
+        font-size: 19px;
+    }
+
+    .admin-profile .admin-profile-banner .mu-profile-copy h2 {
+        font-size: 19px;
+        line-height: 28px;
+    }
+
+    .admin-profile .admin-account-details {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-profile .mj-form-actions {
+        grid-template-columns: 1fr;
+    }
+}
