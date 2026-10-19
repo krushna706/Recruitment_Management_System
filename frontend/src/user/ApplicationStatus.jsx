@@ -1,3 +1,4 @@
+import { getResumeUrl, normalizeApplication } from "../utils/dataFormat";
 import { Link, useParams } from "react-router-dom";
 import {
     Alert,
@@ -20,24 +21,19 @@ function ApplicationStatus({ applications = demoApplications }) {
     const { id } = useParams();
 
     const application = Array.isArray(applications)
-        ? applications.find((item) => String(item.id) === id)
+        ? applications
+              .map(normalizeApplication)
+              .find((item) => String(item.id) === id)
         : null;
 
     if (!application) {
         return (
             <div className="panel-card panel-empty-state">
-                <i
-                    className="fa-regular fa-folder-open"
-                    aria-hidden="true"
-                />
+                <i className="fa-regular fa-folder-open" aria-hidden="true" />
 
-                <h1 className="panel-page-title">
-                    Application not found.
-                </h1>
+                <h1 className="panel-page-title">Application not found.</h1>
 
-                <p>
-                    Return to your applications to view an available record.
-                </p>
+                <p>Return to your applications to view an available record.</p>
 
                 <Button
                     component={Link}
@@ -55,7 +51,7 @@ function ApplicationStatus({ applications = demoApplications }) {
     const applicant = application.applicant || {};
 
     const history = [...(application.history || [])].sort(
-        (first, second) => new Date(first.at) - new Date(second.at)
+        (first, second) => new Date(first.at) - new Date(second.at),
     );
 
     const isRejected = application.status === "Rejected";
@@ -78,12 +74,8 @@ function ApplicationStatus({ applications = demoApplications }) {
         });
     }
 
-    const resumeUrl = application.resume?.url;
-
-    const canOpenResume =
-        typeof resumeUrl === "string" &&
-        (/^https:\/\//i.test(resumeUrl) ||
-            /^\/(?!\/)/.test(resumeUrl));
+    const resumeUrl = getResumeUrl(application.resume?.url);
+    const canOpenResume = Boolean(resumeUrl);
 
     return (
         <div className="application-status-page">
@@ -91,18 +83,13 @@ function ApplicationStatus({ applications = demoApplications }) {
                 to="/manage/my-applications"
                 className="application-back-link"
             >
-                <i
-                    className="fa-solid fa-arrow-left"
-                    aria-hidden="true"
-                />
+                <i className="fa-solid fa-arrow-left" aria-hidden="true" />
                 Back to My Applications
             </Link>
 
             <header className="panel-page-heading">
                 <div>
-                    <h1 className="panel-page-title">
-                        Application details
-                    </h1>
+                    <h1 className="panel-page-title">Application details</h1>
 
                     <p className="panel-page-description">
                         Your submitted information and recruitment progress.
@@ -133,7 +120,10 @@ function ApplicationStatus({ applications = demoApplications }) {
                             </h2>
 
                             <p className="application-company">
-                                {application.company}
+                                {application.company ||
+                                    (application.openingType === "internal"
+                                        ? "Internal vacancy"
+                                        : "Company not specified")}
                             </p>
                         </div>
                     </div>
@@ -145,8 +135,7 @@ function ApplicationStatus({ applications = demoApplications }) {
 
                         <span
                             className={`panel-status panel-status-${
-                                statusClasses[application.status] ||
-                                "submitted"
+                                statusClasses[application.status] || "submitted"
                             }`}
                         >
                             <span aria-hidden="true" />
@@ -237,7 +226,7 @@ function ApplicationStatus({ applications = demoApplications }) {
                                             <dd>
                                                 {formatApplicationDate(
                                                     application.interview.at,
-                                                    true
+                                                    true,
                                                 )}
                                             </dd>
                                         </div>
@@ -267,13 +256,10 @@ function ApplicationStatus({ applications = demoApplications }) {
                         )}
 
                     {isRejected && (
-                        <Alert
-                            severity="info"
-                            className="application-feedback"
-                        >
+                        <Alert severity="info" className="application-feedback">
                             <strong>Application update</strong>
-                            This application is no longer moving forward.
-                            You can continue exploring other opportunities.
+                            This application is no longer moving forward. You
+                            can continue exploring other opportunities.
                         </Alert>
                     )}
 
@@ -334,7 +320,7 @@ function ApplicationStatus({ applications = demoApplications }) {
                                         <dd>
                                             {formatApplicationDate(
                                                 application.appliedAt,
-                                                true
+                                                true,
                                             )}
                                         </dd>
                                     </div>
@@ -439,7 +425,7 @@ function ApplicationStatus({ applications = demoApplications }) {
                             <p className="panel-card-description">
                                 {latestEvent
                                     ? `Last updated: ${formatApplicationDate(
-                                          latestEvent.at
+                                          latestEvent.at,
                                       )}`
                                     : "No updates available yet."}
                             </p>
@@ -473,9 +459,7 @@ function ApplicationStatus({ applications = demoApplications }) {
                                         disabled={!event.recorded}
                                     >
                                         <StepLabel
-                                            error={
-                                                event.status === "Rejected"
-                                            }
+                                            error={event.status === "Rejected"}
                                         >
                                             {event.status}
 
@@ -493,7 +477,7 @@ function ApplicationStatus({ applications = demoApplications }) {
                                                     <time dateTime={event.at}>
                                                         {formatApplicationDate(
                                                             event.at,
-                                                            true
+                                                            true,
                                                         )}
                                                     </time>
 

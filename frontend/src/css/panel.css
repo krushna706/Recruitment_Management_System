@@ -75,7 +75,6 @@
     outline-offset: 4px;
 }
 
-
 /* =========================================================
    PANEL HEADER
    ========================================================= */
@@ -114,7 +113,6 @@
     flex-shrink: 0;
 }
 
-
 /* ===== LOGO ===== */
 
 .panel-brand {
@@ -139,7 +137,6 @@
 
     object-fit: contain;
 }
-
 
 /* ===== HAMBURGER BUTTON ===== */
 
@@ -168,7 +165,6 @@
     color: var(--panel-primary);
     background: var(--panel-soft);
 }
-
 
 /* ===== PROFILE BUTTON ===== */
 
@@ -260,7 +256,6 @@
 .panel-profile-button.is-open .panel-profile-chevron {
     transform: rotate(180deg);
 }
-
 
 /* ===== PROFILE DROPDOWN ===== */
 
@@ -380,7 +375,6 @@
     background: #fff5f4;
 }
 
-
 /* ===== HEADER: TABLET ===== */
 
 @media (max-width: 991.98px) {
@@ -414,7 +408,6 @@
         transition: none;
     }
 }
-
 
 /* ===== HEADER: MOBILE ===== */
 
@@ -494,7 +487,6 @@
     }
 }
 
-
 /* =========================================================
    PANEL SIDEBAR
    ========================================================= */
@@ -509,14 +501,9 @@
     color: #d6def0;
 
     background:
-        linear-gradient(
-            180deg,
-            rgb(39 62 117 / 16%),
-            transparent 45%
-        ),
+        linear-gradient(180deg, rgb(39 62 117 / 16%), transparent 45%),
         var(--panel-sidebar-background);
 }
-
 
 /* ===== DESKTOP SLIDE TRANSITION ===== */
 
@@ -552,7 +539,6 @@
         transform var(--panel-transition),
         visibility 0s linear 280ms;
 }
-
 
 /* ===== NAVIGATION ===== */
 
@@ -671,7 +657,6 @@
     outline-offset: 3px;
 }
 
-
 /* ===== MOBILE DRAWER ===== */
 
 .panel-sidebar-drawer.MuiDrawer-paper {
@@ -681,11 +666,7 @@
     color: #d6def0;
 
     background:
-        linear-gradient(
-            180deg,
-            rgb(39 62 117 / 16%),
-            transparent 45%
-        ),
+        linear-gradient(180deg, rgb(39 62 117 / 16%), transparent 45%),
         var(--panel-sidebar-background);
 
     overscroll-behavior: contain;
@@ -727,7 +708,6 @@
     background: rgb(255 255 255 / 10%);
 }
 
-
 /* ===== REDUCED MOTION ===== */
 
 @media (prefers-reduced-motion: reduce) {
@@ -756,7 +736,6 @@
     height: 100%;
     object-fit: cover;
 }
-
 
 /* ===== SIDEBAR: BACK TO WEBSITE ===== */
 
@@ -811,8 +790,6 @@
 .panel-sidebar-home:hover > i:last-child {
     color: #ffffff;
 }
-
-
 
 /* =========================================================
    PANEL: SHARED PAGE HEADINGS AND BUTTONS
@@ -908,7 +885,6 @@
     text-underline-offset: 4px;
 }
 
-
 /* ===== SHARED HEADINGS: MOBILE ===== */
 
 @media (max-width: 575.98px) {
@@ -928,7 +904,6 @@
         line-height: 24px;
     }
 }
-
 
 /* =========================================================
    PANEL: REUSABLE CONTENT CARDS
@@ -1008,7 +983,6 @@
     margin-top: 20px;
 }
 
-
 /* ===== SHARED CARDS: MOBILE ===== */
 
 @media (max-width: 575.98px) {
@@ -1025,7 +999,6 @@
         line-height: 28px;
     }
 }
-
 
 /* =========================================================
    PANEL: APPLICATION STATUS BADGES
@@ -1085,7 +1058,6 @@
     background: #fff0f0;
 }
 
-
 /* =========================================================
    DASHBOARD: WELCOME SECTION
    ========================================================= */
@@ -1120,12 +1092,7 @@
             rgb(116 160 255 / 25%),
             transparent 45%
         ),
-        linear-gradient(
-            115deg,
-            #14284f 0%,
-            #1b3f83 65%,
-            #275cd0 100%
-        );
+        linear-gradient(115deg, #14284f 0%, #1b3f83 65%, #275cd0 100%);
 
     box-shadow: 0 10px 28px rgb(27 63 131 / 12%);
 }
@@ -1224,7 +1191,6 @@
 .dashboard-welcome-link:focus-visible {
     outline-color: #ffffff;
 }
-
 
 /* ===== WELCOME ILLUSTRATION ===== */
 
@@ -1327,7 +1293,6 @@
     transform: rotate(12deg);
 }
 
-
 /* ===== WELCOME: RESPONSIVE ===== */
 
 @media (max-width: 1199.98px) {
@@ -1369,7 +1334,6 @@
         font-size: 13px;
     }
 }
-
 
 /* =========================================================
    DASHBOARD: STATISTICS
@@ -1490,7 +1454,6 @@
     }
 }
 
-
 /* ===== STATISTICS: RESPONSIVE ===== */
 
 @media (max-width: 1199.98px) {
@@ -1542,7 +1505,6 @@
         grid-template-columns: 1fr;
     }
 }
-
 
 /* =========================================================
    DASHBOARD: RECENT APPLICATIONS
@@ -1656,7 +1618,6 @@
     gap: 4px;
 }
 
-
 /* ===== APPLICATIONS: RESPONSIVE ===== */
 
 @media (max-width: 1399.98px) {
@@ -1706,7 +1667,6 @@
         line-height: 24px;
     }
 }
-
 
 /* =========================================================
    DASHBOARD: RECENT ACTIVITY
@@ -1808,7 +1768,6 @@
     line-height: 21px;
 }
 
-
 /* ===== ACTIVITY: MOBILE ===== */
 
 @media (max-width: 575.98px) {
@@ -1816,7 +1775,6 @@
         padding: 24px 20px;
     }
 }
-
 
 /* ===== DASHBOARD: REDUCED MOTION ===== */
 
@@ -1828,9 +1786,6 @@
         transition: none !important;
     }
 }
-
-
-
 
 /* =========================================================
    APPLICATION PAGES: SHARED TYPOGRAPHY AND MUI INPUTS
@@ -1911,7 +1866,6 @@
     font-size: 15px;
 }
 
-
 /* =========================================================
    MY APPLICATIONS: FILTERS AND SECTION HEADER
    ========================================================= */
@@ -1936,24 +1890,6 @@
     color: #7c8799;
 }
 
-.applications-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    min-width: 25px;
-    min-height: 25px;
-    margin-left: 9px;
-    padding-inline: 7px;
-    border-radius: 7px;
-
-    color: var(--panel-primary);
-    background: var(--panel-soft);
-
-    font-size: 12px;
-    vertical-align: middle;
-}
-
 .applications-sort-note {
     display: inline-flex;
     align-items: center;
@@ -1967,7 +1903,6 @@
 .applications-sort-note i {
     color: var(--panel-primary);
 }
-
 
 /* ===== FILTERS: RESPONSIVE ===== */
 
@@ -2002,7 +1937,6 @@
         grid-column: auto;
     }
 }
-
 
 /* =========================================================
    MY APPLICATIONS: COMPACT TABLE
@@ -2051,7 +1985,9 @@
     width: 25%;
 }
 
-.applications-table .MuiTableBody-root .MuiTableRow-root:last-child
+.applications-table
+    .MuiTableBody-root
+    .MuiTableRow-root:last-child
     .MuiTableCell-root {
     border-bottom: 0;
 }
@@ -2213,7 +2149,6 @@
     }
 }
 
-
 /* ===== TABLE: SMALL DESKTOP / TABLET ===== */
 
 @media (min-width: 768px) and (max-width: 1199.98px) {
@@ -2237,7 +2172,6 @@
         display: none;
     }
 }
-
 
 /* ===== MOBILE: LABELLED APPLICATION CARDS ===== */
 
@@ -2296,7 +2230,6 @@
     }
 }
 
-
 /* =========================================================
    APPLICATION DETAILS: HEADER AND JOB SUMMARY
    ========================================================= */
@@ -2348,11 +2281,7 @@
     left: 0;
 
     height: 3px;
-    background: linear-gradient(
-        90deg,
-        var(--panel-primary),
-        #b7ccff
-    );
+    background: linear-gradient(90deg, var(--panel-primary), #b7ccff);
 
     content: "";
 }
@@ -2497,7 +2426,6 @@
     overflow-wrap: anywhere;
 }
 
-
 /* ===== JOB SUMMARY: RESPONSIVE ===== */
 
 @media (max-width: 1199.98px) {
@@ -2542,7 +2470,6 @@
         gap: 16px 14px;
     }
 }
-
 
 /* =========================================================
    APPLICATION DETAILS: SUBMITTED INFORMATION
@@ -2718,7 +2645,6 @@
     line-height: 20px;
 }
 
-
 /* ===== SUBMITTED INFORMATION: RESPONSIVE ===== */
 
 @media (max-width: 1199.98px) {
@@ -2746,7 +2672,6 @@
         width: 100%;
     }
 }
-
 
 /* =========================================================
    APPLICATION DETAILS: INTERVIEW AND STATUS UPDATES
@@ -2852,7 +2777,6 @@
     }
 }
 
-
 /* =========================================================
    APPLICATION DETAILS: COMPACT PROGRESS TIMELINE
    ========================================================= */
@@ -2946,7 +2870,6 @@
     vertical-align: middle;
 }
 
-
 /* ===== APPLICATION PAGES: REDUCED MOTION ===== */
 
 @media (prefers-reduced-motion: reduce) {
@@ -2956,8 +2879,6 @@
         transition: none !important;
     }
 }
-
-
 
 /* =========================================================
    PROFILE: LAYOUT
@@ -3015,7 +2936,6 @@
     border-radius: 50%;
     background: currentColor;
 }
-
 
 /* =========================================================
    PROFILE: SUMMARY
@@ -3184,7 +3104,6 @@
     line-height: 22px;
 }
 
-
 /* =========================================================
    PROFILE: FORM
    ========================================================= */
@@ -3287,7 +3206,6 @@
     color: #6b83b5;
 }
 
-
 /* ===== SKILLS DROPDOWN: MUI PORTAL ===== */
 
 .profile-skills-menu.MuiPaper-root {
@@ -3318,7 +3236,6 @@
     font-weight: 600;
     line-height: 34px;
 }
-
 
 /* =========================================================
    PROFILE: CURRENT RESUME
@@ -3414,7 +3331,6 @@
     font-size: 12px;
     padding-inline: 13px;
 }
-
 
 /* =========================================================
    PROFILE: RESUME REPLACEMENT
@@ -3533,7 +3449,6 @@
     line-height: 20px;
 }
 
-
 /* =========================================================
    PROFILE: SAVE BAR
    ========================================================= */
@@ -3585,7 +3500,6 @@
     font-size: 13px;
     line-height: 22px;
 }
-
 
 /* =========================================================
    PROFILE: RESPONSIVE
@@ -3733,9 +3647,6 @@
     }
 }
 
-
-
-
 /* =========================================================
    ADMIN DASHBOARD: SHARED ACCENT COLORS
    ========================================================= */
@@ -3789,7 +3700,6 @@
     font-size: 13px;
     line-height: 21px;
 }
-
 
 /* =========================================================
    ADMIN DASHBOARD: WELCOME
@@ -3951,7 +3861,6 @@
     line-height: 21px;
 }
 
-
 /* ===== WELCOME: RESPONSIVE ===== */
 
 @media (max-width: 1199.98px) {
@@ -3998,14 +3907,13 @@
     }
 }
 
-
 /* =========================================================
    ADMIN DASHBOARD: TOTAL COUNTS
    ========================================================= */
 
 .admin-overview-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 20px;
 
     margin-bottom: 20px;
@@ -4097,10 +4005,13 @@
     }
 }
 
-
 /* ===== TOTAL COUNTS: RESPONSIVE ===== */
 
 @media (max-width: 1199.98px) {
+    .admin-overview-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .admin-overview-card {
         flex-direction: column;
         gap: 14px;
@@ -4129,7 +4040,6 @@
         margin-top: 5px;
     }
 }
-
 
 /* =========================================================
    ADMIN DASHBOARD: STATUS COUNTS
@@ -4216,7 +4126,6 @@
     line-height: 20px;
 }
 
-
 /* ===== STATUS COUNTS: RESPONSIVE ===== */
 
 @media (max-width: 1199.98px) {
@@ -4240,7 +4149,6 @@
         grid-template-columns: 1fr;
     }
 }
-
 
 /* =========================================================
    ADMIN DASHBOARD: RECENT APPLICATIONS
@@ -4378,7 +4286,6 @@
     white-space: nowrap;
 }
 
-
 /* ===== APPLICATIONS: RESPONSIVE ===== */
 
 @media (max-width: 1399.98px) {
@@ -4397,7 +4304,6 @@
         padding-inline: 14px;
     }
 }
-
 
 /* =========================================================
    ADMIN DASHBOARD: RECENT ACTIVITY
@@ -4488,7 +4394,6 @@
         padding: 20px 18px;
     }
 }
-
 
 /* ===== REDUCED MOTION ===== */
 
@@ -4600,7 +4505,6 @@
     font-size: 12px;
     line-height: 20px;
 }
-
 
 /* =========================================================
    ADMIN DASHBOARD: APPLICATION STATUS CHART
@@ -4772,7 +4676,6 @@
     line-height: 21px;
 }
 
-
 /* ===== CHART AND TYPOGRAPHY: MOBILE ===== */
 
 @media (max-width: 575.98px) {
@@ -4849,8 +4752,6 @@
         transition: none;
     }
 }
-
-
 
 /* =========================================================
    MANAGE JOBS
@@ -5183,8 +5084,7 @@
     border-color: #d5deeb;
 }
 
-.manage-jobs .MuiOutlinedInput-root:hover
-.MuiOutlinedInput-notchedOutline {
+.manage-jobs .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
     border-color: #9babca;
 }
 
@@ -5192,13 +5092,13 @@
     box-shadow: 0 0 0 3px rgb(38 93 245 / 7%);
 }
 
-.manage-jobs .MuiOutlinedInput-root.Mui-focused
-.MuiOutlinedInput-notchedOutline {
+.manage-jobs
+    .MuiOutlinedInput-root.Mui-focused
+    .MuiOutlinedInput-notchedOutline {
     border-color: var(--mj-primary);
 }
 
-.manage-jobs .MuiOutlinedInput-root.Mui-error
-.MuiOutlinedInput-notchedOutline {
+.manage-jobs .MuiOutlinedInput-root.Mui-error .MuiOutlinedInput-notchedOutline {
     border-color: #d32f2f;
 }
 
@@ -5408,8 +5308,7 @@
     font-size: 13px;
 }
 
-.manage-jobs .mj-table .MuiTableRow-root:last-child
-.MuiTableCell-body {
+.manage-jobs .mj-table .MuiTableRow-root:last-child .MuiTableCell-body {
     border-bottom: 0;
 }
 
@@ -5730,12 +5629,6 @@
 }
 
 /* Vacancy skills field spans the full form width. */
-
-.manage-vacancies .mv-full-width {
-    grid-column: 1 / -1;
-}
-
-
 
 /* =========================================================
    APPLICATIONS: STAGE COUNTS
@@ -6136,7 +6029,6 @@
     }
 }
 
-
 /* =========================================================
    MANAGE USERS
    ========================================================= */
@@ -6530,8 +6422,6 @@
     }
 }
 
-
-
 /* =========================================================
    MANAGE ADMINS
    ========================================================= */
@@ -6650,7 +6540,6 @@
         margin: 12px;
     }
 }
-
 
 /* =========================================================
    MANAGE ENQUIRIES
@@ -6989,8 +6878,6 @@
         line-height: 25px;
     }
 }
-
-
 
 /* =========================================================
    ADMIN PROFILE

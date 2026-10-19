@@ -1,3 +1,4 @@
+import { demoJobs } from "../data/jobData";
 import { Link, useOutletContext } from "react-router-dom";
 import { Button } from "@mui/material";
 
@@ -188,6 +189,7 @@ function getInitials(name = "") {
 
 function Dashboard({
     user,
+    jobs = demoJobs,
     vacancies = demoVacancies,
     applications = demoApplications,
     users = demoUsers,
@@ -197,6 +199,7 @@ function Dashboard({
     const currentUser = user ?? outletContext?.user;
     const firstName = currentUser?.name?.trim().split(/\s+/)[0];
 
+    const jobList = Array.isArray(jobs) ? jobs : [];
     const vacancyList = Array.isArray(vacancies) ? vacancies : [];
     const applicationList = Array.isArray(applications) ? applications : [];
     const userList = Array.isArray(users) ? users : [];
@@ -215,36 +218,43 @@ function Dashboard({
     const countStatus = (statuses) =>
         statuses.reduce(
             (total, status) => total + (statusCounts[status] || 0),
-            0
+            0,
         );
 
     const pendingCount = countStatus(["Submitted", "Under Review"]);
 
     const publishedCount = vacancyList.filter(
-        (vacancy) => vacancy.status === "Published"
+        (vacancy) => vacancy.status === "Published",
     ).length;
 
     const totalUsers = userList.filter(
-        (account) => account.role === "user"
+        (account) => account.role === "user",
     ).length;
 
     const recentApplications = [...applicationList]
         .sort(
             (first, second) =>
-                getTimestamp(second.appliedAt) - getTimestamp(first.appliedAt)
+                getTimestamp(second.appliedAt) - getTimestamp(first.appliedAt),
         )
         .slice(0, 5);
 
     const recentActivities = [...activityList]
         .sort(
-            (first, second) =>
-                getTimestamp(second.at) - getTimestamp(first.at)
+            (first, second) => getTimestamp(second.at) - getTimestamp(first.at),
         )
         .slice(0, 4);
 
     const overviewCards = [
         {
-            label: "Total Vacancies",
+            label: "Client Jobs",
+            value: jobList.length,
+            description: `${jobList.filter((job) => job.status === "Published").length} currently published`,
+            icon: "fa-solid fa-briefcase",
+            tone: "blue",
+            path: "/manage/manage-jobs",
+        },
+        {
+            label: "Internal Vacancies",
             value: vacancyList.length,
             description: `${publishedCount} currently published`,
             icon: "fa-solid fa-briefcase",
@@ -254,7 +264,7 @@ function Dashboard({
         {
             label: "Total Applications",
             value: applicationList.length,
-            description: "Across all vacancies",
+            description: "Across client jobs and internal vacancies",
             icon: "fa-regular fa-file-lines",
             tone: "purple",
             path: "/manage/manage-applications",
@@ -315,7 +325,7 @@ function Dashboard({
     // Keep unexpected statuses represented in the chart total.
     const knownStatusCount = statusChart.reduce(
         (total, status) => total + status.count,
-        0
+        0,
     );
 
     const otherStatusCount = applicationList.length - knownStatusCount;
@@ -346,7 +356,10 @@ function Dashboard({
                     variant="outlined"
                     className="panel-button panel-button-outline"
                     startIcon={
-                        <i className="fa-solid fa-briefcase" aria-hidden="true" />
+                        <i
+                            className="fa-solid fa-briefcase"
+                            aria-hidden="true"
+                        />
                     }
                 >
                     Manage Jobs
@@ -369,8 +382,8 @@ function Dashboard({
                     </h2>
 
                     <p>
-                        Keep hiring moving. Review applications, manage
-                        openings and follow your team’s recruitment progress.
+                        Keep hiring moving. Review applications, manage openings
+                        and follow your team’s recruitment progress.
                     </p>
 
                     <Link
@@ -414,10 +427,7 @@ function Dashboard({
                         to={card.path}
                         className={`admin-overview-card admin-tone-${card.tone}`}
                     >
-                        <span
-                            className="admin-metric-icon"
-                            aria-hidden="true"
-                        >
+                        <span className="admin-metric-icon" aria-hidden="true">
                             <i className={card.icon} />
                         </span>
 
@@ -467,10 +477,7 @@ function Dashboard({
             >
                 <header className="panel-card-header">
                     <div>
-                        <h2
-                            id="admin-chart-title"
-                            className="panel-card-title"
-                        >
+                        <h2 id="admin-chart-title" className="panel-card-title">
                             Application status overview
                         </h2>
 
@@ -549,7 +556,8 @@ function Dashboard({
                         />
                         <h3>No application data yet.</h3>
                         <p>
-                            The chart will appear when applications are received.
+                            The chart will appear when applications are
+                            received.
                         </p>
                     </div>
                 )}
@@ -616,7 +624,7 @@ function Dashboard({
                                                             aria-hidden="true"
                                                         >
                                                             {getInitials(
-                                                                application.candidate
+                                                                application.candidate,
                                                             )}
                                                         </span>
 
@@ -627,11 +635,15 @@ function Dashboard({
                                                             </h3>
 
                                                             <p>
-                                                                {application.title}
+                                                                {
+                                                                    application.title
+                                                                }
                                                             </p>
 
                                                             <span>
-                                                                {application.company}
+                                                                {
+                                                                    application.company
+                                                                }
                                                             </span>
                                                         </div>
                                                     </div>
@@ -644,7 +656,7 @@ function Dashboard({
                                                         }
                                                     >
                                                         {formatDate(
-                                                            application.appliedAt
+                                                            application.appliedAt,
                                                         )}
                                                     </time>
                                                 </td>
@@ -675,9 +687,7 @@ function Dashboard({
                                 aria-hidden="true"
                             />
                             <h3>No applications yet.</h3>
-                            <p>
-                                New candidate applications will appear here.
-                            </p>
+                            <p>New candidate applications will appear here.</p>
                         </div>
                     )}
                 </section>

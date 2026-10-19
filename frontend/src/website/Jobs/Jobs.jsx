@@ -1,197 +1,22 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import {
-    Button,
-    MenuItem,
-    Pagination,
-    TextField,
-} from "@mui/material";
+import { Button, MenuItem, Pagination, TextField } from "@mui/material";
 
 import JobSearchBar from "../../components/JobSearchBar";
 
-// Frontend demo data. Replace with backend data later.
-const demoJobs = [
-    {
-        id: "frontend-developer",
-        title: "Frontend Developer",
-        company: "Demo Technologies",
-        location: "Bhubaneswar, Odisha",
-        employmentType: "Full-time",
-        workMode: "On-site",
-        minExperience: 0,
-        maxExperience: 2,
-        salary: "₹3–5 LPA",
-        postedAt: "2026-10-15",
-        description:
-            "Build responsive React interfaces and reusable components for web applications.",
-    },
-    {
-        id: "backend-developer",
-        title: "Backend Developer",
-        company: "Demo Technologies",
-        location: "Bengaluru, Karnataka",
-        employmentType: "Full-time",
-        workMode: "Hybrid",
-        minExperience: 1,
-        maxExperience: 3,
-        salary: "₹5–8 LPA",
-        postedAt: "2026-10-13",
-        description:
-            "Develop REST APIs, manage databases and build reliable backend services.",
-    },
-    {
-        id: "ui-ux-designer",
-        title: "UI/UX Designer",
-        company: "Sample Design Studio",
-        location: "Pune, Maharashtra",
-        employmentType: "Full-time",
-        workMode: "Hybrid",
-        minExperience: 0,
-        maxExperience: 2,
-        salary: "₹3–6 LPA",
-        postedAt: "2026-10-14",
-        description:
-            "Create user journeys, wireframes and accessible designs for digital products.",
-    },
-    {
-        id: "mern-developer",
-        title: "MERN Stack Developer",
-        company: "Sample Digital",
-        location: "Hyderabad, Telangana",
-        employmentType: "Full-time",
-        workMode: "Remote",
-        minExperience: 2,
-        maxExperience: 5,
-        salary: "₹6–10 LPA",
-        postedAt: "2026-10-12",
-        description:
-            "Build full-stack features and integrate APIs across modern web applications.",
-    },
-    {
-        id: "hr-intern",
-        title: "HR Intern",
-        company: "Sample People Services",
-        location: "Bhubaneswar, Odisha",
-        employmentType: "Internship",
-        workMode: "On-site",
-        minExperience: 0,
-        maxExperience: 1,
-        salary: "₹10k–15k / month",
-        postedAt: "2026-10-16",
-        description:
-            "Support recruitment, coordinate interviews and learn practical HR operations.",
-    },
-    {
-        id: "business-development",
-        title: "Business Development Executive",
-        company: "Sample Digital",
-        location: "Kolkata, West Bengal",
-        employmentType: "Full-time",
-        workMode: "On-site",
-        minExperience: 1,
-        maxExperience: 4,
-        salary: "₹3–6 LPA",
-        postedAt: "2026-10-11",
-        description:
-            "Connect with prospective clients and develop lasting business relationships.",
-    },
-    {
-        id: "qa-engineer",
-        title: "QA Engineer",
-        company: "Demo Technologies",
-        location: "Pune, Maharashtra",
-        employmentType: "Contract",
-        workMode: "Remote",
-        minExperience: 1,
-        maxExperience: 3,
-        salary: "₹4–7 LPA",
-        postedAt: "2026-10-14",
-        description:
-            "Test application features and help developers deliver reliable software.",
-    },
-    {
-        id: "content-writer",
-        title: "Content Writer",
-        company: "Sample Design Studio",
-        location: "Bengaluru, Karnataka",
-        employmentType: "Part-time",
-        workMode: "Remote",
-        minExperience: 0,
-        maxExperience: 2,
-        salary: "₹15k–25k / month",
-        postedAt: "2026-10-10",
-        description:
-            "Write useful website and marketing content with a consistent brand voice.",
-    },
-    {
-        id: "digital-marketing",
-        title: "Digital Marketing Executive",
-        company: "Sample Digital",
-        location: "Hyderabad, Telangana",
-        employmentType: "Full-time",
-        workMode: "Hybrid",
-        minExperience: 1,
-        maxExperience: 3,
-        salary: "₹3–5 LPA",
-        postedAt: "2026-10-13",
-        description:
-            "Support digital campaigns and improve audience engagement across channels.",
-    },
-    {
-        id: "react-intern",
-        title: "React Developer Intern",
-        company: "Demo Technologies",
-        location: "Bhubaneswar, Odisha",
-        employmentType: "Internship",
-        workMode: "On-site",
-        minExperience: 0,
-        maxExperience: 1,
-        salary: "₹12k–18k / month",
-        postedAt: "2026-10-16",
-        description:
-            "Build frontend components with guidance and gain practical React experience.",
-    },
-    {
-        id: "customer-support",
-        title: "Customer Support Executive",
-        company: "Sample People Services",
-        location: "Kolkata, West Bengal",
-        employmentType: "Full-time",
-        workMode: "On-site",
-        minExperience: 0,
-        maxExperience: 2,
-        salary: "₹2.5–4 LPA",
-        postedAt: "2026-10-12",
-        description:
-            "Resolve customer queries and coordinate timely support with internal teams.",
-    },
-    {
-        id: "project-coordinator",
-        title: "Project Coordinator",
-        company: "Sample Digital",
-        location: "Pune, Maharashtra",
-        employmentType: "Full-time",
-        workMode: "Hybrid",
-        minExperience: 2,
-        maxExperience: 4,
-        salary: "₹4–7 LPA",
-        postedAt: "2026-10-09",
-        description:
-            "Coordinate project tasks, track delivery and keep teams informed.",
-    },
-];
+import { demoJobs } from "../../data/jobData";
+import { getExperienceRange } from "../../utils/dataFormat";
 
-const employmentTypes = [
-    ...new Set(demoJobs.map((job) => job.employmentType)),
-];
+const employmentTypes = [...new Set(demoJobs.map((job) => job.type))];
 
-const workModes = [...new Set(demoJobs.map((job) => job.workMode))];
+const workModes = [...new Set(demoJobs.map((job) => job.mode))];
 
 const PAGE_SIZE = 20;
 
 /* Calendar-day difference using the visitor's local date. */
 function getPostedLabel(dateString) {
-    const [year, month, day] = dateString.split("-").map(Number);
+    if (!dateString) return "Date unavailable";
+    const [year, month, day] = dateString.slice(0, 10).split("-").map(Number);
 
     const postedDay = Date.UTC(year, month - 1, day);
     const now = new Date();
@@ -199,12 +24,10 @@ function getPostedLabel(dateString) {
     const currentDay = Date.UTC(
         now.getFullYear(),
         now.getMonth(),
-        now.getDate()
+        now.getDate(),
     );
 
-    const days = Math.floor(
-        (currentDay - postedDay) / (1000 * 60 * 60 * 24)
-    );
+    const days = Math.floor((currentDay - postedDay) / (1000 * 60 * 60 * 24));
 
     if (!Number.isFinite(days)) return "Date unavailable";
     if (days < 0) return "Scheduled";
@@ -217,8 +40,11 @@ function getPostedLabel(dateString) {
 function matchesExperience(job, experience) {
     if (!experience) return true;
 
+    const range = getExperienceRange(job.experience);
+    if (!range) return false;
+
     if (experience === "30+") {
-        return job.maxExperience > 30;
+        return range.max > 30;
     }
 
     const years = Number(experience);
@@ -226,8 +52,8 @@ function matchesExperience(job, experience) {
     return (
         Number.isFinite(years) &&
         years >= 0 &&
-        years >= job.minExperience &&
-        years <= job.maxExperience
+        years >= range.min &&
+        years <= range.max
     );
 }
 
@@ -258,34 +84,24 @@ export default function Jobs() {
         const locationQuery = location.toLowerCase();
 
         return demoJobs.filter((job) => {
-            const searchableText = [
-                job.title,
-                job.company,
-                job.description,
-            ]
+            if (job.status !== "Published") return false;
+            const searchableText = [job.title, job.company, job.description]
                 .join(" ")
                 .toLowerCase();
 
             const searchableLocation =
-                `${job.location} ${job.workMode}`.toLowerCase();
+                `${job.location} ${job.mode}`.toLowerCase();
 
             return (
                 (!titleQuery || searchableText.includes(titleQuery)) &&
                 (!locationQuery ||
                     searchableLocation.includes(locationQuery)) &&
                 matchesExperience(job, experience) &&
-                (!employmentType ||
-                    job.employmentType === employmentType) &&
-                (!workMode || job.workMode === workMode)
+                (!employmentType || job.type === employmentType) &&
+                (!workMode || job.mode === workMode)
             );
         });
-    }, [
-        designation,
-        location,
-        experience,
-        employmentType,
-        workMode,
-    ]);
+    }, [designation, location, experience, employmentType, workMode]);
 
     const pageCount = Math.ceil(filteredJobs.length / PAGE_SIZE);
 
@@ -296,17 +112,10 @@ export default function Jobs() {
 
     const startIndex = (currentPage - 1) * PAGE_SIZE;
 
-    const visibleJobs = filteredJobs.slice(
-        startIndex,
-        startIndex + PAGE_SIZE
-    );
+    const visibleJobs = filteredJobs.slice(startIndex, startIndex + PAGE_SIZE);
 
     const hasFilters = Boolean(
-        designation ||
-            location ||
-            experience ||
-            employmentType ||
-            workMode
+        designation || location || experience || employmentType || workMode,
     );
 
     const updateFilter = (name, value) => {
@@ -362,10 +171,7 @@ export default function Jobs() {
     return (
         <div className="jobs-page">
             {/* IMAGE BANNER */}
-            <section
-                className="about-hero"
-                aria-labelledby="jobs-page-title"
-            >
+            <section className="about-hero" aria-labelledby="jobs-page-title">
                 <img
                     className="about-hero-image"
                     src="/images/about-banner.jpg"
@@ -374,10 +180,7 @@ export default function Jobs() {
                 />
 
                 <div className="website-shell about-hero-inner">
-                    <nav
-                        className="about-breadcrumb"
-                        aria-label="Breadcrumb"
-                    >
+                    <nav className="about-breadcrumb" aria-label="Breadcrumb">
                         <ol>
                             <li>
                                 <Link to="/">Home</Link>
@@ -401,8 +204,8 @@ export default function Jobs() {
                         </h1>
 
                         <p className="website-section-description jobs-banner-description">
-                            Discover roles that match your experience,
-                            interests and the way you want to work.
+                            Discover roles that match your experience, interests
+                            and the way you want to work.
                         </p>
                     </div>
                 </div>
@@ -429,7 +232,7 @@ export default function Jobs() {
                                 onChange={(event) =>
                                     updateFilter(
                                         filter.name,
-                                        event.target.value
+                                        event.target.value,
                                     )
                                 }
                                 className="website-text-field"
@@ -443,9 +246,7 @@ export default function Jobs() {
                                 ))}
 
                                 {filter.value &&
-                                    !filter.options.includes(
-                                        filter.value
-                                    ) && (
+                                    !filter.options.includes(filter.value) && (
                                         <MenuItem value={filter.value}>
                                             {filter.value}
                                         </MenuItem>
@@ -490,7 +291,7 @@ export default function Jobs() {
                                 ? "No matching positions found."
                                 : `Showing ${startIndex + 1}–${Math.min(
                                       startIndex + PAGE_SIZE,
-                                      filteredJobs.length
+                                      filteredJobs.length,
                                   )} of ${filteredJobs.length} positions`}
                         </p>
                     </div>
@@ -511,10 +312,10 @@ export default function Jobs() {
 
                                             <time
                                                 className="jobs-posted"
-                                                dateTime={job.postedAt}
-                                                title={`Posted on ${job.postedAt}`}
+                                                dateTime={job.createdAt}
+                                                title={`Posted on ${job.createdAt}`}
                                                 aria-label={`Posted ${getPostedLabel(
-                                                    job.postedAt
+                                                    job.createdAt,
                                                 )}`}
                                             >
                                                 <i
@@ -522,7 +323,7 @@ export default function Jobs() {
                                                     aria-hidden="true"
                                                 />
 
-                                                {getPostedLabel(job.postedAt)}
+                                                {getPostedLabel(job.createdAt)}
                                             </time>
                                         </div>
 
@@ -538,11 +339,9 @@ export default function Jobs() {
                                         </div>
 
                                         <div className="rms-job-tags">
-                                            <span>
-                                                {job.employmentType}
-                                            </span>
+                                            <span>{job.type}</span>
 
-                                            <span>{job.workMode}</span>
+                                            <span>{job.mode}</span>
                                         </div>
 
                                         <p className="jobs-card-description">
@@ -560,10 +359,7 @@ export default function Jobs() {
                                                     Experience
                                                 </dt>
 
-                                                <dd>
-                                                    {job.minExperience}–
-                                                    {job.maxExperience} years
-                                                </dd>
+                                                <dd>{job.experience}</dd>
                                             </div>
 
                                             <div>
@@ -575,7 +371,10 @@ export default function Jobs() {
                                                     Salary
                                                 </dt>
 
-                                                <dd>{job.salary}</dd>
+                                                <dd>
+                                                    {job.salary ||
+                                                        "Not disclosed"}
+                                                </dd>
                                             </div>
                                         </dl>
 

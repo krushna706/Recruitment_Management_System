@@ -28,8 +28,8 @@ function WebsiteFooter() {
                         </p>
 
                         <p className="website-footer-description">
-                            Explore open roles, discover our workplace and
-                            stay connected throughout your application journey.
+                            Explore open roles, discover our workplace and stay
+                            connected throughout your application journey.
                         </p>
                     </div>
 
@@ -39,10 +39,18 @@ function WebsiteFooter() {
 
                         <nav aria-label="Footer explore links">
                             <ul className="website-footer-links">
-                                <li><Link to="/">Home</Link></li>
-                                <li><Link to="/about">About Us</Link></li>
-                                <li><Link to="/jobs">Open Positions</Link></li>
-                                <li><Link to="/careers">Careers</Link></li>
+                                <li>
+                                    <Link to="/">Home</Link>
+                                </li>
+                                <li>
+                                    <Link to="/about">About Us</Link>
+                                </li>
+                                <li>
+                                    <Link to="/jobs">Open Positions</Link>
+                                </li>
+                                <li>
+                                    <Link to="/careers">Careers</Link>
+                                </li>
                             </ul>
                         </nav>
                     </div>
@@ -53,8 +61,14 @@ function WebsiteFooter() {
 
                         <nav aria-label="Footer candidate links">
                             <ul className="website-footer-links">
-                                <li><Link to="/jobs">Browse Jobs</Link></li>
-                                <li><Link to="/signup">Create Account</Link></li>
+                                <li>
+                                    <Link to="/jobs">Browse Jobs</Link>
+                                </li>
+                                <li>
+                                    <Link to="/manage/signup">
+                                        Create Account
+                                    </Link>
+                                </li>
                                 <li>
                                     <Link to="/manage?from=website">
                                         Sign In

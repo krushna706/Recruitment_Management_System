@@ -17,14 +17,11 @@ import {
 } from "@mui/material";
 import { toast } from "react-toastify";
 
+import { getExperienceRange } from "../utils/dataFormat";
+
 const STORAGE_KEY = "rms-client-jobs-v1";
 
-const JOB_TYPES = [
-    "Full Time",
-    "Part Time",
-    "Contract",
-    "Internship",
-];
+const JOB_TYPES = ["Full Time", "Part Time", "Contract", "Internship"];
 
 const WORK_MODES = ["On-site", "Hybrid", "Remote"];
 const JOB_STATUSES = ["Draft", "Published", "Closed"];
@@ -38,6 +35,7 @@ const EMPTY_FORM = {
     mode: "On-site",
     experience: "",
     salary: "",
+    openings: "",
     qualification: "",
     skills: "",
     description: "",
@@ -53,12 +51,9 @@ const STATUS_COLORS = {
 };
 
 const STATUS_DESCRIPTIONS = {
-    Draft:
-        "Keep this job unpublished while you prepare the details.",
-    Published:
-        "This job stays open until you manually change its status.",
-    Closed:
-        "Stop new applications while retaining the job and its existing applications.",
+    Draft: "Keep this job unpublished while you prepare the details.",
+    Published: "This job stays open until you manually change its status.",
+    Closed: "Stop new applications while retaining the job and its existing applications.",
 };
 
 // Only retain supported form fields.
@@ -67,10 +62,15 @@ function getFormValues(source = {}) {
     return Object.fromEntries(
         Object.entries(EMPTY_FORM).map(([key, fallback]) => [
             key,
-            typeof source[key] === typeof fallback
-                ? source[key]
-                : fallback,
-        ])
+            key === "openings" && Number.isInteger(source[key])
+                ? String(source[key])
+                : ["skills", "requirements"].includes(key) &&
+                    Array.isArray(source[key])
+                  ? source[key].join(key === "skills" ? ", " : "\n")
+                  : typeof source[key] === typeof fallback
+                    ? source[key]
+                    : fallback,
+        ]),
     );
 }
 
@@ -90,7 +90,7 @@ function loadJobs() {
                     typeof job.id === "string" &&
                     typeof job.company === "string" &&
                     typeof job.title === "string" &&
-                    JOB_STATUSES.includes(job.status)
+                    JOB_STATUSES.includes(job.status),
             );
 
         if (!valid) throw new Error("Invalid job data");
@@ -101,13 +101,9 @@ function loadJobs() {
                 id: job.id,
                 openingType: "client",
                 createdAt:
-                    typeof job.createdAt === "string"
-                        ? job.createdAt
-                        : "",
+                    typeof job.createdAt === "string" ? job.createdAt : "",
                 updatedAt:
-                    typeof job.updatedAt === "string"
-                        ? job.updatedAt
-                        : "",
+                    typeof job.updatedAt === "string" ? job.updatedAt : "",
             })),
             error: "",
         };
@@ -142,6 +138,23 @@ function validateJob(form) {
 
     if (!JOB_STATUSES.includes(form.status)) {
         errors.status = "Select a valid status.";
+    }
+
+    if (
+        form.openings &&
+        (!/^\d+$/.test(form.openings) ||
+            Number(form.openings) < 1 ||
+            Number(form.openings) > 10000)
+    ) {
+        errors.openings = "Enter a whole number between 1 and 10,000.";
+    }
+
+    if (
+        form.status === "Published" &&
+        form.experience.trim() &&
+        !getExperienceRange(form.experience)
+    ) {
+        errors.experience = "Use Fresher, 2 years, 2–4 years or 5+ years.";
     }
 
     if (form.status === "Published") {
@@ -220,7 +233,7 @@ function ManageJobs() {
             result[job.status] += 1;
             return result;
         },
-        { total: 0, Draft: 0, Published: 0, Closed: 0 }
+        { total: 0, Draft: 0, Published: 0, Closed: 0 },
     );
 
     const metrics = [
@@ -271,12 +284,12 @@ function ManageJobs() {
             return matchesSearch && matchesStatus;
         })
         .sort((first, second) =>
-            second.createdAt.localeCompare(first.createdAt)
+            second.createdAt.localeCompare(first.createdAt),
         );
 
     const visibleJobs = filteredJobs.slice(
         page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
+        page * rowsPerPage + rowsPerPage,
     );
 
     function handleChange(event) {
@@ -288,9 +301,7 @@ function ManageJobs() {
         }));
 
         setErrors((previous) =>
-            name === "status"
-                ? {}
-                : { ...previous, [name]: "" }
+            name === "status" ? {} : { ...previous, [name]: "" },
         );
     }
 
@@ -302,7 +313,7 @@ function ManageJobs() {
 
     function focusForm() {
         const reduceMotion = window.matchMedia(
-            "(prefers-reduced-motion: reduce)"
+            "(prefers-reduced-motion: reduce)",
         ).matches;
 
         formRef.current?.scrollIntoView({
@@ -351,7 +362,7 @@ function ManageJobs() {
             Object.entries(form).map(([key, value]) => [
                 key,
                 typeof value === "string" ? value.trim() : value,
-            ])
+            ]),
         );
 
         let nextJobs;
@@ -361,6 +372,9 @@ function ManageJobs() {
 
             const savedJob = {
                 ...normalizedForm,
+                openings: normalizedForm.openings
+                    ? Number(normalizedForm.openings)
+                    : null,
                 id: existingJob?.id ?? window.crypto.randomUUID(),
                 openingType: "client",
                 createdAt: existingJob?.createdAt || now,
@@ -368,18 +382,13 @@ function ManageJobs() {
             };
 
             nextJobs = isEditing
-                ? jobs.map((job) =>
-                      job.id === editingId ? savedJob : job
-                  )
+                ? jobs.map((job) => (job.id === editingId ? savedJob : job))
                 : [savedJob, ...jobs];
 
-            window.localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify(nextJobs)
-            );
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextJobs));
         } catch {
             toast.error(
-                "Could not save the job. Check browser storage and try again."
+                "Could not save the job. Check browser storage and try again.",
             );
             return;
         }
@@ -392,7 +401,7 @@ function ManageJobs() {
         toast.success(
             isEditing
                 ? "Job updated successfully."
-                : "Job created successfully."
+                : "Job created successfully.",
         );
 
         resetForm();
@@ -417,17 +426,12 @@ function ManageJobs() {
         <div className="manage-jobs">
             <header className="mj-heading">
                 <div>
-                    <span className="mj-eyebrow">
-                        RECRUITMENT WORKSPACE
-                    </span>
+                    <span className="mj-eyebrow">RECRUITMENT WORKSPACE</span>
 
                     <h1>Manage Jobs</h1>
 
-                    <p>
-                        Create opportunities. Keep your hiring organised.
-                    </p>
+                    <p>Create opportunities. Keep your hiring organised.</p>
                 </div>
-
             </header>
 
             {initialData.error && (
@@ -447,10 +451,7 @@ function ManageJobs() {
                                 {metric.label}
                             </span>
 
-                            <span
-                                className="mj-metric-icon"
-                                aria-hidden="true"
-                            >
+                            <span className="mj-metric-icon" aria-hidden="true">
                                 <i className={metric.icon} />
                             </span>
                         </div>
@@ -480,7 +481,9 @@ function ManageJobs() {
 
                         <div>
                             <h2 id="mj-form-title">
-                                {isEditing ? "Edit job details" : "Create a job"}
+                                {isEditing
+                                    ? "Edit job details"
+                                    : "Create a job"}
                             </h2>
 
                             <p>
@@ -518,7 +521,8 @@ function ManageJobs() {
                                 <TextField
                                     {...field("title", "Job title", {
                                         required: true,
-                                        placeholder: "e.g. MERN Stack Developer",
+                                        placeholder:
+                                            "e.g. MERN Stack Developer",
                                     })}
                                 />
 
@@ -532,7 +536,8 @@ function ManageJobs() {
                                 <TextField
                                     {...field("location", "Location", {
                                         required: publishing,
-                                        placeholder: "e.g. Bengaluru or Remote — India",
+                                        placeholder:
+                                            "e.g. Bengaluru or Remote — India",
                                     })}
                                 />
 
@@ -574,6 +579,25 @@ function ManageJobs() {
                                 />
 
                                 <TextField
+                                    {...field(
+                                        "openings",
+                                        "Number of openings",
+                                        {
+                                            helperText:
+                                                "Optional. Leave blank if not specified.",
+                                        },
+                                    )}
+                                    type="number"
+                                    slotProps={{
+                                        htmlInput: {
+                                            min: 1,
+                                            max: 10000,
+                                            step: 1,
+                                        },
+                                    }}
+                                />
+
+                                <TextField
                                     {...field("salary", "Salary", {
                                         placeholder: "e.g. ₹6–10 LPA",
                                         helperText:
@@ -588,7 +612,7 @@ function ManageJobs() {
                                         {
                                             required: publishing,
                                             placeholder: "e.g. Any graduate",
-                                        }
+                                        },
                                     )}
                                 />
 
@@ -615,7 +639,7 @@ function ManageJobs() {
                                             required: publishing,
                                             placeholder:
                                                 "Describe the role and daily responsibilities.",
-                                        }
+                                        },
                                     )}
                                     multiline
                                     minRows={5}
@@ -629,7 +653,7 @@ function ManageJobs() {
                                             required: publishing,
                                             placeholder:
                                                 "Describe the abilities and experience needed.",
-                                        }
+                                        },
                                     )}
                                     multiline
                                     minRows={5}
@@ -680,7 +704,8 @@ function ManageJobs() {
                                                     setForm((previous) => ({
                                                         ...previous,
                                                         featured:
-                                                            event.target.checked,
+                                                            event.target
+                                                                .checked,
                                                     }))
                                                 }
                                             />

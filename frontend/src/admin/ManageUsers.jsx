@@ -1,3 +1,4 @@
+import { getResumeUrl, toTextList } from "../utils/dataFormat";
 import { useState } from "react";
 import {
     Alert,
@@ -156,10 +157,10 @@ function loadUsers() {
                 (user) =>
                     user &&
                     ["id", "name", "email", "joinedAt"].every(
-                        (key) => typeof user[key] === "string"
+                        (key) => typeof user[key] === "string",
                     ) &&
                     user.role === "user" &&
-                    ["Active", "Inactive"].includes(user.status)
+                    ["Active", "Inactive"].includes(user.status),
             );
 
         if (!valid) throw new Error("Invalid user data");
@@ -191,14 +192,12 @@ function loadApplications() {
                 (application) =>
                     application &&
                     ["id", "title", "appliedAt"].every(
-                        (key) => typeof application[key] === "string"
+                        (key) => typeof application[key] === "string",
                     ) &&
-                    (
-                        typeof application.userId === "string" ||
-                        typeof application.email === "string"
-                    ) &&
+                    (typeof application.userId === "string" ||
+                        typeof application.email === "string") &&
                     APPLICATION_STATUSES.includes(application.status) &&
-                    ["client", "internal"].includes(application.openingType)
+                    ["client", "internal"].includes(application.openingType),
             );
 
         if (!valid) throw new Error("Invalid application data");
@@ -207,8 +206,7 @@ function loadApplications() {
     } catch {
         return {
             applications: [],
-            error:
-                "Application history could not be loaded. User account details are still available.",
+            error: "Application history could not be loaded. User account details are still available.",
         };
     }
 }
@@ -239,9 +237,7 @@ function formatDate(value, includeTime = false) {
         month: "short",
         year: "numeric",
         timeZone: "Asia/Kolkata",
-        ...(includeTime
-            ? { hour: "numeric", minute: "2-digit" }
-            : {}),
+        ...(includeTime ? { hour: "numeric", minute: "2-digit" } : {}),
     }).format(date);
 }
 
@@ -255,17 +251,6 @@ function getInitials(name) {
             .join("")
             .toUpperCase() || "?"
     );
-}
-
-function getResumeUrl(value) {
-    if (typeof value !== "string" || !value) return "";
-
-    try {
-        const url = new URL(value);
-        return url.protocol === "https:" ? url.href : "";
-    } catch {
-        return "";
-    }
 }
 
 function UserStatus({ status }) {
@@ -302,20 +287,14 @@ function ManageUsers() {
     const [statusAction, setStatusAction] = useState(null);
 
     const selectedUser = users.find((user) => user.id === selectedId);
-    const actionUser = users.find(
-        (user) => user.id === statusAction?.userId
-    );
+    const actionUser = users.find((user) => user.id === statusAction?.userId);
 
     const applications = applicationData.applications;
 
-    const activeCount = users.filter(
-        (user) => user.status === "Active"
-    ).length;
+    const activeCount = users.filter((user) => user.status === "Active").length;
 
     const applicantsCount = users.filter((user) =>
-        applications.some((application) =>
-            belongsToUser(application, user)
-        )
+        applications.some((application) => belongsToUser(application, user)),
     ).length;
 
     const metrics = [
@@ -360,7 +339,9 @@ function ManageUsers() {
                 user.address,
                 user.id,
             ].some((value) =>
-                String(value || "").toLowerCase().includes(query)
+                String(value || "")
+                    .toLowerCase()
+                    .includes(query),
             );
 
             return (
@@ -368,26 +349,24 @@ function ManageUsers() {
                 (statusFilter === "All" || user.status === statusFilter)
             );
         })
-        .sort((first, second) =>
-            second.joinedAt.localeCompare(first.joinedAt)
-        );
+        .sort((first, second) => second.joinedAt.localeCompare(first.joinedAt));
 
     const visibleUsers = filteredUsers.slice(
         page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
+        page * rowsPerPage + rowsPerPage,
     );
 
     const userApplications = selectedUser
         ? applications
-              .filter((application) =>
-                  belongsToUser(application, selectedUser)
-              )
+              .filter((application) => belongsToUser(application, selectedUser))
               .sort((first, second) =>
-                  second.appliedAt.localeCompare(first.appliedAt)
+                  second.appliedAt.localeCompare(first.appliedAt),
               )
         : [];
 
-    const resumeUrl = getResumeUrl(selectedUser?.resumeUrl);
+    const resumeUrl = getResumeUrl(
+        selectedUser?.resume?.url || selectedUser?.resumeUrl,
+    );
 
     function openProfile(user) {
         setApplicationData(loadApplications());
@@ -418,17 +397,14 @@ function ManageUsers() {
                       status: statusAction.nextStatus,
                       updatedAt: new Date().toISOString(),
                   }
-                : user
+                : user,
         );
 
         try {
-            window.localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify(nextUsers)
-            );
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUsers));
         } catch {
             toast.error(
-                "Could not save the account status. Check browser storage."
+                "Could not save the account status. Check browser storage.",
             );
             return;
         }
@@ -440,7 +416,7 @@ function ManageUsers() {
         toast.success(
             statusAction.nextStatus === "Active"
                 ? "User activated successfully."
-                : "User deactivated successfully."
+                : "User deactivated successfully.",
         );
     }
 
@@ -456,14 +432,10 @@ function ManageUsers() {
                 <div>
                     <span className="mj-eyebrow">USER MANAGEMENT</span>
                     <h1>Manage Users</h1>
-                    <p>
-                        Review candidate profiles and manage account access.
-                    </p>
+                    <p>Review candidate profiles and manage account access.</p>
                 </div>
 
-                <span className="mj-result-count">
-                    Candidate accounts
-                </span>
+                <span className="mj-result-count">Candidate accounts</span>
             </header>
 
             {initialData.error && (
@@ -510,7 +482,8 @@ function ManageUsers() {
                         <div>
                             <h2 id="mu-list-title">Registered candidates</h2>
                             <p>
-                                View profiles, application history and account status.
+                                View profiles, application history and account
+                                status.
                             </p>
                         </div>
                     </div>
@@ -559,7 +532,10 @@ function ManageUsers() {
                 </div>
 
                 <TableContainer>
-                    <Table className="mj-table mu-table" aria-label="Registered users">
+                    <Table
+                        className="mj-table mu-table"
+                        aria-label="Registered users"
+                    >
                         <TableHead>
                             <TableRow>
                                 <TableCell>Candidate</TableCell>
@@ -575,7 +551,7 @@ function ManageUsers() {
                             {visibleUsers.map((user) => {
                                 const applicationCount = applications.filter(
                                     (application) =>
-                                        belongsToUser(application, user)
+                                        belongsToUser(application, user),
                                 ).length;
 
                                 return (
@@ -592,7 +568,8 @@ function ManageUsers() {
                                                 <div>
                                                     <strong>{user.name}</strong>
                                                     <p>
-                                                        {user.address || "Location not provided"}
+                                                        {user.address ||
+                                                            "Location not provided"}
                                                     </p>
                                                 </div>
                                             </div>
@@ -603,7 +580,8 @@ function ManageUsers() {
                                                 {user.email}
                                             </span>
                                             <span className="mj-cell-secondary">
-                                                {user.phone || "Phone not provided"}
+                                                {user.phone ||
+                                                    "Phone not provided"}
                                             </span>
                                         </TableCell>
 
@@ -631,7 +609,9 @@ function ManageUsers() {
                                                     type="button"
                                                     variant="outlined"
                                                     size="small"
-                                                    onClick={() => openProfile(user)}
+                                                    onClick={() =>
+                                                        openProfile(user)
+                                                    }
                                                     aria-label={`View ${user.name}'s profile`}
                                                     startIcon={
                                                         <i
@@ -653,7 +633,9 @@ function ManageUsers() {
                                                             : "success"
                                                     }
                                                     onClick={() =>
-                                                        requestStatusChange(user)
+                                                        requestStatusChange(
+                                                            user,
+                                                        )
                                                     }
                                                     aria-label={`${
                                                         user.status === "Active"
@@ -747,13 +729,28 @@ function ManageUsers() {
                                 <h3>Personal & contact information</h3>
 
                                 <dl className="mu-detail-grid">
-                                    <Detail label="Full name" value={selectedUser.name} />
-                                    <Detail label="Email" value={selectedUser.email} />
-                                    <Detail label="Phone" value={selectedUser.phone} />
-                                    <Detail label="Address" value={selectedUser.address} />
+                                    <Detail
+                                        label="Full name"
+                                        value={selectedUser.name}
+                                    />
+                                    <Detail
+                                        label="Email"
+                                        value={selectedUser.email}
+                                    />
+                                    <Detail
+                                        label="Phone"
+                                        value={selectedUser.phone}
+                                    />
+                                    <Detail
+                                        label="Address"
+                                        value={selectedUser.address}
+                                    />
                                     <Detail
                                         label="Registered on"
-                                        value={formatDate(selectedUser.joinedAt, true)}
+                                        value={formatDate(
+                                            selectedUser.joinedAt,
+                                            true,
+                                        )}
                                     />
                                     <Detail
                                         label="Account status"
@@ -776,7 +773,9 @@ function ManageUsers() {
                                     />
                                     <Detail
                                         label="Skills"
-                                        value={selectedUser.skills}
+                                        value={toTextList(
+                                            selectedUser.skills,
+                                        ).join(", ")}
                                     />
                                 </dl>
 
@@ -827,49 +826,64 @@ function ManageUsers() {
                                         >
                                             <TableHead>
                                                 <TableRow>
-                                                    <TableCell>Position</TableCell>
-                                                    <TableCell>Applied on</TableCell>
-                                                    <TableCell>Status</TableCell>
+                                                    <TableCell>
+                                                        Position
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        Applied on
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        Status
+                                                    </TableCell>
                                                 </TableRow>
                                             </TableHead>
 
                                             <TableBody>
-                                                {userApplications.map((application) => (
-                                                    <TableRow key={application.id}>
-                                                        <TableCell>
-                                                            <strong>
-                                                                {application.title}
-                                                            </strong>
+                                                {userApplications.map(
+                                                    (application) => (
+                                                        <TableRow
+                                                            key={application.id}
+                                                        >
+                                                            <TableCell>
+                                                                <strong>
+                                                                    {
+                                                                        application.title
+                                                                    }
+                                                                </strong>
 
-                                                            <span className="mu-history-company">
-                                                                {application.openingType ===
-                                                                "internal"
-                                                                    ? "Internal vacancy"
-                                                                    : application.company ||
-                                                                      "Client job"}
-                                                            </span>
-                                                        </TableCell>
+                                                                <span className="mu-history-company">
+                                                                    {application.openingType ===
+                                                                    "internal"
+                                                                        ? "Internal vacancy"
+                                                                        : application.company ||
+                                                                          "Client job"}
+                                                                </span>
+                                                            </TableCell>
 
-                                                        <TableCell>
-                                                            {formatDate(
-                                                                application.appliedAt
-                                                            )}
-                                                        </TableCell>
+                                                            <TableCell>
+                                                                {formatDate(
+                                                                    application.appliedAt,
+                                                                )}
+                                                            </TableCell>
 
-                                                        <TableCell>
-                                                            <Chip
-                                                                label={application.status}
-                                                                color={
-                                                                    APPLICATION_COLORS[
+                                                            <TableCell>
+                                                                <Chip
+                                                                    label={
                                                                         application.status
-                                                                    ]
-                                                                }
-                                                                variant="outlined"
-                                                                size="small"
-                                                            />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
+                                                                    }
+                                                                    color={
+                                                                        APPLICATION_COLORS[
+                                                                            application
+                                                                                .status
+                                                                        ]
+                                                                    }
+                                                                    variant="outlined"
+                                                                    size="small"
+                                                                />
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ),
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
@@ -880,7 +894,8 @@ function ManageUsers() {
                                             aria-hidden="true"
                                         />
                                         <p>
-                                            This candidate has not submitted any applications.
+                                            This candidate has not submitted any
+                                            applications.
                                         </p>
                                     </div>
                                 )}
@@ -898,8 +913,9 @@ function ManageUsers() {
                                         </strong>
 
                                         <p>
-                                            Changing account access preserves the profile
-                                            and existing applications.
+                                            Changing account access preserves
+                                            the profile and existing
+                                            applications.
                                         </p>
                                     </div>
 

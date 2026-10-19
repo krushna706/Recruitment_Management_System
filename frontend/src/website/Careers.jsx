@@ -12,11 +12,10 @@ const careerPositions = [
         department: "Engineering",
         location: "Bhubaneswar, Odisha",
         experience: "0–2 years",
-        employmentType: "Full-time",
-        employmentType: "On-Site",
+        mode: "On-site",
         description:
             "Build responsive interfaces with React, translate designs into reusable components and improve the user experience.",
-        isActive: true,
+        status: "Published",
     },
     {
         id: "demo-backend",
@@ -24,11 +23,10 @@ const careerPositions = [
         department: "Engineering",
         location: "Bhubaneswar, Odisha",
         experience: "1–3 years",
-        employmentType: "Full-time",
-        employmentType: "Hybrid",
+        mode: "Hybrid",
         description:
             "Develop REST APIs with Node.js and Express, work with MongoDB and contribute to reliable application services.",
-        isActive: true,
+        status: "Published",
     },
     {
         id: "demo-designer",
@@ -36,11 +34,10 @@ const careerPositions = [
         department: "Design",
         location: "Bhubaneswar, Odisha",
         experience: "0–2 years",
-        employmentType: "Full-time",
-        employmentType: "Remote",
+        mode: "Remote",
         description:
             "Create clear user journeys, wireframes and interface designs while collaborating with the development team.",
-        isActive: true,
+        status: "Published",
     },
 ];
 
@@ -86,22 +83,19 @@ function getApplicationLink(position) {
     ].join("\n");
 
     return `mailto:${APPLICATION_EMAIL}?subject=${encodeURIComponent(
-        subject
+        subject,
     )}&body=${encodeURIComponent(body)}`;
 }
 
 export default function Careers() {
     const openPositions = careerPositions.filter(
-        (position) => position.isActive === true
+        (position) => position.status === "Published",
     );
 
     return (
         <div className="careers-page">
             {/* BANNER */}
-            <section
-                className="about-hero"
-                aria-labelledby="careers-title"
-            >
+            <section className="about-hero" aria-labelledby="careers-title">
                 <img
                     className="about-hero-image"
                     src="/images/about-banner.jpg"
@@ -110,10 +104,7 @@ export default function Careers() {
                 />
 
                 <div className="website-shell about-hero-inner">
-                    <nav
-                        className="about-breadcrumb"
-                        aria-label="Breadcrumb"
-                    >
+                    <nav className="about-breadcrumb" aria-label="Breadcrumb">
                         <ol>
                             <li>
                                 <Link to="/">Home</Link>
@@ -124,9 +115,7 @@ export default function Careers() {
                     </nav>
 
                     <div className="about-hero-content">
-                        <p className="website-section-label">
-                            GROW WITH US
-                        </p>
+                        <p className="website-section-label">GROW WITH US</p>
 
                         <h1
                             id="careers-title"
@@ -137,8 +126,8 @@ export default function Careers() {
                         </h1>
 
                         <p className="website-section-description careers-banner-description">
-                            Explore our approach to work, discover
-                            opportunities and take your next step with us.
+                            Explore our approach to work, discover opportunities
+                            and take your next step with us.
                         </p>
                     </div>
                 </div>
@@ -164,9 +153,9 @@ export default function Careers() {
                         </h2>
 
                         <p className="website-section-description">
-                            Our approach to work starts with people:
-                            listening to ideas, taking responsibility
-                            and making progress together.
+                            Our approach to work starts with people: listening
+                            to ideas, taking responsibility and making progress
+                            together.
                         </p>
                     </div>
 
@@ -213,9 +202,7 @@ export default function Careers() {
             >
                 <div className="website-shell">
                     <div className="careers-section-heading">
-                        <p className="website-section-label">
-                            OPEN POSITIONS
-                        </p>
+                        <p className="website-section-label">OPEN POSITIONS</p>
 
                         <h2
                             id="careers-positions-title"
@@ -233,7 +220,6 @@ export default function Careers() {
 
                     {openPositions.length > 0 ? (
                         <>
-
                             <div className="careers-position-grid">
                                 {openPositions.map((position) => (
                                     <article
@@ -251,12 +237,7 @@ export default function Careers() {
                                         </div>
 
                                         <div className="rms-job-tags">
-                                            <span>
-                                                {position.employmentType}
-                                            </span>
-                                             <span>
-                                                {position.employmentType}
-                                            </span>
+                                            <span>{position.mode}</span>
                                         </div>
 
                                         <p className="careers-position-description">
@@ -273,9 +254,7 @@ export default function Careers() {
                                                     Experience
                                                 </dt>
 
-                                                <dd>
-                                                    {position.experience}
-                                                </dd>
+                                                <dd>{position.experience}</dd>
                                             </div>
                                         </dl>
 
@@ -286,15 +265,13 @@ export default function Careers() {
                                                     aria-hidden="true"
                                                 />
 
-                                                <span>
-                                                    {position.location}
-                                                </span>
+                                                <span>{position.location}</span>
                                             </p>
 
                                             <Button
                                                 component="a"
                                                 href={getApplicationLink(
-                                                    position
+                                                    position,
                                                 )}
                                                 className="website-button website-button-primary"
                                                 aria-label={`Apply now for ${position.title} by email`}
@@ -305,7 +282,6 @@ export default function Careers() {
                                     </article>
                                 ))}
                             </div>
-
                         </>
                     ) : (
                         <div className="careers-empty">
@@ -319,9 +295,9 @@ export default function Careers() {
                             <h3>No open positions right now.</h3>
 
                             <p className="website-section-description">
-                                We don’t have any openings at the moment.
-                                Please check back for future opportunities.
-                                Thank you for your interest in joining us.
+                                We don’t have any openings at the moment. Please
+                                check back for future opportunities. Thank you
+                                for your interest in joining us.
                             </p>
 
                             <div className="careers-empty-actions">

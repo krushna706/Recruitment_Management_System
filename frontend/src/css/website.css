@@ -72,7 +72,6 @@
     }
 }
 
-
 /* =========================================================
    02. SHARED SKIP LINK AND LOGO
    ========================================================= */
@@ -101,7 +100,6 @@
         height: auto;
     }
 }
-
 
 /* =========================================================
    03. SHARED BUTTONS
@@ -169,20 +167,6 @@
     background: var(--website-soft);
 }
 
-.website-layout .website-button-light-outline {
-    border-color: rgb(255 255 255 / 55%);
-
-    color: #ffffff;
-    background: rgb(255 255 255 / 6%);
-}
-
-.website-layout .website-button-light-outline:hover {
-    border-color: #ffffff;
-
-    color: var(--website-text);
-    background: #ffffff;
-}
-
 .website-layout .website-button-white {
     flex-shrink: 0;
 
@@ -201,7 +185,6 @@
     box-shadow: none;
     cursor: not-allowed;
 }
-
 
 /* =========================================================
    04. SHARED SECTION TYPOGRAPHY
@@ -264,7 +247,6 @@
         line-height: 28px;
     }
 }
-
 
 /* =========================================================
    05. NAVBAR
@@ -498,7 +480,6 @@
     }
 }
 
-
 /* =========================================================
    06. HOME — HERO SLIDER
    Background, content, search positioning and controls
@@ -638,32 +619,6 @@
 }
 
 /* Optional hero actions */
-
-.rms-hero-actions {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 14px;
-
-    margin-top: 32px;
-}
-
-.rms-hero-location {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-
-    margin: 28px 0 0;
-
-    color: #c8d6ed;
-    font-size: 15px;
-    line-height: 24px;
-}
-
-.rms-hero-location i {
-    color: #a9c6ff;
-}
 
 /* Hero search placement */
 
@@ -851,19 +806,6 @@
         font-size: 12px;
     }
 
-    .rms-hero-actions {
-        gap: 12px;
-        margin-top: 26px;
-    }
-
-    .rms-hero-actions .website-button {
-        width: 100%;
-    }
-
-    .rms-hero-location {
-        font-size: 14px;
-    }
-
     .rms-hero-count {
         display: none;
     }
@@ -882,7 +824,6 @@
         width: 28px;
     }
 }
-
 
 /* =========================================================
    07. REUSABLE JOB SEARCH BAR
@@ -1149,7 +1090,6 @@
     }
 }
 
-
 /* =========================================================
    08. HOME — ABOUT SECTION
    ========================================================= */
@@ -1358,7 +1298,6 @@
     }
 }
 
-
 /* =========================================================
    09. HOME — FEATURED JOBS AND JOB CARDS
    ========================================================= */
@@ -1383,12 +1322,6 @@
 
 .rms-featured-header > .website-button {
     flex-shrink: 0;
-}
-
-.rms-jobs-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 22px;
 }
 
 .rms-job-card {
@@ -1566,18 +1499,6 @@
     overflow-wrap: anywhere;
 }
 
-.website-layout .rms-job-details {
-    flex-shrink: 0;
-
-    min-height: 44px;
-    margin-left: auto;
-    padding: 9px 12px;
-
-    font-size: 14px;
-    line-height: 24px;
-    white-space: nowrap;
-}
-
 /* Empty jobs state */
 
 .rms-jobs-empty {
@@ -1610,11 +1531,6 @@
 /* Featured Jobs: large desktop */
 
 @media (min-width: 1600px) {
-    .rms-jobs-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 20px;
-    }
-
     .rms-job-card {
         padding: 22px;
     }
@@ -1628,25 +1544,15 @@
         align-items: flex-start;
         gap: 24px;
     }
-
-    .rms-jobs-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
 }
 
 /* Featured Jobs: mobile */
 
 @media (max-width: 575.98px) {
-    .rms-jobs-grid {
-        grid-template-columns: 1fr;
-        gap: 18px;
-    }
-
     .rms-job-card {
         padding: 24px;
     }
 }
-
 
 /* =========================================================
    10. HOME — JOBS CTA
@@ -1722,7 +1628,6 @@
     }
 }
 
-
 /* =========================================================
    11. FOOTER
    ========================================================= */
@@ -1734,12 +1639,7 @@
 
     border-top: 1px solid var(--website-border);
 
-    background: linear-gradient(
-        120deg,
-        #f1f5ff 0%,
-        #f8faff 55%,
-        #ffffff 100%
-    );
+    background: linear-gradient(120deg, #f1f5ff 0%, #f8faff 55%, #ffffff 100%);
 }
 
 .website-footer-content {
@@ -1908,7 +1808,6 @@
     }
 }
 
-
 /* =========================================================
    12. ABOUT PAGE — SHARED ELEMENTS
    ========================================================= */
@@ -2000,10 +1899,8 @@
     outline-offset: 5px;
 }
 
-.about-purpose-card:has(.about-card-trigger:focus-visible)
-    .about-card-trigger,
-.about-value-card:has(.about-card-trigger:focus-visible)
-    .about-card-trigger {
+.about-purpose-card:has(.about-card-trigger:focus-visible) .about-card-trigger,
+.about-value-card:has(.about-card-trigger:focus-visible) .about-card-trigger {
     outline: none;
 }
 
@@ -2022,7 +1919,6 @@
         font-size: 20px;
     }
 }
-
 
 /* =========================================================
    13. ABOUT PAGE — IMAGE BANNER
@@ -2182,7 +2078,6 @@
         font-size: 13px;
     }
 }
-
 
 /* =========================================================
    14. ABOUT PAGE — COMPANY STORY
@@ -2357,7 +2252,6 @@
         margin-block: 22px 26px;
     }
 }
-
 
 /* =========================================================
    15. ABOUT PAGE — MISSION AND VISION
@@ -2572,7 +2466,6 @@
     }
 }
 
-
 /* =========================================================
    16. ABOUT PAGE — CORE VALUES
    Active state supports React hover/tap handling
@@ -2690,7 +2583,6 @@
     }
 }
 
-
 /* =========================================================
    17. ABOUT PAGE — ORGANIZATION
    ========================================================= */
@@ -2778,7 +2670,6 @@
     }
 }
 
-
 /* =========================================================
    18. AUTH — SHARED PAGE LAYOUT
    Login, Signup and Forgot Password
@@ -2787,11 +2678,7 @@
 
 .auth-layout {
     background:
-        radial-gradient(
-            circle at 8% 10%,
-            rgb(38 93 245 / 6%),
-            transparent 32%
-        ),
+        radial-gradient(circle at 8% 10%, rgb(38 93 245 / 6%), transparent 32%),
         #f4f7fc;
 }
 
@@ -3096,18 +2983,21 @@
     }
 }
 
-
 /* =========================================================
    19. AUTH — MATERIAL UI INPUTS AND FORM ACTIONS
    ========================================================= */
 
 .website-layout :is(.auth-text-field, .website-text-field) .MuiInputBase-root,
 .website-layout :is(.auth-text-field, .website-text-field) .MuiInputLabel-root,
-.website-layout :is(.auth-text-field, .website-text-field) .MuiFormHelperText-root {
+.website-layout
+    :is(.auth-text-field, .website-text-field)
+    .MuiFormHelperText-root {
     font-family: inherit;
 }
 
-.website-layout :is(.auth-text-field, .website-text-field) .MuiOutlinedInput-root {
+.website-layout
+    :is(.auth-text-field, .website-text-field)
+    .MuiOutlinedInput-root {
     border-radius: 11px;
 
     color: var(--website-text);
@@ -3117,7 +3007,9 @@
     transition: box-shadow 180ms ease;
 }
 
-.website-layout :is(.auth-text-field, .website-text-field) .MuiOutlinedInput-notchedOutline {
+.website-layout
+    :is(.auth-text-field, .website-text-field)
+    .MuiOutlinedInput-notchedOutline {
     border-color: var(--website-border);
     transition: border-color 180ms ease;
 }
@@ -3134,11 +3026,15 @@
     font-size: 16px;
 }
 
-.website-layout :is(.auth-text-field, .website-text-field) .MuiInputLabel-root.Mui-focused {
+.website-layout
+    :is(.auth-text-field, .website-text-field)
+    .MuiInputLabel-root.Mui-focused {
     color: var(--website-primary);
 }
 
-.website-layout :is(.auth-text-field, .website-text-field) .MuiOutlinedInput-root.Mui-focused {
+.website-layout
+    :is(.auth-text-field, .website-text-field)
+    .MuiOutlinedInput-root.Mui-focused {
     box-shadow: 0 0 0 3px rgb(38 93 245 / 10%);
 }
 
@@ -3149,7 +3045,9 @@
     border-color: var(--website-primary);
 }
 
-.website-layout :is(.auth-text-field, .website-text-field) .MuiFormHelperText-root {
+.website-layout
+    :is(.auth-text-field, .website-text-field)
+    .MuiFormHelperText-root {
     margin-top: 7px;
 
     color: var(--website-muted);
@@ -3159,8 +3057,12 @@
 
 /* Input validation states */
 
-.website-layout :is(.auth-text-field, .website-text-field) .MuiInputLabel-root.Mui-error,
-.website-layout :is(.auth-text-field, .website-text-field) .MuiFormHelperText-root.Mui-error {
+.website-layout
+    :is(.auth-text-field, .website-text-field)
+    .MuiInputLabel-root.Mui-error,
+.website-layout
+    :is(.auth-text-field, .website-text-field)
+    .MuiFormHelperText-root.Mui-error {
     color: #b42318;
 }
 
@@ -3171,7 +3073,9 @@
     border-color: #b42318;
 }
 
-.website-layout :is(.auth-text-field, .website-text-field) .MuiOutlinedInput-root.Mui-error.Mui-focused {
+.website-layout
+    :is(.auth-text-field, .website-text-field)
+    .MuiOutlinedInput-root.Mui-error.Mui-focused {
     box-shadow: 0 0 0 3px rgb(180 35 24 / 10%);
 }
 
@@ -3302,7 +3206,6 @@
     }
 }
 
-
 /* =========================================================
    20. AUTH — FORGOT PASSWORD
    Recovery steps, question and restart button
@@ -3391,7 +3294,6 @@
     }
 }
 
-
 /* =========================================================
    21. SHARED ACCESSIBILITY — REDUCED MOTION
    Kept together because it applies across all sections
@@ -3417,7 +3319,6 @@
     }
 }
 
-
 /* =========================================================
    CONTACT PAGE
    About banner and shared MUI input styles are reused
@@ -3441,7 +3342,6 @@
     white-space: nowrap;
 }
 
-
 /* ===== CONTACT BANNER ===== */
 
 .contact-page .contact-banner-description {
@@ -3451,16 +3351,11 @@
     color: #dce6f7;
 }
 
-
 /* ===== CONTACT MAIN LAYOUT ===== */
 
 .contact-main-section {
     background:
-        radial-gradient(
-            circle at 100% 0,
-            rgb(38 93 245 / 4%),
-            transparent 36%
-        ),
+        radial-gradient(circle at 100% 0, rgb(38 93 245 / 4%), transparent 36%),
         #ffffff;
 }
 
@@ -3482,7 +3377,6 @@
 .contact-information > .website-section-title {
     text-wrap: balance;
 }
-
 
 /* ===== CONTACT DETAILS ===== */
 
@@ -3574,7 +3468,6 @@
     font-size: 12px;
 }
 
-
 /* ===== CONTACT CAREERS CARD ===== */
 
 .contact-careers {
@@ -3637,7 +3530,6 @@
 .contact-careers a:focus-visible {
     outline-color: #ffffff;
 }
-
 
 /* ===== CONTACT FORM CARD ===== */
 
@@ -3755,7 +3647,6 @@
     gap: 0;
 }
 
-
 /* ===== CONTACT: TABLET ===== */
 
 @media (max-width: 991.98px) {
@@ -3770,7 +3661,6 @@
         padding: 36px;
     }
 }
-
 
 /* ===== CONTACT: MOBILE ===== */
 
@@ -3855,10 +3745,6 @@
     }
 }
 
-
-
-
-
 /* =========================================================
    CAREERS PAGE
    Reuses shared banner, typography, buttons and job cards
@@ -3875,7 +3761,6 @@
     margin-top: 20px;
     color: #dce6f7;
 }
-
 
 /* ===== CAREERS SHARED ELEMENTS ===== */
 
@@ -3910,8 +3795,7 @@
     font-size: 22px;
 }
 
-.careers-culture-card h3,
-.careers-benefit-item h3 {
+.careers-culture-card h3 {
     margin: 0 0 12px;
 
     color: var(--website-text);
@@ -3920,7 +3804,6 @@
     line-height: 30px;
     letter-spacing: -0.3px;
 }
-
 
 /* ===== CAREERS CULTURE ===== */
 
@@ -3972,68 +3855,7 @@
     }
 }
 
-
 /* ===== CAREERS BENEFITS ===== */
-
-.careers-benefits {
-    border-block: 1px solid var(--website-border);
-    background: #f7f9fd;
-}
-
-.careers-benefits-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-    align-items: center;
-    gap: clamp(32px, 5vw, 80px);
-}
-
-.careers-benefits-intro {
-    min-width: 0;
-}
-
-.careers-benefits-intro .website-section-title {
-    text-wrap: balance;
-}
-
-.careers-benefits-note {
-    margin: 24px 0 28px;
-    padding-left: 16px;
-
-    border-left: 3px solid #b8ceff;
-
-    color: var(--website-muted);
-    font-size: 14px;
-    line-height: 25px;
-}
-
-.careers-benefit-list {
-    display: grid;
-    gap: 18px;
-}
-
-.careers-benefit-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 18px;
-
-    padding: 26px;
-    border: 1px solid var(--website-border);
-    border-radius: 18px;
-
-    background: #ffffff;
-    box-shadow: 0 4px 16px rgb(24 46 83 / 3%);
-}
-
-.careers-benefit-item > div {
-    min-width: 0;
-}
-
-.careers-benefit-item h3 {
-    margin-bottom: 6px;
-    font-size: 18px;
-    line-height: 27px;
-}
-
 
 /* ===== CAREERS OPEN POSITIONS ===== */
 
@@ -4051,6 +3873,7 @@
 }
 
 .careers-position-description {
+    white-space: pre-line;
     margin: 0 0 24px;
 
     color: var(--website-muted);
@@ -4058,28 +3881,6 @@
     line-height: 27px;
     overflow-wrap: anywhere;
 }
-
-.careers-demo-note {
-    max-width: 680px;
-    margin: -12px auto 28px;
-    padding: 12px 16px;
-
-    border: 1px solid #dce6ff;
-    border-radius: 10px;
-
-    color: var(--website-muted);
-    background: #edf2ff;
-
-    font-size: 13px;
-    line-height: 23px;
-    text-align: center;
-}
-
-.careers-application-note i {
-    flex-shrink: 0;
-    color: var(--website-primary);
-}
-
 
 /* ===== CAREERS NO POSITIONS STATE ===== */
 
@@ -4160,7 +3961,6 @@
     margin-top: 28px;
 }
 
-
 /* ===== CAREERS: TABLET ===== */
 
 @media (max-width: 991.98px) {
@@ -4172,16 +3972,10 @@
         padding: 24px;
     }
 
-    .careers-benefits-grid {
-        grid-template-columns: 1fr;
-        gap: 36px;
-    }
-
     .careers-position-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
-
 
 /* ===== CAREERS: SMALL TABLET ===== */
 
@@ -4198,7 +3992,6 @@
         margin-bottom: 22px;
     }
 }
-
 
 /* ===== CAREERS: MOBILE ===== */
 
@@ -4223,23 +4016,9 @@
         font-size: 19px;
     }
 
-    .careers-benefit-item {
-        gap: 14px;
-        padding: 22px 18px;
-        border-radius: 16px;
-    }
-
-    .careers-benefits-intro .website-button {
-        width: 100%;
-    }
-
     .careers-position-grid {
         grid-template-columns: 1fr;
         gap: 18px;
-    }
-
-    .careers-application-note {
-        text-align: left;
     }
 
     .careers-empty {
@@ -4270,7 +4049,6 @@
     }
 }
 
-
 /* ===== CAREERS: REDUCED MOTION ===== */
 
 @media (prefers-reduced-motion: reduce) {
@@ -4283,8 +4061,6 @@
     }
 }
 
-
-
 /* =========================================================
    JOBS PAGE
    Centered search container and fluid compact job cards
@@ -4295,7 +4071,6 @@
     min-width: 0;
     background: #f7f9fd;
 }
-
 
 /* =========================================================
    01. JOBS — BANNER
@@ -4316,7 +4091,6 @@
         margin-top: 16px;
     }
 }
-
 
 /* =========================================================
    02. JOBS — CENTERED SEARCH CONTAINER
@@ -4423,7 +4197,6 @@
     }
 }
 
-
 /* =========================================================
    03. JOBS — FLUID RESULTS HEADING
    ========================================================= */
@@ -4464,7 +4237,6 @@
         margin-bottom: 24px;
     }
 }
-
 
 /* =========================================================
    04. JOBS — COMPACT CARDS
@@ -4515,25 +4287,6 @@
 
     min-width: 0;
     margin-bottom: 12px;
-}
-
-.jobs-department {
-    flex: 0 1 auto;
-    min-width: 0;
-    max-width: 35%;
-    overflow: hidden;
-
-    padding: 4px 6px;
-    border-radius: 5px;
-
-    color: var(--website-primary);
-    background: var(--website-soft);
-
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 18px;
-    white-space: nowrap;
-    text-overflow: ellipsis;
 }
 
 .jobs-title-row .rms-job-title {
@@ -4754,7 +4507,6 @@
     }
 }
 
-
 /* =========================================================
    05. JOBS — PAGINATION
    ========================================================= */
@@ -4824,7 +4576,6 @@
     }
 }
 
-
 /* =========================================================
    06. JOBS — EMPTY RESULTS
    ========================================================= */
@@ -4860,7 +4611,6 @@
     }
 }
 
-
 /* =========================================================
    07. JOBS — REDUCED MOTION
    ========================================================= */
@@ -4875,8 +4625,6 @@
     }
 }
 
-
-
 /* =========================================================
    SHARED JOB CARD TYPOGRAPHY
    Same font styling for Home and Jobs pages
@@ -4890,11 +4638,6 @@
 }
 
 /* Department */
-.website-layout .jobs-list-grid .jobs-department {
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 20px;
-}
 
 /* Job Title */
 .website-layout .jobs-list-grid .rms-job-title {
@@ -4945,9 +4688,6 @@
     line-height: 24px;
 }
 
-
-
-
 /* =========================================================
    JOB DETAILS PAGE
    Summary inside the description card; related jobs sidebar
@@ -4964,7 +4704,6 @@
     max-width: 1320px;
     margin-inline: auto;
 }
-
 
 /* =========================================================
    01. JOB DETAILS — WEBSITE BANNER
@@ -4985,7 +4724,6 @@
         margin-top: 16px;
     }
 }
-
 
 /* =========================================================
    02. JOB DETAILS — PAGE LAYOUT
@@ -5033,7 +4771,6 @@
         border-radius: 16px;
     }
 }
-
 
 /* =========================================================
    03. JOB DETAILS — SUMMARY INSIDE ABOUT THE ROLE
@@ -5275,7 +5012,6 @@
     }
 }
 
-
 /* =========================================================
    04. JOB DETAILS — DESCRIPTION AND COMPACT BULLETS
    ========================================================= */
@@ -5288,6 +5024,10 @@
     font-weight: 600;
     line-height: 31px;
     letter-spacing: -0.3px;
+}
+
+.jd-content-section .website-section-description {
+    white-space: pre-line;
 }
 
 .jd-content-section {
@@ -5364,7 +5104,6 @@
         line-height: 24px;
     }
 }
-
 
 /* =========================================================
    05. JOB DETAILS — RELATED JOBS
@@ -5577,206 +5316,6 @@
     }
 }
 
-
-/* =========================================================
-   06. JOB DETAILS — APPLICATION DIALOG
-   ========================================================= */
-
-.jd-application-dialog .MuiDialog-paper {
-    width: calc(100% - 32px);
-    margin: 16px;
-    border-radius: 20px;
-}
-
-.jd-dialog-theme.website-layout {
-    min-height: 0;
-    background: #ffffff;
-}
-
-.jd-application-dialog .jd-dialog-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-
-    padding: 24px 28px;
-
-    border-bottom: 1px solid var(--website-border);
-
-    color: var(--website-text);
-    font-family: inherit;
-    font-size: 23px;
-    font-weight: 600;
-    line-height: 33px;
-}
-
-.jd-dialog-title > span {
-    min-width: 0;
-}
-
-.jd-application-dialog .jd-dialog-close {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-
-    color: var(--website-muted);
-    font-size: 20px;
-}
-
-.jd-application-dialog .jd-dialog-content {
-    padding: 26px 28px;
-}
-
-.jd-form-intro {
-    margin: 0 0 26px;
-
-    color: var(--website-muted);
-    font-size: 14px;
-    line-height: 24px;
-}
-
-.jd-form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-    gap: 24px;
-}
-
-.jd-form-grid .website-text-field {
-    min-width: 0;
-}
-
-.jd-resume-field {
-    margin-top: 26px;
-}
-
-.jd-resume-field label {
-    display: block;
-    margin-bottom: 10px;
-
-    color: var(--website-text);
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 24px;
-}
-
-.jd-resume-field input {
-    display: block;
-    width: 100%;
-    padding: 12px;
-
-    border: 1px dashed #b8c9e7;
-    border-radius: 11px;
-
-    color: var(--website-text);
-    background: #f8faff;
-
-    font-family: inherit;
-    font-size: 14px;
-}
-
-.jd-resume-field input::file-selector-button {
-    min-height: 40px;
-    margin-right: 12px;
-    padding: 8px 12px;
-
-    border: 1px solid #dce6ff;
-    border-radius: 7px;
-
-    color: var(--website-primary);
-    background: #ffffff;
-
-    font: inherit;
-    cursor: pointer;
-}
-
-.jd-resume-field input:focus-visible {
-    outline: 3px solid var(--website-primary);
-    outline-offset: 3px;
-}
-
-.jd-resume-field input[aria-invalid="true"] {
-    border-color: #b42318;
-}
-
-.jd-resume-field p {
-    margin: 8px 0 0;
-
-    color: var(--website-muted);
-    font-size: 13px;
-    line-height: 22px;
-    overflow-wrap: anywhere;
-}
-
-.jd-resume-field .jd-form-error {
-    color: #b42318;
-}
-
-.jd-form-preview-note {
-    margin: 24px 0 0;
-    padding: 12px 14px;
-
-    border: 1px solid #dce6ff;
-    border-radius: 10px;
-
-    color: #39547f;
-    background: var(--website-soft);
-
-    font-size: 13px;
-    line-height: 23px;
-}
-
-.jd-application-dialog .jd-dialog-actions {
-    gap: 12px;
-    padding: 20px 28px;
-
-    border-top: 1px solid var(--website-border);
-}
-
-.jd-application-dialog .jd-dialog-actions > :not(style) ~ :not(style) {
-    margin-left: 0;
-}
-
-@media (max-width: 575.98px) {
-    .jd-application-dialog .MuiDialog-paper {
-        width: calc(100% - 20px);
-        margin: 10px;
-        border-radius: 16px;
-    }
-
-    .jd-application-dialog .jd-dialog-title {
-        gap: 10px;
-        padding: 18px;
-
-        font-size: 20px;
-        line-height: 29px;
-    }
-
-    .jd-application-dialog .jd-dialog-content {
-        padding: 24px 18px;
-    }
-
-    .jd-form-grid {
-        grid-template-columns: 1fr;
-        gap: 22px;
-    }
-
-    .jd-application-dialog .jd-dialog-actions {
-        flex-wrap: wrap;
-        gap: 10px;
-        padding: 18px;
-    }
-
-    .jd-dialog-actions .website-button {
-        flex: 1;
-    }
-
-    .jd-resume-field input {
-        font-size: 12px;
-    }
-}
-
-
 /* =========================================================
    07. JOB DETAILS — NOT FOUND AND REDUCED MOTION
    ========================================================= */
@@ -5837,13 +5376,10 @@
     color: var(--website-primary);
 }
 
-
-
 /* =========================================================
    JOB APPLICATION
    Layout, form, resume upload, sidebar and responsive styles
    ========================================================= */
-
 
 /* ===== PAGE AND CONTAINER ===== */
 
@@ -5907,7 +5443,6 @@
     line-height: 22px;
 }
 
-
 /* ===== PAGE HEADING ===== */
 
 .job-apply-page-heading {
@@ -5926,7 +5461,6 @@
 .job-apply-page-heading .website-section-description {
     max-width: 720px;
 }
-
 
 /* ===== MAIN GRID ===== */
 
@@ -5949,7 +5483,6 @@
         0 16px 44px rgb(24 46 83 / 4%);
 }
 
-
 /* ===== FORM CARD HEADER ===== */
 
 .job-apply-card-header {
@@ -5963,11 +5496,7 @@
     border-bottom: 1px solid var(--website-border);
     border-radius: 20px 20px 0 0;
 
-    background: linear-gradient(
-        110deg,
-        #ffffff,
-        #f8faff
-    );
+    background: linear-gradient(110deg, #ffffff, #f8faff);
 }
 
 .job-apply-card-header h2 {
@@ -5995,7 +5524,6 @@
     font-size: 12px;
     line-height: 22px;
 }
-
 
 /* ===== FORM SECTIONS ===== */
 
@@ -6075,7 +5603,6 @@
     grid-column: 1 / -1;
 }
 
-
 /* ===== MATERIAL UI INPUTS ===== */
 
 .job-apply-page .website-text-field .MuiInputBase-root,
@@ -6095,9 +5622,7 @@
     transition: box-shadow 180ms ease;
 }
 
-.job-apply-page
-    .website-text-field
-    .MuiOutlinedInput-notchedOutline {
+.job-apply-page .website-text-field .MuiOutlinedInput-notchedOutline {
     border-color: var(--website-border);
     transition: border-color 180ms ease;
 }
@@ -6114,15 +5639,11 @@
     font-size: 16px;
 }
 
-.job-apply-page
-    .website-text-field
-    .MuiInputLabel-root.Mui-focused {
+.job-apply-page .website-text-field .MuiInputLabel-root.Mui-focused {
     color: var(--website-primary);
 }
 
-.job-apply-page
-    .website-text-field
-    .MuiOutlinedInput-root.Mui-focused {
+.job-apply-page .website-text-field .MuiOutlinedInput-root.Mui-focused {
     box-shadow: 0 0 0 3px rgb(38 93 245 / 8%);
 }
 
@@ -6139,12 +5660,8 @@
     line-height: 21px;
 }
 
-.job-apply-page
-    .website-text-field
-    .MuiInputLabel-root.Mui-error,
-.job-apply-page
-    .website-text-field
-    .MuiFormHelperText-root.Mui-error {
+.job-apply-page .website-text-field .MuiInputLabel-root.Mui-error,
+.job-apply-page .website-text-field .MuiFormHelperText-root.Mui-error {
     color: #b42318;
 }
 
@@ -6181,7 +5698,6 @@
     font-size: 14px;
     line-height: 24px;
 }
-
 
 /* ===== RESUME UPLOAD ===== */
 
@@ -6288,7 +5804,6 @@
     line-height: 22px;
 }
 
-
 /* ===== SUBMIT ROW ===== */
 
 .job-apply-submit-row {
@@ -6321,7 +5836,6 @@
     margin-top: 24px;
 }
 
-
 /* ===== JOB SUMMARY ===== */
 
 .job-apply-sidebar {
@@ -6344,11 +5858,7 @@
     left: 0;
 
     height: 3px;
-    background: linear-gradient(
-        90deg,
-        var(--website-primary),
-        #9bb8ff
-    );
+    background: linear-gradient(90deg, var(--website-primary), #9bb8ff);
 
     content: "";
 }
@@ -6422,7 +5932,6 @@
     padding-left: 24px;
 }
 
-
 /* ===== APPLICATION TIPS ===== */
 
 .job-apply-tips {
@@ -6471,7 +5980,6 @@
     color: var(--website-primary);
 }
 
-
 /* ===== SMALL DESKTOP ===== */
 
 @media (max-width: 1199.98px) {
@@ -6492,7 +6000,6 @@
         padding: 24px;
     }
 }
-
 
 /* ===== TABLET ===== */
 
@@ -6529,7 +6036,6 @@
         margin-bottom: 30px;
     }
 }
-
 
 /* ===== MOBILE ===== */
 
@@ -6675,7 +6181,6 @@
         padding-left: 0;
     }
 }
-
 
 /* ===== REDUCED MOTION ===== */
 

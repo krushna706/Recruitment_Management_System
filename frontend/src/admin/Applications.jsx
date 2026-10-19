@@ -1,3 +1,4 @@
+import { getResumeUrl, toAdminApplication, toTextList } from "../utils/dataFormat";
 import { useState } from "react";
 import {
     Alert,
@@ -49,13 +50,16 @@ const STATUS_COLORS = {
 const DEMO_APPLICATIONS = [
     {
         id: "application-1001",
+        userId: "user-1001",
+        type: "Full Time",
+        salary: "₹6–10 LPA",
         candidate: "Aarav Sharma",
         email: "aarav@example.com",
         phone: "9000000001",
         qualification: "B.Tech — Computer Science",
         experience: "2 years",
         skills: "React, Node.js, Express, MongoDB",
-        jobId: "demo-job-1",
+        jobId: "mern-developer",
         title: "MERN Stack Developer",
         company: "Sample Digital",
         openingType: "client",
@@ -75,6 +79,9 @@ const DEMO_APPLICATIONS = [
     },
     {
         id: "application-1002",
+        userId: "user-1002",
+        type: "",
+        salary: "",
         candidate: "Priya Das",
         email: "priya@example.com",
         phone: "9000000002",
@@ -106,13 +113,16 @@ const DEMO_APPLICATIONS = [
     },
     {
         id: "application-1003",
+        userId: "user-1003",
+        type: "Full Time",
+        salary: "₹3–6 LPA",
         candidate: "Rohan Patel",
         email: "rohan@example.com",
         phone: "9000000003",
         qualification: "Bachelor of Design",
         experience: "2 years",
         skills: "Figma, Prototyping, User Research",
-        jobId: "demo-job-2",
+        jobId: "ui-ux-designer",
         title: "UI/UX Designer",
         company: "Sample Design Studio",
         openingType: "client",
@@ -147,10 +157,16 @@ function loadApplications() {
         const stored = window.localStorage.getItem(STORAGE_KEY);
 
         if (!stored) {
-            return { applications: DEMO_APPLICATIONS, error: "" };
+            return {
+                applications: DEMO_APPLICATIONS.map(toAdminApplication),
+                error: "",
+            };
         }
 
-        const parsed = JSON.parse(stored);
+        const storedRecords = JSON.parse(stored);
+        const parsed = Array.isArray(storedRecords)
+            ? storedRecords.map((item) => item && toAdminApplication(item))
+            : storedRecords;
 
         const valid =
             Array.isArray(parsed) &&
@@ -173,8 +189,8 @@ function loadApplications() {
                             entry &&
                             STATUSES.includes(entry.status) &&
                             typeof entry.at === "string" &&
-                            typeof entry.message === "string"
-                    )
+                            typeof entry.message === "string",
+                    ),
             );
 
         if (!valid) throw new Error("Invalid application data");
@@ -202,9 +218,7 @@ function formatDate(value, includeTime = false) {
         month: "short",
         year: "numeric",
         timeZone: "Asia/Kolkata",
-        ...(includeTime
-            ? { hour: "numeric", minute: "2-digit" }
-            : {}),
+        ...(includeTime ? { hour: "numeric", minute: "2-digit" } : {}),
     }).format(date);
 }
 
@@ -230,18 +244,6 @@ function getOpeningKey(application) {
     return `${application.openingType}:${application.jobId}`;
 }
 
-function getResumeUrl(value) {
-    if (typeof value !== "string" || !value) return "";
-
-    try {
-        const url = new URL(value);
-
-        return url.protocol === "https:" ? url.href : "";
-    } catch {
-        return "";
-    }
-}
-
 function StatusChip({ status }) {
     return (
         <Chip
@@ -264,9 +266,7 @@ function Detail({ label, children }) {
 
 function Applications() {
     const [initialData] = useState(loadApplications);
-    const [applications, setApplications] = useState(
-        initialData.applications
-    );
+    const [applications, setApplications] = useState(initialData.applications);
 
     const [search, setSearch] = useState("");
     const [typeFilter, setTypeFilter] = useState("All");
@@ -279,14 +279,14 @@ function Applications() {
     const [selectedId, setSelectedId] = useState(null);
     const [nextStatus, setNextStatus] = useState("");
     const [message, setMessage] = useState("");
+    const [interviewAt, setInterviewAt] = useState("");
+    const [interviewMode, setInterviewMode] = useState("Online");
 
     const selected = applications.find(
-        (application) => application.id === selectedId
+        (application) => application.id === selectedId,
     );
 
-    const allowedStatuses = selected
-        ? getAllowedStatuses(selected.status)
-        : [];
+    const allowedStatuses = selected ? getAllowedStatuses(selected.status) : [];
 
     const resumeUrl = getResumeUrl(selected?.resumeUrl);
 
@@ -295,7 +295,7 @@ function Applications() {
             result[item.status] += 1;
             return result;
         },
-        Object.fromEntries(STATUSES.map((status) => [status, 0]))
+        Object.fromEntries(STATUSES.map((status) => [status, 0])),
     );
 
     const metrics = [
@@ -334,8 +334,7 @@ function Applications() {
             applications
                 .filter(
                     (item) =>
-                        typeFilter === "All" ||
-                        item.openingType === typeFilter
+                        typeFilter === "All" || item.openingType === typeFilter,
                 )
                 .map((item) => [
                     getOpeningKey(item),
@@ -347,7 +346,7 @@ function Applications() {
                                 ? "Internal vacancy"
                                 : item.company || "Client job"),
                     },
-                ])
+                ]),
         ).values(),
     ];
 
@@ -362,16 +361,16 @@ function Applications() {
                 item.company,
                 item.id,
             ].some((value) =>
-                String(value || "").toLowerCase().includes(query)
+                String(value || "")
+                    .toLowerCase()
+                    .includes(query),
             );
 
             const matchesType =
-                typeFilter === "All" ||
-                item.openingType === typeFilter;
+                typeFilter === "All" || item.openingType === typeFilter;
 
             const matchesJob =
-                jobFilter === "All" ||
-                getOpeningKey(item) === jobFilter;
+                jobFilter === "All" || getOpeningKey(item) === jobFilter;
 
             const matchesStatus =
                 statusFilter === "All" ||
@@ -379,32 +378,31 @@ function Applications() {
                     ? ["Submitted", "Under Review"].includes(item.status)
                     : item.status === statusFilter);
 
-            return (
-                matchesSearch &&
-                matchesType &&
-                matchesJob &&
-                matchesStatus
-            );
+            return matchesSearch && matchesType && matchesJob && matchesStatus;
         })
         .sort((first, second) =>
-            second.appliedAt.localeCompare(first.appliedAt)
+            second.appliedAt.localeCompare(first.appliedAt),
         );
 
     const visibleApplications = filteredApplications.slice(
         page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
+        page * rowsPerPage + rowsPerPage,
     );
 
     function openDetails(application) {
         setSelectedId(application.id);
         setNextStatus("");
         setMessage("");
+        setInterviewAt("");
+        setInterviewMode("Online");
     }
 
     function closeDetails() {
         setSelectedId(null);
         setNextStatus("");
         setMessage("");
+        setInterviewAt("");
+        setInterviewMode("Online");
     }
 
     function resetFilters() {
@@ -432,6 +430,17 @@ function Applications() {
             return;
         }
 
+        if (
+            nextStatus === "Interview" &&
+            (!interviewAt ||
+                Number.isNaN(new Date(interviewAt).getTime()) ||
+                new Date(interviewAt).getTime() <= Date.now() ||
+                !["Online", "In-person", "Phone"].includes(interviewMode))
+        ) {
+            toast.error("Select a future interview date, time and valid mode.");
+            return;
+        }
+
         const now = new Date().toISOString();
 
         const updatedApplications = applications.map((item) =>
@@ -439,6 +448,20 @@ function Applications() {
                 ? {
                       ...item,
                       status: nextStatus,
+                      ...(nextStatus === "Interview"
+                          ? {
+                                interview: {
+                                    at: new Date(interviewAt).toISOString(),
+                                    mode: interviewMode,
+                                    note: trimmedMessage,
+                                },
+                            }
+                          : {}),
+                      ...(nextStatus === "Selected"
+                          ? {
+                                selection: { note: trimmedMessage },
+                            }
+                          : {}),
                       updatedAt: now,
                       history: [
                           ...item.history,
@@ -449,17 +472,17 @@ function Applications() {
                           },
                       ],
                   }
-                : item
+                : item,
         );
 
         try {
             window.localStorage.setItem(
                 STORAGE_KEY,
-                JSON.stringify(updatedApplications)
+                JSON.stringify(updatedApplications),
             );
         } catch {
             toast.error(
-                "Could not save the update. Check browser storage and try again."
+                "Could not save the update. Check browser storage and try again.",
             );
             return;
         }
@@ -468,6 +491,8 @@ function Applications() {
         setPage(0);
         setNextStatus("");
         setMessage("");
+        setInterviewAt("");
+        setInterviewMode("Online");
 
         toast.success("Application status updated.");
     }
@@ -476,15 +501,11 @@ function Applications() {
         <div className="manage-jobs applications-page">
             <header className="mj-heading">
                 <div>
-                    <span className="mj-eyebrow">
-                        CANDIDATE MANAGEMENT
-                    </span>
+                    <span className="mj-eyebrow">CANDIDATE MANAGEMENT</span>
 
                     <h1>Applications</h1>
 
-                    <p>
-                        Review candidates and keep every application moving.
-                    </p>
+                    <p>Review candidates and keep every application moving.</p>
                 </div>
 
                 <span className="mj-result-count">
@@ -520,7 +541,10 @@ function Applications() {
                 ))}
             </section>
 
-            <section className="ap-stage-summary" aria-label="Recruitment stages">
+            <section
+                className="ap-stage-summary"
+                aria-label="Recruitment stages"
+            >
                 {STATUSES.map((status) => (
                     <div className="ap-stage-item" key={status}>
                         <span>{status}</span>
@@ -539,14 +563,15 @@ function Applications() {
                         <div>
                             <h2 id="ap-list-title">Candidate applications</h2>
                             <p>
-                                Open an application to review details and update status.
+                                Open an application to review details and update
+                                status.
                             </p>
                         </div>
                     </div>
 
                     <span className="mj-result-count">
-                        {filteredApplications.length} of{" "}
-                        {applications.length} applications
+                        {filteredApplications.length} of {applications.length}{" "}
+                        applications
                     </span>
                 </header>
 
@@ -630,7 +655,10 @@ function Applications() {
                 </div>
 
                 <TableContainer>
-                    <Table className="mj-table ap-table" aria-label="Applications">
+                    <Table
+                        className="mj-table ap-table"
+                        aria-label="Applications"
+                    >
                         <TableHead>
                             <TableRow>
                                 <TableCell>Candidate</TableCell>
@@ -650,11 +678,15 @@ function Applications() {
                                                 className="mj-company-avatar"
                                                 aria-hidden="true"
                                             >
-                                                {getInitials(application.candidate)}
+                                                {getInitials(
+                                                    application.candidate,
+                                                )}
                                             </span>
 
                                             <div>
-                                                <strong>{application.candidate}</strong>
+                                                <strong>
+                                                    {application.candidate}
+                                                </strong>
                                                 <p>{application.email}</p>
                                             </div>
                                         </div>
@@ -666,13 +698,15 @@ function Applications() {
                                         </span>
 
                                         <span className="mj-cell-secondary">
-                                            {application.openingType === "internal"
+                                            {application.openingType ===
+                                            "internal"
                                                 ? "Own company"
                                                 : application.company}
                                         </span>
 
                                         <span className="ap-opening-type">
-                                            {application.openingType === "internal"
+                                            {application.openingType ===
+                                            "internal"
                                                 ? "Internal vacancy"
                                                 : "Client job"}
                                         </span>
@@ -685,7 +719,9 @@ function Applications() {
                                     </TableCell>
 
                                     <TableCell>
-                                        <StatusChip status={application.status} />
+                                        <StatusChip
+                                            status={application.status}
+                                        />
                                     </TableCell>
 
                                     <TableCell align="right">
@@ -693,7 +729,9 @@ function Applications() {
                                             type="button"
                                             variant="outlined"
                                             size="small"
-                                            onClick={() => openDetails(application)}
+                                            onClick={() =>
+                                                openDetails(application)
+                                            }
                                             aria-label={`View ${application.candidate}'s application for ${application.title}`}
                                             startIcon={
                                                 <i
@@ -763,7 +801,10 @@ function Applications() {
 
                         <DialogContent dividers>
                             <div className="ap-candidate-banner">
-                                <span className="ap-large-avatar" aria-hidden="true">
+                                <span
+                                    className="ap-large-avatar"
+                                    aria-hidden="true"
+                                >
                                     {getInitials(selected.candidate)}
                                 </span>
 
@@ -780,15 +821,21 @@ function Applications() {
                                 <h3>Candidate information</h3>
 
                                 <dl className="ap-detail-grid">
-                                    <Detail label="Email">{selected.email}</Detail>
-                                    <Detail label="Phone">{selected.phone}</Detail>
+                                    <Detail label="Email">
+                                        {selected.email}
+                                    </Detail>
+                                    <Detail label="Phone">
+                                        {selected.phone}
+                                    </Detail>
                                     <Detail label="Qualification">
                                         {selected.qualification}
                                     </Detail>
                                     <Detail label="Experience">
                                         {selected.experience}
                                     </Detail>
-                                    <Detail label="Skills">{selected.skills}</Detail>
+                                    <Detail label="Skills">
+                                        {toTextList(selected.skills).join(", ")}
+                                    </Detail>
                                     <Detail label="Applied on">
                                         {formatDate(selected.appliedAt, true)}
                                     </Detail>
@@ -812,7 +859,8 @@ function Applications() {
                                     </Button>
                                 ) : (
                                     <p className="ap-muted">
-                                        Resume is not available for this application.
+                                        Resume is not available for this
+                                        application.
                                     </p>
                                 )}
                             </section>
@@ -821,7 +869,9 @@ function Applications() {
                                 <h3>Applied opening</h3>
 
                                 <dl className="ap-detail-grid">
-                                    <Detail label="Position">{selected.title}</Detail>
+                                    <Detail label="Position">
+                                        {selected.title}
+                                    </Detail>
                                     <Detail label="Opening type">
                                         {selected.openingType === "internal"
                                             ? "Internal vacancy"
@@ -835,21 +885,56 @@ function Applications() {
                                     <Detail label="Department">
                                         {selected.department}
                                     </Detail>
-                                    <Detail label="Location">{selected.location}</Detail>
-                                    <Detail label="Work mode">{selected.mode}</Detail>
+                                    <Detail label="Location">
+                                        {selected.location}
+                                    </Detail>
+                                    <Detail label="Work mode">
+                                        {selected.mode}
+                                    </Detail>
+                                    <Detail label="Job type">
+                                        {selected.type}
+                                    </Detail>
+                                    <Detail label="Salary">
+                                        {selected.salary}
+                                    </Detail>
                                 </dl>
                             </section>
+
+                            {selected.interview && (
+                                <section className="ap-detail-section">
+                                    <h3>Interview details</h3>
+                                    <dl className="ap-detail-grid">
+                                        <Detail label="Date & time">
+                                            {formatDate(
+                                                selected.interview.at,
+                                                true,
+                                            )}
+                                        </Detail>
+                                        <Detail label="Mode">
+                                            {selected.interview.mode}
+                                        </Detail>
+                                        <Detail label="Instructions">
+                                            {selected.interview.note}
+                                        </Detail>
+                                    </dl>
+                                </section>
+                            )}
 
                             <section className="ap-detail-section">
                                 <h3>Update application status</h3>
 
                                 {allowedStatuses.length ? (
-                                    <form onSubmit={updateStatus} className="ap-status-form">
+                                    <form
+                                        onSubmit={updateStatus}
+                                        className="ap-status-form"
+                                    >
                                         <TextField
                                             label="Next status"
                                             value={nextStatus}
                                             onChange={(event) =>
-                                                setNextStatus(event.target.value)
+                                                setNextStatus(
+                                                    event.target.value,
+                                                )
                                             }
                                             select
                                             required
@@ -857,11 +942,64 @@ function Applications() {
                                             size="small"
                                         >
                                             {allowedStatuses.map((status) => (
-                                                <MenuItem key={status} value={status}>
+                                                <MenuItem
+                                                    key={status}
+                                                    value={status}
+                                                >
                                                     {status}
                                                 </MenuItem>
                                             ))}
                                         </TextField>
+
+                                        {nextStatus === "Interview" && (
+                                            <>
+                                                <TextField
+                                                    label="Interview date & time"
+                                                    type="datetime-local"
+                                                    value={interviewAt}
+                                                    onChange={(event) =>
+                                                        setInterviewAt(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                    fullWidth
+                                                    size="small"
+                                                    slotProps={{
+                                                        inputLabel: {
+                                                            shrink: true,
+                                                        },
+                                                    }}
+                                                    helperText="Enter the date and time in your device's local timezone."
+                                                />
+                                                <TextField
+                                                    label="Interview mode"
+                                                    value={interviewMode}
+                                                    onChange={(event) =>
+                                                        setInterviewMode(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    select
+                                                    required
+                                                    fullWidth
+                                                    size="small"
+                                                >
+                                                    {[
+                                                        "Online",
+                                                        "In-person",
+                                                        "Phone",
+                                                    ].map((mode) => (
+                                                        <MenuItem
+                                                            key={mode}
+                                                            value={mode}
+                                                        >
+                                                            {mode}
+                                                        </MenuItem>
+                                                    ))}
+                                                </TextField>
+                                            </>
+                                        )}
 
                                         <TextField
                                             label="Update message (optional)"
@@ -882,8 +1020,10 @@ function Applications() {
 
                                         {nextStatus === "Rejected" && (
                                             <Alert severity="warning">
-                                                Saving will mark this application as rejected.
-                                                Further stage changes are disabled in this flow.
+                                                Saving will mark this
+                                                application as rejected. Further
+                                                stage changes are disabled in
+                                                this flow.
                                             </Alert>
                                         )}
 
@@ -908,8 +1048,9 @@ function Applications() {
                                                 : "info"
                                         }
                                     >
-                                        This application is {selected.status.toLowerCase()}.
-                                        Its recruitment flow is complete.
+                                        This application is{" "}
+                                        {selected.status.toLowerCase()}. Its
+                                        recruitment flow is complete.
                                     </Alert>
                                 )}
                             </section>
@@ -918,25 +1059,32 @@ function Applications() {
                                 <h3>Application history</h3>
 
                                 <ol className="ap-history">
-                                    {[...selected.history].reverse().map((entry, index) => (
-                                        <li key={`${entry.at}-${index}`}>
-                                            <span
-                                                className="ap-history-dot"
-                                                aria-hidden="true"
-                                            />
+                                    {[...selected.history]
+                                        .reverse()
+                                        .map((entry, index) => (
+                                            <li key={`${entry.at}-${index}`}>
+                                                <span
+                                                    className="ap-history-dot"
+                                                    aria-hidden="true"
+                                                />
 
-                                            <div>
-                                                <strong>{entry.status}</strong>
-                                                <time dateTime={entry.at}>
-                                                    {formatDate(entry.at, true)}
-                                                </time>
+                                                <div>
+                                                    <strong>
+                                                        {entry.status}
+                                                    </strong>
+                                                    <time dateTime={entry.at}>
+                                                        {formatDate(
+                                                            entry.at,
+                                                            true,
+                                                        )}
+                                                    </time>
 
-                                                {entry.message && (
-                                                    <p>{entry.message}</p>
-                                                )}
-                                            </div>
-                                        </li>
-                                    ))}
+                                                    {entry.message && (
+                                                        <p>{entry.message}</p>
+                                                    )}
+                                                </div>
+                                            </li>
+                                        ))}
                                 </ol>
                             </section>
                         </DialogContent>

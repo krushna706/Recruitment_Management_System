@@ -8,130 +8,8 @@ import {
     TextField,
 } from "@mui/material";
 
-// Temporary frontend data.
-// Replace with job data from the API during backend integration.
-const demoJobs = [
-    {
-        id: "frontend-developer",
-        title: "Frontend Developer",
-        company: "Demo Technologies",
-        location: "Bhubaneswar, Odisha",
-        experience: "0–2 years",
-        salary: "₹3–5 LPA",
-        employmentType: "Full-time",
-        workMode: "On-site",
-    },
-    {
-        id: "backend-developer",
-        title: "Backend Developer",
-        company: "Demo Technologies",
-        location: "Bengaluru, Karnataka",
-        experience: "1–3 years",
-        salary: "₹5–8 LPA",
-        employmentType: "Full-time",
-        workMode: "Hybrid",
-    },
-    {
-        id: "ui-ux-designer",
-        title: "UI/UX Designer",
-        company: "Sample Design Studio",
-        location: "Pune, Maharashtra",
-        experience: "0–2 years",
-        salary: "₹3–6 LPA",
-        employmentType: "Full-time",
-        workMode: "Hybrid",
-    },
-    {
-        id: "mern-developer",
-        title: "MERN Stack Developer",
-        company: "Sample Digital",
-        location: "Hyderabad, Telangana",
-        experience: "2–5 years",
-        salary: "₹6–10 LPA",
-        employmentType: "Full-time",
-        workMode: "Remote",
-    },
-    {
-        id: "hr-intern",
-        title: "HR Intern",
-        company: "Sample People Services",
-        location: "Bhubaneswar, Odisha",
-        experience: "0–1 year",
-        salary: "₹10,000–15,000/month",
-        employmentType: "Internship",
-        workMode: "On-site",
-    },
-    {
-        id: "business-development",
-        title: "Business Development Executive",
-        company: "Sample Digital",
-        location: "Kolkata, West Bengal",
-        experience: "1–4 years",
-        salary: "₹3–6 LPA",
-        employmentType: "Full-time",
-        workMode: "On-site",
-    },
-    {
-        id: "qa-engineer",
-        title: "QA Engineer",
-        company: "Demo Technologies",
-        location: "Pune, Maharashtra",
-        experience: "1–3 years",
-        salary: "₹4–7 LPA",
-        employmentType: "Contract",
-        workMode: "Remote",
-    },
-    {
-        id: "content-writer",
-        title: "Content Writer",
-        company: "Sample Design Studio",
-        location: "Bengaluru, Karnataka",
-        experience: "0–2 years",
-        salary: "₹15,000–25,000/month",
-        employmentType: "Part-time",
-        workMode: "Remote",
-    },
-    {
-        id: "digital-marketing",
-        title: "Digital Marketing Executive",
-        company: "Sample Digital",
-        location: "Hyderabad, Telangana",
-        experience: "1–3 years",
-        salary: "₹3–5 LPA",
-        employmentType: "Full-time",
-        workMode: "Hybrid",
-    },
-    {
-        id: "react-intern",
-        title: "React Developer Intern",
-        company: "Demo Technologies",
-        location: "Bhubaneswar, Odisha",
-        experience: "0–1 year",
-        salary: "₹12,000–18,000/month",
-        employmentType: "Internship",
-        workMode: "On-site",
-    },
-    {
-        id: "customer-support",
-        title: "Customer Support Executive",
-        company: "Sample People Services",
-        location: "Kolkata, West Bengal",
-        experience: "0–2 years",
-        salary: "₹2.5–4 LPA",
-        employmentType: "Full-time",
-        workMode: "On-site",
-    },
-    {
-        id: "project-coordinator",
-        title: "Project Coordinator",
-        company: "Sample Digital",
-        location: "Pune, Maharashtra",
-        experience: "2–4 years",
-        salary: "₹4–7 LPA",
-        employmentType: "Full-time",
-        workMode: "Hybrid",
-    },
-];
+import { demoJobs } from "../../data/jobData";
+import { toTextList } from "../../utils/dataFormat";
 
 const qualifications = [
     "Secondary / Class 10",
@@ -205,7 +83,7 @@ function normalizeSkills(skills) {
             skills
                 .map((skill) => skill.trim())
                 .filter(Boolean)
-                .map((skill) => [skill.toLowerCase(), skill])
+                .map((skill) => [skill.toLowerCase(), skill]),
         ).values(),
     ];
 }
@@ -215,12 +93,16 @@ function ApplicationForm({ job, user }) {
     const fileInputRef = useRef(null);
 
     const [values, setValues] = useState({
-        fullName: user?.name || "",
+        name: user?.name || "",
         email: user?.email || "",
         phone: user?.phone || "",
-        qualification: "",
-        experience: "",
-        skills: [],
+        qualification: qualifications.includes(user?.qualification)
+            ? user.qualification
+            : "",
+        experience: experienceOptions.includes(user?.experience)
+            ? user.experience
+            : "",
+        skills: toTextList(user?.skills),
     });
 
     const [skillInput, setSkillInput] = useState("");
@@ -279,7 +161,7 @@ function ApplicationForm({ job, user }) {
 
         const cleanedValues = {
             ...values,
-            fullName: values.fullName.trim(),
+            name: values.name.trim(),
             email: values.email.trim(),
             phone: values.phone.trim(),
             skills: normalizeSkills([...values.skills, skillInput]),
@@ -291,12 +173,8 @@ function ApplicationForm({ job, user }) {
 
         const nextErrors = {};
 
-        if (
-            cleanedValues.fullName.length < 2 ||
-            cleanedValues.fullName.length > 100
-        ) {
-            nextErrors.fullName =
-                "Enter your full name using 2–100 characters.";
+        if (cleanedValues.name.length < 2 || cleanedValues.name.length > 100) {
+            nextErrors.name = "Enter your full name using 2–100 characters.";
         }
 
         if (
@@ -317,8 +195,7 @@ function ApplicationForm({ job, user }) {
         }
 
         if (!qualifications.includes(cleanedValues.qualification)) {
-            nextErrors.qualification =
-                "Select your highest qualification.";
+            nextErrors.qualification = "Select your highest qualification.";
         }
 
         if (!experienceOptions.includes(cleanedValues.experience)) {
@@ -349,8 +226,8 @@ function ApplicationForm({ job, user }) {
             requestAnimationFrame(() => {
                 const target = formRef.current?.querySelector(
                     `[data-field="${firstError}"] input, ` +
-                    `[data-field="${firstError}"] [role="combobox"], ` +
-                    `[data-field="${firstError}"] button`
+                        `[data-field="${firstError}"] [role="combobox"], ` +
+                        `[data-field="${firstError}"] button`,
                 );
 
                 target?.focus();
@@ -360,7 +237,9 @@ function ApplicationForm({ job, user }) {
         }
 
         // Frontend validation only.
-        // Backend integration: send job ID, fields and resume via FormData.
+        // Backend integration: send job ID, name, email, phone, qualification,
+        // experience, skills and resume via FormData. The server derives userId,
+        // openingType and the job snapshot; it must not trust client ownership.
         setPreviewValidated(true);
     };
 
@@ -384,10 +263,7 @@ function ApplicationForm({ job, user }) {
         >
             <div className="job-apply-container">
                 <div className="job-apply-topbar">
-                    <Link
-                        to={jobPath}
-                        className="job-apply-back-link"
-                    >
+                    <Link to={jobPath} className="job-apply-back-link">
                         <i
                             className="fa-solid fa-arrow-left"
                             aria-hidden="true"
@@ -401,9 +277,7 @@ function ApplicationForm({ job, user }) {
                 </div>
 
                 <header className="job-apply-page-heading">
-                    <p className="website-section-label">
-                        TAKE THE NEXT STEP
-                    </p>
+                    <p className="website-section-label">TAKE THE NEXT STEP</p>
 
                     <h1
                         id="application-page-title"
@@ -413,8 +287,8 @@ function ApplicationForm({ job, user }) {
                     </h1>
 
                     <p className="website-section-description">
-                        Tell us about yourself and share the experience
-                        you’ll bring to this role.
+                        Tell us about yourself and share the experience you’ll
+                        bring to this role.
                     </p>
                 </header>
 
@@ -429,9 +303,7 @@ function ApplicationForm({ job, user }) {
                                     Application details
                                 </h2>
 
-                                <p>
-                                    Complete the information below to apply.
-                                </p>
+                                <p>Complete the information below to apply.</p>
                             </div>
 
                             <span className="job-apply-required">
@@ -462,7 +334,7 @@ function ApplicationForm({ job, user }) {
 
                                 <div className="job-apply-fields">
                                     <TextField
-                                        {...textFieldProps("fullName")}
+                                        {...textFieldProps("name")}
                                         label="Full name"
                                         autoComplete="name"
                                         slotProps={{
@@ -511,8 +383,8 @@ function ApplicationForm({ job, user }) {
                                 </legend>
 
                                 <p className="job-apply-group-description">
-                                    Highlight your education, experience
-                                    and relevant skills.
+                                    Highlight your education, experience and
+                                    relevant skills.
                                 </p>
 
                                 <div className="job-apply-fields">
@@ -522,10 +394,7 @@ function ApplicationForm({ job, user }) {
                                         select
                                     >
                                         {qualifications.map((item) => (
-                                            <MenuItem
-                                                key={item}
-                                                value={item}
-                                            >
+                                            <MenuItem key={item} value={item}>
                                                 {item}
                                             </MenuItem>
                                         ))}
@@ -537,10 +406,7 @@ function ApplicationForm({ job, user }) {
                                         select
                                     >
                                         {experienceOptions.map((item) => (
-                                            <MenuItem
-                                                key={item}
-                                                value={item}
-                                            >
+                                            <MenuItem key={item} value={item}>
                                                 {item}
                                             </MenuItem>
                                         ))}
@@ -563,7 +429,7 @@ function ApplicationForm({ job, user }) {
                                             setValues((previous) => ({
                                                 ...previous,
                                                 skills: normalizeSkills(
-                                                    selectedSkills
+                                                    selectedSkills,
                                                 ),
                                             }));
 
@@ -601,16 +467,14 @@ function ApplicationForm({ job, user }) {
                                 </legend>
 
                                 <p className="job-apply-group-description">
-                                    Add your latest resume with your
-                                    experience and achievements.
+                                    Add your latest resume with your experience
+                                    and achievements.
                                 </p>
 
                                 <div
                                     className={`job-apply-upload ${
                                         resume ? "has-file" : ""
-                                    } ${
-                                        errors.resume ? "is-error" : ""
-                                    }`}
+                                    } ${errors.resume ? "is-error" : ""}`}
                                 >
                                     <span
                                         className="job-apply-upload-icon"
@@ -637,8 +501,8 @@ function ApplicationForm({ job, user }) {
                                                 ? `${Math.max(
                                                       1,
                                                       Math.round(
-                                                          resume.size / 1024
-                                                      )
+                                                          resume.size / 1024,
+                                                      ),
                                                   )} KB · File selected`
                                                 : "PDF, DOC or DOCX · Maximum 5 MB"}
                                         </p>
@@ -696,10 +560,9 @@ function ApplicationForm({ job, user }) {
 
                             {previewValidated && (
                                 <Alert severity="info" role="status">
-                                    Your form passed the frontend checks.
-                                    No application has been submitted.
-                                    Submission will work after the backend
-                                    is connected.
+                                    Your form passed the frontend checks. No
+                                    application has been submitted. Submission
+                                    will work after the backend is connected.
                                 </Alert>
                             )}
 
@@ -745,17 +608,13 @@ function ApplicationForm({ job, user }) {
                                 </p>
                             </div>
 
-                            <p className="rms-job-company">
-                                {job.company}
-                            </p>
+                            <p className="rms-job-company">{job.company}</p>
 
-                            <h2 id="application-job-title">
-                                {job.title}
-                            </h2>
+                            <h2 id="application-job-title">{job.title}</h2>
 
                             <div className="rms-job-tags">
-                                <span>{job.employmentType}</span>
-                                <span>{job.workMode}</span>
+                                <span>{job.type}</span>
+                                <span>{job.mode}</span>
                             </div>
 
                             <dl className="rms-job-meta">
@@ -792,7 +651,7 @@ function ApplicationForm({ job, user }) {
                                         Salary
                                     </dt>
 
-                                    <dd>{job.salary}</dd>
+                                    <dd>{job.salary || "Not disclosed"}</dd>
                                 </div>
                             </dl>
                         </div>
@@ -807,15 +666,9 @@ function ApplicationForm({ job, user }) {
                             </h3>
 
                             <ul>
-                                <li>
-                                    Check your email and phone number.
-                                </li>
-                                <li>
-                                    Highlight skills that match the role.
-                                </li>
-                                <li>
-                                    Upload a clear, up-to-date resume.
-                                </li>
+                                <li>Check your email and phone number.</li>
+                                <li>Highlight skills that match the role.</li>
+                                <li>Upload a clear, up-to-date resume.</li>
                             </ul>
                         </div>
                     </aside>
@@ -832,12 +685,14 @@ export default function JobApply({ jobs = demoJobs, user = null }) {
         ? jobs.find((item) => String(item._id || item.id) === id)
         : null;
 
-    if (!job) {
+    if (!job || job.status !== "Published") {
         return (
             <section className="website-section website-shell">
                 <div className="rms-jobs-empty">
                     <h1 className="website-section-title">
-                        Position not found.
+                        {job && job.status === "Closed"
+                            ? "Applications are closed."
+                            : "Position not available."}
                     </h1>
 
                     <p>
