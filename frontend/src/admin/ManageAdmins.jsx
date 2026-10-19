@@ -523,19 +523,6 @@ function ManageAdmins({ user }) {
                     </p>
                 </div>
 
-                <Button
-                    variant="contained"
-                    disableElevation
-                    onClick={handleNewAdmin}
-                    startIcon={
-                        <i
-                            className="fa-solid fa-plus"
-                            aria-hidden="true"
-                        />
-                    }
-                >
-                    Add admin
-                </Button>
             </header>
 
             {initialData.error && (

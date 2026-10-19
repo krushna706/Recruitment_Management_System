@@ -6650,3 +6650,342 @@
         margin: 12px;
     }
 }
+
+
+/* =========================================================
+   MANAGE ENQUIRIES
+   ========================================================= */
+
+.me-filters {
+    display: grid;
+    grid-template-columns:
+        minmax(220px, 1fr)
+        180px
+        180px
+        auto;
+    align-items: start;
+    gap: 20px;
+    padding: 25px 28px;
+}
+
+.me-filters > .MuiButton-root {
+    min-height: 48px;
+}
+
+.manage-enquiries .me-table {
+    min-width: 1050px;
+}
+
+.me-message-cell {
+    max-width: 340px;
+}
+
+.me-message-cell > strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+
+    color: #34455e;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 23px;
+    overflow-wrap: anywhere;
+}
+
+.me-message-cell > p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+
+    margin: 5px 0 0;
+    color: #78869a;
+    font-size: 12px;
+    line-height: 21px;
+    overflow-wrap: anywhere;
+}
+
+.me-date {
+    color: #64748b;
+    font-size: 12px;
+    line-height: 21px;
+    white-space: nowrap;
+}
+
+/* ENQUIRY DETAILS DIALOG */
+
+.me-dialog .MuiDialog-paper {
+    border-radius: 18px;
+    background: #fff;
+}
+
+.me-dialog .MuiTypography-root,
+.me-dialog .MuiButton-root,
+.me-dialog .MuiChip-root {
+    font-family: inherit;
+}
+
+.me-dialog .MuiDialogTitle-root {
+    padding: 22px 26px;
+    color: #1e2b43;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 30px;
+}
+
+.me-dialog .MuiDialogContent-root {
+    padding: 24px 26px;
+    border-color: #e4eaf3;
+}
+
+.me-dialog .MuiDialogActions-root {
+    padding: 16px 26px;
+    background: #fafcff;
+}
+
+.me-dialog .MuiButton-root {
+    min-height: 39px;
+    padding: 8px 17px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: none;
+}
+
+.me-dialog .MuiChip-root {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* SENDER BANNER */
+
+.me-sender-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 23px;
+    border: 1px solid #dfe8fa;
+    border-radius: 15px;
+    background: linear-gradient(115deg, #edf4ff, #fafcff);
+}
+
+.me-avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    border: 1px solid #cdddf8;
+    border-radius: 17px;
+    color: #315eaf;
+    background: #dee9ff;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.me-sender-copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.me-sender-copy h2 {
+    margin: 0;
+    color: #1e2b43;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 30px;
+    overflow-wrap: anywhere;
+}
+
+.me-sender-copy p {
+    margin: 4px 0;
+    color: #5b6f8e;
+    font-size: 14px;
+    line-height: 23px;
+    overflow-wrap: anywhere;
+}
+
+.me-sender-copy > span {
+    color: #78869b;
+    font-size: 11px;
+    line-height: 19px;
+}
+
+.me-sender-banner > .MuiChip-root {
+    flex-shrink: 0;
+}
+
+/* CONTACT DETAILS */
+
+.me-section {
+    margin-top: 27px;
+}
+
+.me-section + .me-section {
+    padding-top: 24px;
+    border-top: 1px solid #e8edf5;
+}
+
+.me-section > h3 {
+    margin: 0 0 18px;
+    color: #24344e;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 25px;
+}
+
+.me-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 21px 24px;
+    margin: 0;
+}
+
+.me-detail dt {
+    margin-bottom: 5px;
+    color: #78869a;
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.me-detail dd {
+    margin: 0;
+    color: #34455e;
+    font-size: 14px;
+    line-height: 24px;
+    overflow-wrap: anywhere;
+}
+
+/* MESSAGE */
+
+.me-message-panel {
+    overflow: hidden;
+    border: 1px solid #e0e7f2;
+    border-radius: 13px;
+    background: #fff;
+}
+
+.me-subject {
+    padding: 19px 21px;
+    border-bottom: 1px solid #e5ebf5;
+    background: #f7faff;
+}
+
+.me-subject > span {
+    display: block;
+    margin-bottom: 7px;
+    color: #7b8ba3;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 17px;
+    letter-spacing: 1px;
+}
+
+.me-subject h4 {
+    margin: 0;
+    color: #2f435f;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 26px;
+    overflow-wrap: anywhere;
+}
+
+.me-full-message {
+    margin: 0;
+    padding: 22px 21px;
+    color: #4d607c;
+    font-size: 14px;
+    line-height: 27px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1199.98px) {
+    .me-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .me-filters > .MuiTextField-root:first-child {
+        grid-column: 1 / -1;
+    }
+
+    .me-filters > .MuiButton-root {
+        justify-self: start;
+        min-width: 100px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .me-filters {
+        grid-template-columns: 1fr;
+        padding: 21px 17px;
+    }
+
+    .me-filters > .MuiButton-root {
+        justify-self: stretch;
+    }
+
+    .me-dialog .MuiDialog-paper {
+        width: calc(100% - 24px);
+        max-height: calc(100% - 24px);
+        margin: 12px;
+        border-radius: 14px;
+    }
+
+    .me-dialog .MuiDialogTitle-root,
+    .me-dialog .MuiDialogContent-root {
+        padding: 19px 17px;
+    }
+
+    .me-dialog .MuiDialogActions-root {
+        padding: 14px 17px;
+    }
+
+    .me-sender-banner {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 17px;
+    }
+
+    .me-avatar {
+        width: 47px;
+        height: 47px;
+        border-radius: 13px;
+        font-size: 16px;
+    }
+
+    .me-sender-copy h2 {
+        font-size: 18px;
+        line-height: 27px;
+    }
+
+    .me-sender-copy p {
+        font-size: 12px;
+        line-height: 21px;
+    }
+
+    .me-detail-grid {
+        grid-template-columns: 1fr;
+        gap: 17px;
+    }
+
+    .me-subject,
+    .me-full-message {
+        padding: 17px;
+    }
+
+    .me-subject h4 {
+        font-size: 15px;
+        line-height: 25px;
+    }
+
+    .me-full-message {
+        font-size: 13px;
+        line-height: 25px;
+    }
+}
