@@ -6529,3 +6529,124 @@
         gap: 17px;
     }
 }
+
+
+
+/* =========================================================
+   MANAGE ADMINS
+   ========================================================= */
+
+.ma-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 210px auto;
+    align-items: start;
+    gap: 20px;
+    padding: 25px 28px;
+}
+
+.ma-filters > .MuiButton-root {
+    min-height: 48px;
+}
+
+.manage-admins .ma-table {
+    min-width: 1150px;
+}
+
+.ma-table time {
+    color: #64748b;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.ma-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 9px;
+    white-space: nowrap;
+}
+
+.ma-action-note {
+    max-width: 240px;
+    margin: 8px 0 0 auto;
+    color: #7b8799;
+    font-size: 11px;
+    line-height: 18px;
+    text-align: right;
+}
+
+/* CONFIRMATION DIALOG */
+
+.ma-dialog .MuiDialog-paper {
+    border-radius: 16px;
+}
+
+.ma-dialog .MuiTypography-root,
+.ma-dialog .MuiButton-root {
+    font-family: inherit;
+}
+
+.ma-dialog .MuiDialogTitle-root {
+    padding: 22px 24px 16px;
+    color: #1e2b43;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 29px;
+}
+
+.ma-dialog .MuiDialogContent-root {
+    padding: 8px 24px 22px;
+}
+
+.ma-dialog .MuiDialogContent-root p {
+    margin: 0;
+    color: #42536d;
+    font-size: 14px;
+    line-height: 24px;
+    overflow-wrap: anywhere;
+}
+
+.ma-dialog .MuiDialogContent-root .ma-dialog-note {
+    margin-top: 10px;
+    color: #758297;
+    font-size: 12px;
+    line-height: 21px;
+}
+
+.ma-dialog .MuiDialogActions-root {
+    gap: 8px;
+    padding: 16px 24px;
+    border-top: 1px solid #e6ecf5;
+    background: #fafcff;
+}
+
+.ma-dialog .MuiButton-root {
+    min-height: 39px;
+    padding: 8px 15px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: none;
+}
+
+@media (max-width: 767.98px) {
+    .ma-filters {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .ma-filters > .MuiTextField-root:first-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .ma-filters {
+        grid-template-columns: 1fr;
+        padding: 21px 17px;
+    }
+
+    .ma-dialog .MuiDialog-paper {
+        width: calc(100% - 24px);
+        margin: 12px;
+    }
+}
