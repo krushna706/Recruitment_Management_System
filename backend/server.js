@@ -6,7 +6,7 @@ const app = require("./app");
 const connectDB = require("./config/db");
 
 // ================== SERVER CONFIGURATION ==================
-const PORT = Number(process.env.PORT || 8080);
+const PORT = Number(process.env.PORT);
 
 // ================== START SERVER ==================
 async function startServer() {

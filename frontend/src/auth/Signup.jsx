@@ -1,12 +1,11 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
+import { TextField, InputAdornment, IconButton, Button } from "@mui/material";
+import { toast } from "react-toastify";
 
-import TextField from "@mui/material/TextField";
-import InputAdornment from "@mui/material/InputAdornment";
-import IconButton from "@mui/material/IconButton";
-import Button from "@mui/material/Button";
-import MenuItem from "@mui/material/MenuItem";
+import { useAuth } from "../context/AuthContext";
 
+// ================== INTRODUCTION CONTENT ==================
 const features = [
     {
         icon: "fa-magnifying-glass",
@@ -25,82 +24,147 @@ const features = [
     },
 ];
 
-const securityQuestions = [
-    {
-        id: "favorite_food",
-        label: "What is your favourite food?",
-    },
-    {
-        id: "childhood_nickname",
-        label: "What was your childhood nickname?",
-    },
-    {
-        id: "first_school",
-        label: "What was the name of your first school?",
-    },
-    {
-        id: "favorite_place",
-        label: "What is your favourite place?",
-    },
-];
+// ================== SIGNUP ERROR MESSAGE ==================
+function getSignupErrorMessage(error) {
+    if (error.response?.status === 429) {
+        const retryAfter = error.response.headers["retry-after"];
+        let seconds = Number(retryAfter);
 
+        // Support both seconds and HTTP-date header values.
+        if (!Number.isFinite(seconds) && retryAfter) {
+            seconds = (Date.parse(retryAfter) - Date.now()) / 1000;
+        }
+
+        if (Number.isFinite(seconds) && seconds > 0) {
+            const minutes = Math.ceil(seconds / 60);
+
+            return `Too many signup attempts. Please try again after ${
+                minutes
+            } minute${minutes === 1 ? "" : "s"}.`;
+        }
+
+        return "Too many signup attempts. Please try again later.";
+    }
+
+    // A timeout does not prove that account creation failed.
+    if (error.code === "ECONNABORTED") {
+        return "The request timed out. Your account may have been created. Try signing in before submitting again.";
+    }
+
+    if (!error.response) {
+        return "Unable to confirm account creation. Check your connection and try signing in before submitting again.";
+    }
+
+    return (
+        error.response.data?.message ||
+        "Unable to create your account. Please try again."
+    );
+}
+
+// ================== SIGNUP PAGE ==================
 function Signup() {
     const location = useLocation();
+    const { user, loading, authError, refreshUser, signup } = useAuth();
 
     const [showPassword, setShowPassword] = useState(false);
-    const [showSecurityAnswer, setShowSecurityAnswer] = useState(false);
-    const [securityQuestion, setSecurityQuestion] = useState("");
-    const [questionError, setQuestionError] = useState("");
-    const [answerError, setAnswerError] = useState("");
-    const [notice, setNotice] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    function handleSubmit(event) {
+    // Prevent duplicate submissions before the button updates.
+    const submitLock = useRef(false);
+
+    // ================== SESSION ERROR FEEDBACK ==================
+    useEffect(() => {
+        if (authError) {
+            toast.error(authError, { toastId: "auth-session-error" });
+        }
+    }, [authError]);
+
+    // ================== SIGNUP SUBMISSION ==================
+    async function handleSubmit(event) {
         event.preventDefault();
-        setNotice("");
 
-        const form = event.currentTarget;
-        const formData = new FormData(form);
-
-        const securityAnswer = String(
-            formData.get("securityAnswer") || ""
-        ).trim();
-
-        const isValidQuestion = securityQuestions.some(
-            (question) => question.id === securityQuestion
-        );
-
-        setQuestionError(
-            isValidQuestion ? "" : "Please select a security question."
-        );
-
-        setAnswerError(
-            securityAnswer.length >= 3
-                ? ""
-                : "Enter an answer with at least 3 characters."
-        );
-
-        if (!isValidQuestion || securityAnswer.length < 3) {
+        if (submitLock.current || loading || authError) {
             return;
         }
 
-        // Connect backend signup here later.
-        // The backend must validate all fields and assign role: user.
-        // Never log or store passwords/security answers in browser storage.
+        const formData = new FormData(event.currentTarget);
 
-        setNotice(
-            "Account creation is not available yet. Please try again once the service is connected."
+        const name = String(formData.get("name") || "").trim();
+        const email = String(formData.get("email") || "")
+            .trim()
+            .toLowerCase();
+        const phone = String(formData.get("phone") || "").trim();
+        const password = String(formData.get("password") || "");
+
+        if (name.length < 2 || name.length > 100) {
+            toast.error("Name must contain between 2 and 100 characters.");
+            return;
+        }
+
+        if (
+            !email ||
+            email.length > 254 ||
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        ) {
+            toast.error("Enter a valid email address.");
+            return;
+        }
+
+        if (!/^[6-9]\d{9}$/.test(phone)) {
+            toast.error(
+                "Enter a valid 10-digit Indian mobile number without +91."
+            );
+            return;
+        }
+
+        if (password.length < 6) {
+            toast.error("Password must contain at least 6 characters.");
+            return;
+        }
+
+        if (new TextEncoder().encode(password).length > 72) {
+            toast.error("Password cannot exceed 72 UTF-8 bytes.");
+            return;
+        }
+
+        submitLock.current = true;
+        setIsSubmitting(true);
+
+        try {
+            // Send only the fields accepted by the public signup endpoint.
+            const data = await signup({ name, email, phone, password });
+
+            toast.success(data.message || "Account created successfully.");
+            // Auth state updates automatically after successful signup.
+        } catch (error) {
+            toast.error(getSignupErrorMessage(error));
+        } finally {
+            submitLock.current = false;
+            setIsSubmitting(false);
+        }
+    }
+
+    // ================== AUTHENTICATED REDIRECT ==================
+    if (!loading && !authError && user) {
+        // Reuse Login's destination rules while preserving navigation intent.
+        // Login detects the existing session without making a login request.
+        return (
+            <Navigate
+                to={{ pathname: "/manage", search: location.search }}
+                state={location.state}
+                replace
+            />
         );
     }
+
+    const formDisabled = loading || isSubmitting || Boolean(authError);
 
     return (
         <div className="website-layout auth-layout">
             <main className="auth-main">
                 <div className="auth-topbar">
                     <Link to="/" className="auth-back-link">
-                        <i
-                            className="fa-solid fa-arrow-left"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-arrow-left" aria-hidden="true" />
                         Back to Home
                     </Link>
                 </div>
@@ -180,10 +244,7 @@ function Signup() {
                                     />
                                 </Link>
 
-                                <h1
-                                    id="signup-title"
-                                    className="website-section-title"
-                                >
+                                <h1 id="signup-title" className="website-section-title">
                                     Create your
                                     <span> account.</span>
                                 </h1>
@@ -197,7 +258,8 @@ function Signup() {
                             <form
                                 className="auth-form"
                                 onSubmit={handleSubmit}
-                                onChange={() => setNotice("")}
+                                aria-busy={loading || isSubmitting}
+                                noValidate
                             >
                                 <TextField
                                     id="signup-name"
@@ -206,13 +268,13 @@ function Signup() {
                                     variant="outlined"
                                     className="auth-text-field"
                                     autoComplete="name"
+                                    disabled={formDisabled}
                                     fullWidth
                                     required
                                     slotProps={{
                                         htmlInput: {
+                                            minLength: 2,
                                             maxLength: 100,
-                                            pattern: ".*\\S.*",
-                                            title: "Please enter your name.",
                                         },
                                     }}
                                 />
@@ -225,6 +287,7 @@ function Signup() {
                                     variant="outlined"
                                     className="auth-text-field"
                                     autoComplete="email"
+                                    disabled={formDisabled}
                                     fullWidth
                                     required
                                     slotProps={{
@@ -243,15 +306,17 @@ function Signup() {
                                     type="tel"
                                     variant="outlined"
                                     className="auth-text-field"
-                                    autoComplete="tel"
+                                    autoComplete="tel-national"
+                                    disabled={formDisabled}
                                     fullWidth
                                     required
                                     slotProps={{
                                         htmlInput: {
-                                            maxLength: 25,
-                                            pattern: ".*[0-9].*",
+                                            inputMode: "numeric",
+                                            maxLength: 10,
+                                            pattern: "[6-9][0-9]{9}",
                                             title:
-                                                "Please enter a phone number containing digits.",
+                                                "Enter a valid 10-digit Indian mobile number.",
                                         },
                                     }}
                                 />
@@ -264,12 +329,13 @@ function Signup() {
                                     variant="outlined"
                                     className="auth-text-field"
                                     autoComplete="new-password"
-                                    helperText="Use at least 8 characters."
+                                    disabled={formDisabled}
                                     fullWidth
                                     required
                                     slotProps={{
                                         htmlInput: {
-                                            minLength: 8,
+                                            minLength: 6,
+                                            maxLength: 72,
                                         },
                                         input: {
                                             endAdornment: (
@@ -277,11 +343,13 @@ function Signup() {
                                                     <IconButton
                                                         type="button"
                                                         className="auth-password-toggle"
+                                                        disabled={formDisabled}
                                                         aria-label={
                                                             showPassword
                                                                 ? "Hide password"
                                                                 : "Show password"
                                                         }
+                                                        aria-pressed={showPassword}
                                                         aria-controls="signup-password"
                                                         onClick={() =>
                                                             setShowPassword(
@@ -308,122 +376,31 @@ function Signup() {
                                     }}
                                 />
 
-                                <TextField
-                                    id="signup-security-question"
-                                    name="securityQuestion"
-                                    label="Security question"
-                                    variant="outlined"
-                                    className="auth-text-field"
-                                    value={securityQuestion}
-                                    onChange={(event) => {
-                                        setSecurityQuestion(event.target.value);
-                                        setQuestionError("");
-                                        setNotice("");
-                                    }}
-                                    error={Boolean(questionError)}
-                                    helperText={
-                                        questionError ||
-                                        "Choose a question for password recovery."
-                                    }
-                                    select
-                                    fullWidth
-                                    required
-                                >
-                                    {securityQuestions.map((question) => (
-                                        <MenuItem
-                                            key={question.id}
-                                            value={question.id}
-                                            sx={{ whiteSpace: "normal" }}
-                                        >
-                                            {question.label}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-
-                                <TextField
-                                    id="signup-security-answer"
-                                    name="securityAnswer"
-                                    label="Security answer"
-                                    type={
-                                        showSecurityAnswer
-                                            ? "text"
-                                            : "password"
-                                    }
-                                    variant="outlined"
-                                    className="auth-text-field"
-                                    autoComplete="off"
-                                    error={Boolean(answerError)}
-                                    helperText={
-                                        answerError ||
-                                        "Remember your answer. Avoid answers others can easily guess."
-                                    }
-                                    onChange={() => setAnswerError("")}
-                                    fullWidth
-                                    required
-                                    slotProps={{
-                                        htmlInput: {
-                                            minLength: 3,
-                                            maxLength: 100,
-                                            pattern: ".*\\S.*",
-                                            autoCapitalize: "none",
-                                            spellCheck: false,
-                                        },
-                                        input: {
-                                            endAdornment: (
-                                                <InputAdornment position="end">
-                                                    <IconButton
-                                                        type="button"
-                                                        className="auth-password-toggle"
-                                                        aria-label={
-                                                            showSecurityAnswer
-                                                                ? "Hide security answer"
-                                                                : "Show security answer"
-                                                        }
-                                                        aria-controls="signup-security-answer"
-                                                        onClick={() =>
-                                                            setShowSecurityAnswer(
-                                                                (current) => !current
-                                                            )
-                                                        }
-                                                        onMouseDown={(event) =>
-                                                            event.preventDefault()
-                                                        }
-                                                        edge="end"
-                                                    >
-                                                        <i
-                                                            className={`fa-solid ${
-                                                                showSecurityAnswer
-                                                                    ? "fa-eye-slash"
-                                                                    : "fa-eye"
-                                                            }`}
-                                                            aria-hidden="true"
-                                                        />
-                                                    </IconButton>
-                                                </InputAdornment>
-                                            ),
-                                        },
-                                    }}
-                                />
-
-                                <div
-                                    className={`auth-notice ${
-                                        notice ? "is-visible" : ""
-                                    }`}
-                                    role="status"
-                                    aria-live="polite"
-                                    aria-atomic="true"
-                                >
-                                    {notice}
-                                </div>
+                                {authError && !loading && (
+                                    <Button
+                                        type="button"
+                                        variant="outlined"
+                                        onClick={refreshUser}
+                                        fullWidth
+                                    >
+                                        Retry session check
+                                    </Button>
+                                )}
 
                                 <Button
                                     type="submit"
                                     variant="contained"
                                     className="website-button website-button-primary auth-submit"
+                                    disabled={formDisabled}
                                     disableElevation
                                     fullWidth
                                 >
-                                    Create Account
+                                    {loading
+                                        ? "Checking session..."
+                                        : isSubmitting
+                                          ? "Creating account..."
+                                          : "Create Account"}
+
                                     <i
                                         className="fa-solid fa-arrow-right"
                                         aria-hidden="true"

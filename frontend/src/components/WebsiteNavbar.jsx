@@ -3,6 +3,9 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import Button from "@mui/material/Button";
 import { toast } from "react-toastify";
 
+import { useAuth } from "../context/AuthContext";
+
+// ================== NAVIGATION LINKS ==================
 const navigationLinks = [
     { label: "Home", path: "/" },
     { label: "About", path: "/about" },
@@ -11,9 +14,13 @@ const navigationLinks = [
     { label: "Contact", path: "/contact" },
 ];
 
-function WebsiteNavbar({ user = null, onLogout, authLoading = false }) {
+// ================== WEBSITE NAVBAR ==================
+function WebsiteNavbar() {
     const location = useLocation();
+    const { user, loading, authError, refreshUser, logout } = useAuth();
+
     const menuButtonRef = useRef(null);
+    const logoutLock = useRef(false);
 
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuLocation, setMenuLocation] = useState("");
@@ -22,6 +29,7 @@ function WebsiteNavbar({ user = null, onLogout, authLoading = false }) {
     // A route change hides the mobile menu.
     const isMenuOpen = menuOpen && menuLocation === location.key;
 
+    // ================== MOBILE MENU ==================
     const closeMenu = () => {
         setMenuOpen(false);
     };
@@ -38,22 +46,27 @@ function WebsiteNavbar({ user = null, onLogout, authLoading = false }) {
         }
     };
 
+    // ================== LOGOUT ==================
     const handleLogout = async () => {
-        if (!onLogout || loggingOut) {
+        if (logoutLock.current) {
             return;
         }
 
+        logoutLock.current = true;
         setLoggingOut(true);
 
         try {
-            // Parent callback handles API logout and auth state.
-            await onLogout();
+            await logout();
 
             closeMenu();
             toast.success("Logged out successfully.");
-        } catch {
-            toast.error("Unable to log out. Please try again.");
+        } catch (error) {
+            toast.error(
+                error.response?.data?.message ||
+                "Unable to log out. Please try again."
+            );
         } finally {
+            logoutLock.current = false;
             setLoggingOut(false);
         }
     };
@@ -91,14 +104,18 @@ function WebsiteNavbar({ user = null, onLogout, authLoading = false }) {
                     onClick={toggleMenu}
                 >
                     <i
-                        className={`fa-solid ${isMenuOpen ? "fa-xmark" : "fa-bars"}`}
+                        className={`fa-solid ${
+                            isMenuOpen ? "fa-xmark" : "fa-bars"
+                        }`}
                         aria-hidden="true"
                     />
                 </button>
 
                 <div
                     id="website-navigation"
-                    className={`website-navigation ${isMenuOpen ? "is-open" : ""}`}
+                    className={`website-navigation ${
+                        isMenuOpen ? "is-open" : ""
+                    }`}
                 >
                     <ul className="website-nav-list">
                         {navigationLinks.map((item) => (
@@ -108,7 +125,9 @@ function WebsiteNavbar({ user = null, onLogout, authLoading = false }) {
                                     end={item.path === "/"}
                                     onClick={closeMenu}
                                     className={({ isActive }) =>
-                                        `website-nav-link ${isActive ? "is-active" : ""}`
+                                        `website-nav-link ${
+                                            isActive ? "is-active" : ""
+                                        }`
                                     }
                                 >
                                     {item.label}
@@ -119,10 +138,29 @@ function WebsiteNavbar({ user = null, onLogout, authLoading = false }) {
 
                     {/* Guest / authenticated actions */}
                     <div className="website-nav-actions">
-                        {authLoading ? (
+                        {loading ? (
                             <span className="website-auth-status" role="status">
                                 Loading account…
                             </span>
+                        ) : authError ? (
+                            <>
+                                <span
+                                    className="website-auth-status"
+                                    role="status"
+                                    title={authError}
+                                >
+                                    Account check unavailable
+                                </span>
+
+                                <Button
+                                    type="button"
+                                    className="website-button website-button-outline"
+                                    variant="outlined"
+                                    onClick={refreshUser}
+                                >
+                                    Retry
+                                </Button>
+                            </>
                         ) : user ? (
                             <>
                                 <Button
@@ -140,7 +178,7 @@ function WebsiteNavbar({ user = null, onLogout, authLoading = false }) {
                                     type="button"
                                     className="website-button website-button-outline"
                                     variant="outlined"
-                                    disabled={loggingOut || !onLogout}
+                                    disabled={loggingOut}
                                     onClick={handleLogout}
                                 >
                                     {loggingOut ? "Logging out…" : "Logout"}
@@ -165,7 +203,10 @@ function WebsiteNavbar({ user = null, onLogout, authLoading = false }) {
                                     onClick={closeMenu}
                                 >
                                     Create Account
-                                    <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+                                    <i
+                                        className="fa-solid fa-arrow-right"
+                                        aria-hidden="true"
+                                    />
                                 </Button>
                             </>
                         )}

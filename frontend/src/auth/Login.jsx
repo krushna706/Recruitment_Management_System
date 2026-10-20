@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
+import { TextField, InputAdornment, IconButton, Button } from "@mui/material";
+import { toast } from "react-toastify";
 
-import TextField from "@mui/material/TextField";
-import InputAdornment from "@mui/material/InputAdornment";
-import IconButton from "@mui/material/IconButton";
-import Button from "@mui/material/Button";
+import { useAuth } from "../context/AuthContext";
 
+// ================== INTRODUCTION CONTENT ==================
 const features = [
     {
         icon: "fa-magnifying-glass",
@@ -24,30 +24,150 @@ const features = [
     },
 ];
 
+// ================== LOGIN DESTINATION ==================
+function getLoginDestination(user, location) {
+    if (user.role === "admin") {
+        return "/manage/dashboard";
+    }
+
+    const returnTo = location.state?.returnTo;
+
+    // Accept only approved internal user destinations.
+    if (typeof returnTo === "string") {
+        const safeJobPath = /^\/jobs\/[a-zA-Z0-9_-]+$/;
+        const safePanelPath =
+            /^\/manage\/(?:dashboard|profile|my-applications(?:\/[a-zA-Z0-9_-]+)?)(?:[?#][^\s\\]*)?$/;
+
+        if (safeJobPath.test(returnTo) || safePanelPath.test(returnTo)) {
+            return returnTo;
+        }
+    }
+
+    const searchParams = new URLSearchParams(location.search);
+
+    return searchParams.get("from") === "website"
+        ? "/"
+        : "/manage/dashboard";
+}
+
+// ================== LOGIN ERROR MESSAGE ==================
+function getLoginErrorMessage(error) {
+    if (error.response?.status === 429) {
+        const retryAfter = error.response.headers["retry-after"];
+        let seconds = Number(retryAfter);
+
+        // Also support an HTTP-date Retry-After value.
+        if (!Number.isFinite(seconds) && retryAfter) {
+            seconds = (Date.parse(retryAfter) - Date.now()) / 1000;
+        }
+
+        if (Number.isFinite(seconds) && seconds > 0) {
+            const minutes = Math.ceil(seconds / 60);
+
+            return `Too many login attempts. Please try again after ${
+                minutes
+            } minute${minutes === 1 ? "" : "s"}.`;
+        }
+
+        return "Too many login attempts. Please try again later.";
+    }
+
+    if (error.code === "ECONNABORTED") {
+        return "The request timed out. Please try again.";
+    }
+
+    if (!error.response) {
+        return "Unable to connect to the server. Please try again.";
+    }
+
+    return (
+        error.response.data?.message ||
+        "Unable to login. Please try again."
+    );
+}
+
+// ================== LOGIN PAGE ==================
 function Login() {
     const location = useLocation();
+    const { user, loading, authError, refreshUser, login } = useAuth();
 
     const [showPassword, setShowPassword] = useState(false);
-    const [notice, setNotice] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    function handleSubmit(event) {
+    // Prevent duplicate submissions before React updates the button.
+    const submitLock = useRef(false);
+
+    // ================== SESSION ERROR FEEDBACK ==================
+    useEffect(() => {
+        if (authError) {
+            toast.error(authError, { toastId: "auth-session-error" });
+        }
+    }, [authError]);
+
+    // ================== LOGIN SUBMISSION ==================
+    async function handleSubmit(event) {
         event.preventDefault();
 
-        // Connect backend login here later.
-        setNotice(
-            "Sign-in is not available yet. Please try again once the service is connected."
-        );
+        if (submitLock.current || loading || authError) {
+            return;
+        }
+
+        const formData = new FormData(event.currentTarget);
+
+        const email = String(formData.get("email") || "")
+            .trim()
+            .toLowerCase();
+
+        const password = String(formData.get("password") || "");
+
+        if (!email || !password) {
+            toast.error("Email and password are required.");
+            return;
+        }
+
+        if (
+            email.length > 254 ||
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        ) {
+            toast.error("Enter a valid email address.");
+            return;
+        }
+
+        // Match the backend bcrypt input limit without changing the password.
+        if (new TextEncoder().encode(password).length > 72) {
+            toast.error("Password cannot exceed 72 UTF-8 bytes.");
+            return;
+        }
+
+        submitLock.current = true;
+        setIsSubmitting(true);
+
+        try {
+            const data = await login({ email, password });
+
+            toast.success(data.message || "Login successful.");
+            // Updated auth state triggers the redirect below.
+        } catch (error) {
+            toast.error(getLoginErrorMessage(error));
+        } finally {
+            submitLock.current = false;
+            setIsSubmitting(false);
+        }
     }
+
+    // ================== EXISTING SESSION REDIRECT ==================
+    if (!loading && !authError && user) {
+        return <Navigate to={getLoginDestination(user, location)} replace />;
+    }
+
+    const formDisabled = loading || isSubmitting || Boolean(authError);
 
     return (
         <div className="website-layout auth-layout">
             <main className="auth-main">
                 <div className="auth-topbar">
                     <Link to="/" className="auth-back-link">
-                        <i
-                            className="fa-solid fa-arrow-left"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-arrow-left" aria-hidden="true" />
                         Back to Home
                     </Link>
                 </div>
@@ -127,10 +247,7 @@ function Login() {
                                     />
                                 </Link>
 
-                                <h1
-                                    id="login-title"
-                                    className="website-section-title"
-                                >
+                                <h1 id="login-title" className="website-section-title">
                                     Welcome <span>back.</span>
                                 </h1>
 
@@ -142,7 +259,8 @@ function Login() {
                             <form
                                 className="auth-form"
                                 onSubmit={handleSubmit}
-                                onChange={() => setNotice("")}
+                                aria-busy={loading || isSubmitting}
+                                noValidate
                             >
                                 <TextField
                                     id="login-email"
@@ -152,6 +270,7 @@ function Login() {
                                     variant="outlined"
                                     className="auth-text-field"
                                     autoComplete="username"
+                                    disabled={formDisabled}
                                     fullWidth
                                     required
                                     slotProps={{
@@ -171,20 +290,26 @@ function Login() {
                                     variant="outlined"
                                     className="auth-text-field"
                                     autoComplete="current-password"
+                                    disabled={formDisabled}
                                     fullWidth
                                     required
                                     slotProps={{
+                                        htmlInput: {
+                                            maxLength: 72,
+                                        },
                                         input: {
                                             endAdornment: (
                                                 <InputAdornment position="end">
                                                     <IconButton
                                                         type="button"
                                                         className="auth-password-toggle"
+                                                        disabled={formDisabled}
                                                         aria-label={
                                                             showPassword
                                                                 ? "Hide password"
                                                                 : "Show password"
                                                         }
+                                                        aria-pressed={showPassword}
                                                         aria-controls="login-password"
                                                         onClick={() =>
                                                             setShowPassword(
@@ -211,25 +336,31 @@ function Login() {
                                     }}
                                 />
 
-                                <div
-                                    className={`auth-notice ${
-                                        notice ? "is-visible" : ""
-                                    }`}
-                                    role="status"
-                                    aria-live="polite"
-                                    aria-atomic="true"
-                                >
-                                    {notice}
-                                </div>
+                                {authError && !loading && (
+                                    <Button
+                                        type="button"
+                                        variant="outlined"
+                                        onClick={refreshUser}
+                                        fullWidth
+                                    >
+                                        Retry session check
+                                    </Button>
+                                )}
 
                                 <Button
                                     type="submit"
                                     variant="contained"
                                     className="website-button website-button-primary auth-submit"
+                                    disabled={formDisabled}
                                     disableElevation
                                     fullWidth
                                 >
-                                    Sign In
+                                    {loading
+                                        ? "Checking session..."
+                                        : isSubmitting
+                                          ? "Signing in..."
+                                          : "Sign In"}
+
                                     <i
                                         className="fa-solid fa-arrow-right"
                                         aria-hidden="true"
@@ -251,12 +382,14 @@ function Login() {
                                     </Link>
                                 </p>
 
-                                <Link
-                                    to="/manage/forgot-password"
-                                    className="auth-forgot-link"
-                                >
-                                    Forgot password?
-                                </Link>
+                                {import.meta.env.DEV && (
+                                    <Link
+                                        to="/manage/forgot-password"
+                                        className="auth-forgot-link"
+                                    >
+                                        Forgot password?
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </section>

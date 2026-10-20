@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet, Link, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, Link, useLocation, useParams } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
+
+import { useAuth } from "./context/AuthContext";
 
 import WebsiteLayout from "./layouts/WebsiteLayout";
 import PanelLayout from "./layouts/PanelLayout";
@@ -26,41 +28,60 @@ import NotFound from "./components/NotFound";
 
 import "./css/website.css";
 
-/* ===== FRONTEND DEMO ACCOUNT ===== */
+// ================== SESSION FEEDBACK ==================
+function SessionFeedback() {
+    const { loading, authError, refreshUser } = useAuth();
 
-// Change role to "user" or "admin".
-// Replace this with verified authentication data later.
-const demoUser = {
-    id: "demo-account",
-    name: "Krushna Chandra Mohanty",
-    email: "candidate@example.com",
-    phone: "9876543210",
-    role: "admin",
-    avatarUrl: "/images/default-avatar.svg",
-};
+    return (
+        <section className="container-fluid py-5 text-center">
+            {loading ? (
+                <p role="status">Checking your session...</p>
+            ) : (
+                <>
+                    <p role="alert">{authError}</p>
 
-/* ===== ACCESS DENIED ===== */
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={refreshUser}
+                    >
+                        Try again
+                    </button>
 
+                    <Link to="/" className="btn btn-link">
+                        Back to website
+                    </Link>
+                </>
+            )}
+        </section>
+    );
+}
+
+// ================== ACCESS DENIED ==================
 function AccessDenied() {
     return (
-        <section className="panel-card panel-empty-state">
-            <h1 className="panel-page-title">Access denied</h1>
+        <section className="container-fluid py-5 text-center">
+            <h1>Access denied</h1>
 
             <p>
                 Your account does not have permission to open this page.
             </p>
 
-            <Link to="/" className="panel-text-link">
+            <Link to="/" className="btn btn-primary">
                 Back to website
             </Link>
         </section>
     );
 }
 
-/* ===== PANEL ENTRY CHECK ===== */
-
-function PanelAccess({ user }) {
+// ================== PANEL ACCESS ==================
+function PanelAccess() {
+    const { user, loading, authError } = useAuth();
     const location = useLocation();
+
+    if (loading || authError) {
+        return <SessionFeedback />;
+    }
 
     if (!user) {
         const returnTo =
@@ -76,8 +97,28 @@ function PanelAccess({ user }) {
     return <Outlet />;
 }
 
-/* ===== ROLE-BASED DASHBOARD AND PROFILE ===== */
+// ================== JOB APPLICATION ACCESS ==================
+function JobApplicationAccess() {
+    const { user, loading, authError } = useAuth();
+    const { id } = useParams();
 
+    if (loading || authError) {
+        return <SessionFeedback />;
+    }
+
+    if (!user) {
+        // Return to the same job details after authentication.
+        return <Navigate to="/manage" replace state={{ returnTo: `/jobs/${encodeURIComponent(id)}` }} />;
+    }
+
+    if (user.role !== "user") {
+        return <AccessDenied />;
+    }
+
+    return <JobApply user={user} />;
+}
+
+// ================== ROLE-BASED DASHBOARD AND PROFILE ==================
 function RolePage({ user, page }) {
     const roleConfig = getPanelRole(user?.role);
     const PageComponent = roleConfig?.[page];
@@ -89,8 +130,7 @@ function RolePage({ user, page }) {
     return <PageComponent user={user} />;
 }
 
-/* ===== INDIVIDUAL PAGE ACCESS ===== */
-
+// ================== INDIVIDUAL PANEL PAGE ACCESS ==================
 function PanelPage({ user, page }) {
     if (!user || !page.allowedRoles.includes(user.role)) {
         return <AccessDenied />;
@@ -101,10 +141,9 @@ function PanelPage({ user, page }) {
     return <PageComponent user={user} />;
 }
 
-/* ===== APP ROUTES ===== */
-
+// ================== APPLICATION ROUTES ==================
 function App() {
-    const user = demoUser;
+    const { user, logout } = useAuth();
     const roleConfig = getPanelRole(user?.role);
 
     const panelUser = user
@@ -122,14 +161,18 @@ function App() {
                 {/* Authentication */}
                 <Route path="/manage" element={<Login />} />
                 <Route path="/manage/signup" element={<Signup />} />
-                <Route path="/manage/forgot-password" element={<ForgotPassword />} />
+
+                {/* Recovery remains a development preview only */}
+                {import.meta.env.DEV && (
+                    <Route path="/manage/forgot-password" element={<ForgotPassword />} />
+                )}
 
                 {/* Public website */}
                 <Route element={<WebsiteLayout />}>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/jobs" element={<Jobs />} />
-                    <Route path="/jobs/:id" element={<JobDetails />} />
-                    <Route path="/jobs/:id/apply" element={<JobApply />} />
+                    <Route path="/jobs/:id" element={<JobDetails user={user} />} />
+                    <Route path="/jobs/:id/apply" element={<JobApplicationAccess />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/careers" element={<Careers />} />
                     <Route path="/contact" element={<Contact />} />
@@ -137,8 +180,8 @@ function App() {
                 </Route>
 
                 {/* Shared user/admin panel */}
-                <Route element={<PanelAccess user={panelUser} />}>
-                    <Route path="/manage" element={<PanelLayout user={panelUser} />}>
+                <Route element={<PanelAccess />}>
+                    <Route path="/manage" element={<PanelLayout user={panelUser} onLogout={logout} />}>
                         <Route path="dashboard" element={<RolePage user={panelUser} page="dashboard" />} />
                         <Route path="profile" element={<RolePage user={panelUser} page="profile" />} />
 
