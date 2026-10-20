@@ -127,6 +127,7 @@ async function login(req, res, next) {
             );
         }
 
+        // Compare the entered password with the stored password hash.
         const passwordMatches = await bcrypt.compare(
             password,
             user.passwordHash
@@ -162,7 +163,7 @@ async function login(req, res, next) {
                 },
             },
             {
-                new: true,
+                returnDocument: "after",
                 runValidators: true,
             }
         ).select("+tokenVersion");
