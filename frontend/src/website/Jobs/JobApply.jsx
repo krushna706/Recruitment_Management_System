@@ -399,7 +399,7 @@ function ApplicationForm({ job, user }) {
                                     />
                                 }
                             >
-                                My Applicatio
+                                My Applicati
                             </Button>
 
                             <Button
