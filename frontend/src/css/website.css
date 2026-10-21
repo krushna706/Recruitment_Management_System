@@ -6192,3 +6192,246 @@
         transition: none !important;
     }
 }
+
+
+/* ================== APPLICATION SUCCESS ================== */
+
+.job-success-page {
+    padding-block: clamp(32px, 6vw, 72px);
+}
+
+.job-success-card {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 640px;
+    margin-inline: auto;
+    padding: clamp(24px, 4vw, 44px);
+    overflow: hidden;
+    text-align: center;
+    background: #ffffff;
+    border: 1px solid #e1e8f3;
+    border-radius: 24px;
+    box-shadow: 0 16px 48px rgba(24, 47, 87, 0.06);
+}
+
+.job-success-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 24px;
+    color: #16845b;
+    font-size: 28px;
+    background: #eaf8f1;
+    border: 8px solid #f5fcf8;
+    border-radius: 50%;
+}
+
+.job-success-eyebrow {
+    margin: 0 0 12px;
+    color: #16845b;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: 1.8px;
+}
+
+.job-success-card h1 {
+    margin: 0;
+    color: #162843;
+    font-size: clamp(26px, 4vw, 34px);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.8px;
+}
+
+.job-success-description {
+    max-width: 450px;
+    margin: 16px auto 28px;
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.job-success-opening {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    text-align: left;
+    background: #f6f8ff;
+    border: 1px solid #e8edff;
+    border-radius: 14px;
+}
+
+.job-success-opening-icon {
+    display: flex;
+    flex: 0 0 44px;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    color: #2d5bff;
+    font-size: 18px;
+    background: #ffffff;
+    border: 1px solid #e5eaff;
+    border-radius: 12px;
+}
+
+.job-success-opening-copy {
+    min-width: 0;
+}
+
+.job-success-opening-copy h2 {
+    margin: 0;
+    color: #162843;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.job-success-opening-copy p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.job-success-details {
+    display: grid;
+    gap: 16px;
+    margin: 22px 0 0;
+    padding: 0 0 24px;
+    border-bottom: 1px solid #edf0f5;
+}
+
+.job-success-details > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.job-success-details dt {
+    flex-shrink: 0;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 400;
+}
+
+.job-success-details dd {
+    min-width: 0;
+    margin: 0;
+    color: #253754;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+}
+
+.job-success-reference {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    overflow-wrap: anywhere;
+}
+
+.job-success-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    color: #2454cf;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    background: #edf3ff;
+    border-radius: 999px;
+}
+
+.job-success-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 26px;
+}
+
+.job-success-actions .MuiButton-root {
+    min-height: 46px;
+    padding: 11px 20px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-transform: none;
+    border-radius: 10px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.job-success-actions .job-success-primary {
+    color: #ffffff;
+    background: #2d5bff;
+}
+
+.job-success-actions .job-success-primary:hover {
+    background: #2149db;
+}
+
+.job-success-actions .job-success-secondary {
+    color: #344563;
+    background: #ffffff;
+    border-color: #dce3ef;
+}
+
+.job-success-actions .job-success-secondary:hover {
+    background: #f7f9fc;
+    border-color: #b9c6dc;
+}
+
+.job-success-actions .MuiButton-root:focus-visible {
+    outline: 3px solid #9eb5ff;
+    outline-offset: 3px;
+}
+
+.job-success-note {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    margin: 22px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.job-success-note i {
+    flex-shrink: 0;
+    color: #16845b;
+}
+
+/* ================== APPLICATION SUCCESS: MOBILE ================== */
+
+@media (max-width: 575.98px) {
+    .job-success-card {
+        border-radius: 18px;
+    }
+
+    .job-success-details > div {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 7px;
+        text-align: left;
+    }
+
+    .job-success-details dd {
+        max-width: 100%;
+        text-align: left;
+    }
+
+    .job-success-actions {
+        flex-direction: column;
+    }
+
+    .job-success-actions .MuiButton-root {
+        width: 100%;
+    }
+}

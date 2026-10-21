@@ -35,9 +35,13 @@ function errorMiddleware(error, req, res, next) {
         message = "Request body is too large.";
     }
 
-    // Log a minimal diagnostic without request data or credentials.
+    // Log error details during development only.
     if (statusCode >= 500) {
-        console.error("An unexpected server error occurred.");
+        if (process.env.NODE_ENV !== "production") {
+            console.error("Server error:", error);
+        } else {
+            console.error("An unexpected server error occurred.");
+        }
     }
 
     return res.status(statusCode).json({

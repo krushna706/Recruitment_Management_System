@@ -4,6 +4,9 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/authRoutes");
+const jobRoutes = require("./routes/jobRoutes");
+const applicationRoutes = require("./routes/applicationRoutes");
+
 const ExpressError = require("./utils/ExpressError");
 const errorMiddleware = require("./middleware/errorMiddleware");
 
@@ -16,7 +19,9 @@ app.disable("x-powered-by");
 const clientOrigin = process.env.CLIENT_ORIGIN;
 
 if (!clientOrigin) {
-    throw new Error("CLIENT_ORIGIN is missing in environment configuration.");
+    throw new Error(
+        "CLIENT_ORIGIN is missing in environment configuration."
+    );
 }
 
 // Accept only a complete HTTP/HTTPS origin without paths or credentials.
@@ -56,7 +61,6 @@ app.use(
 // ================== REQUEST ORIGIN CHECK ==================
 // Protect state-changing API requests against cross-site submissions.
 app.use("/api", (req, res, next) => {
-    // Read-only requests must never change application data.
     if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
         return next();
     }
@@ -78,7 +82,6 @@ app.use("/api", (req, res, next) => {
         }
     }
 
-    // Reject missing, null or unapproved origins.
     if (requestOrigin !== clientOrigin) {
         return next(
             new ExpressError(403, "Request origin is not allowed.")
@@ -89,6 +92,7 @@ app.use("/api", (req, res, next) => {
 });
 
 // ================== REQUEST BODY PARSING ==================
+// JSON requests only. Multipart resume uploads are handled by Multer.
 app.use(express.json({ limit: "100kb" }));
 
 // ================== COOKIE PARSING ==================
@@ -102,8 +106,10 @@ app.get("/api/health", (req, res) => {
     });
 });
 
-// ================== AUTHENTICATION ROUTES ==================
+// ================== API ROUTES ==================
 app.use("/api/auth", authRoutes);
+app.use("/api/jobs", jobRoutes);
+app.use("/api/applications", applicationRoutes);
 
 // ================== ROUTE NOT FOUND ==================
 app.use((req, res, next) => {

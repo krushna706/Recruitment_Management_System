@@ -1,17 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-    Alert,
-    Autocomplete,
-    Button,
-    MenuItem,
-    TextField,
-} from "@mui/material";
+import { Alert, Autocomplete, Button, MenuItem, TextField } from "@mui/material";
+import { toast } from "react-toastify";
 
-import { demoJobs } from "../../data/jobData";
+import api from "../../services/api";
 import { toTextList } from "../../utils/dataFormat";
 
-const qualifications = [
+// ================== APPLICATION OPTIONS ==================
+const QUALIFICATIONS = [
     "Secondary / Class 10",
     "Higher Secondary / Class 12",
     "Diploma",
@@ -21,7 +17,7 @@ const qualifications = [
     "Other",
 ];
 
-const experienceOptions = [
+const EXPERIENCE_OPTIONS = [
     "Fresher",
     "Less than 1 year",
     "1 year",
@@ -33,7 +29,7 @@ const experienceOptions = [
     "More than 10 years",
 ];
 
-const skillOptions = [
+const SKILL_OPTIONS = [
     "React.js",
     "JavaScript",
     "TypeScript",
@@ -57,6 +53,8 @@ const skillOptions = [
 
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
 
+// ================== RESUME VALIDATION ==================
+// Frontend checks provide feedback; the backend verifies the actual format.
 function validateResume(file) {
     if (!file) {
         return "Please upload your resume.";
@@ -64,6 +62,10 @@ function validateResume(file) {
 
     if (!/\.(pdf|doc|docx)$/i.test(file.name)) {
         return "Upload a PDF, DOC or DOCX file.";
+    }
+
+    if (file.name.length > 255) {
+        return "Resume filename cannot exceed 255 characters.";
     }
 
     if (file.size === 0) {
@@ -77,29 +79,85 @@ function validateResume(file) {
     return "";
 }
 
+// ================== SKILLS NORMALIZATION ==================
 function normalizeSkills(skills) {
     return [
         ...new Map(
             skills
                 .map((skill) => skill.trim())
                 .filter(Boolean)
-                .map((skill) => [skill.toLowerCase(), skill]),
+                .map((skill) => [skill.toLowerCase(), skill])
         ).values(),
     ];
 }
 
+// ================== APPLICATION VALIDATION ==================
+function validateApplication(values, resume) {
+    const errors = {};
+
+    if (values.name.length < 2 || values.name.length > 100) {
+        errors.name = "Enter your full name using 2–100 characters.";
+    }
+
+    if (
+        values.email.length > 254 ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)
+    ) {
+        errors.email = "Enter a valid email address.";
+    }
+
+    const phoneDigits = values.phone.replace(/\D/g, "");
+
+    if (
+        values.phone.length > 25 ||
+        !/^\+?[\d\s()-]+$/.test(values.phone) ||
+        phoneDigits.length < 10 ||
+        phoneDigits.length > 15
+    ) {
+        errors.phone = "Enter a valid phone number containing 10–15 digits.";
+    }
+
+    if (!QUALIFICATIONS.includes(values.qualification)) {
+        errors.qualification = "Select your highest qualification.";
+    }
+
+    if (!EXPERIENCE_OPTIONS.includes(values.experience)) {
+        errors.experience = "Select your total experience.";
+    }
+
+    if (!values.skills.length) {
+        errors.skills = "Add at least one relevant skill.";
+    } else if (
+        values.skills.length > 15 ||
+        values.skills.some((skill) => skill.length > 60)
+    ) {
+        errors.skills = "Add up to 15 skills, with a maximum of 60 characters each.";
+    }
+
+    const resumeError = validateResume(resume);
+
+    if (resumeError) {
+        errors.resume = resumeError;
+    }
+
+    return errors;
+}
+
+// ================== APPLICATION FORM ==================
 function ApplicationForm({ job, user }) {
     const formRef = useRef(null);
     const fileInputRef = useRef(null);
+    const submitLockRef = useRef(false);
+    const mountedRef = useRef(false);
 
     const [values, setValues] = useState({
         name: user?.name || "",
         email: user?.email || "",
         phone: user?.phone || "",
-        qualification: qualifications.includes(user?.qualification)
+        qualification: QUALIFICATIONS.includes(user?.qualification)
             ? user.qualification
             : "",
-        experience: experienceOptions.includes(user?.experience)
+        experience: EXPERIENCE_OPTIONS.includes(user?.experience)
             ? user.experience
             : "",
         skills: toTextList(user?.skills),
@@ -108,20 +166,28 @@ function ApplicationForm({ job, user }) {
     const [skillInput, setSkillInput] = useState("");
     const [resume, setResume] = useState(null);
     const [errors, setErrors] = useState({});
-    const [previewValidated, setPreviewValidated] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [application, setApplication] = useState(null);
 
     const jobPath = `/jobs/${encodeURIComponent(job.id)}`;
 
-    const clearFeedback = (field) => {
+    useEffect(() => {
+        mountedRef.current = true;
+
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
+
+    // ================== INPUT HANDLERS ==================
+    function clearError(field) {
         setErrors((previous) => ({
             ...previous,
             [field]: "",
         }));
+    }
 
-        setPreviewValidated(false);
-    };
-
-    const handleChange = (event) => {
+    function handleChange(event) {
         const { name, value } = event.target;
 
         setValues((previous) => ({
@@ -129,10 +195,10 @@ function ApplicationForm({ job, user }) {
             [name]: value,
         }));
 
-        clearFeedback(name);
-    };
+        clearError(name);
+    }
 
-    const handleResumeChange = (event) => {
+    function handleResumeChange(event) {
         const file = event.target.files?.[0];
 
         event.target.value = "";
@@ -142,119 +208,219 @@ function ApplicationForm({ job, user }) {
         const error = validateResume(file);
 
         setResume(error ? null : file);
-
         setErrors((previous) => ({
             ...previous,
             resume: error,
         }));
+    }
 
-        setPreviewValidated(false);
-    };
-
-    const removeResume = () => {
+    function removeResume() {
         setResume(null);
-        clearFeedback("resume");
-    };
+        clearError("resume");
+    }
 
-    const handleSubmit = (event) => {
+    function focusFirstError(field) {
+        window.requestAnimationFrame(() => {
+            const target = formRef.current?.querySelector(
+                `[data-field="${field}"] input, ` +
+                `[data-field="${field}"] [role="combobox"], ` +
+                `[data-field="${field}"] button`
+            );
+
+            target?.focus();
+        });
+    }
+
+    // ================== SUBMIT APPLICATION ==================
+    async function handleSubmit(event) {
         event.preventDefault();
 
+        if (submitLockRef.current || application) return;
+
         const cleanedValues = {
-            ...values,
             name: values.name.trim(),
-            email: values.email.trim(),
+            email: values.email.trim().toLowerCase(),
             phone: values.phone.trim(),
+            qualification: values.qualification,
+            experience: values.experience,
             skills: normalizeSkills([...values.skills, skillInput]),
         };
 
         setValues(cleanedValues);
         setSkillInput("");
-        setPreviewValidated(false);
 
-        const nextErrors = {};
-
-        if (cleanedValues.name.length < 2 || cleanedValues.name.length > 100) {
-            nextErrors.name = "Enter your full name using 2–100 characters.";
-        }
-
-        if (
-            cleanedValues.email.length > 254 ||
-            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanedValues.email)
-        ) {
-            nextErrors.email = "Enter a valid email address.";
-        }
-
-        const phoneDigits = cleanedValues.phone.replace(/\D/g, "");
-
-        if (
-            !/^\+?[\d\s()-]+$/.test(cleanedValues.phone) ||
-            phoneDigits.length < 10 ||
-            phoneDigits.length > 15
-        ) {
-            nextErrors.phone = "Enter a valid phone number.";
-        }
-
-        if (!qualifications.includes(cleanedValues.qualification)) {
-            nextErrors.qualification = "Select your highest qualification.";
-        }
-
-        if (!experienceOptions.includes(cleanedValues.experience)) {
-            nextErrors.experience = "Select your total experience.";
-        }
-
-        if (cleanedValues.skills.length === 0) {
-            nextErrors.skills = "Add at least one relevant skill.";
-        } else if (
-            cleanedValues.skills.length > 15 ||
-            cleanedValues.skills.some((skill) => skill.length > 60)
-        ) {
-            nextErrors.skills =
-                "Add up to 15 skills, with a maximum of 60 characters each.";
-        }
-
-        const resumeError = validateResume(resume);
-
-        if (resumeError) {
-            nextErrors.resume = resumeError;
-        }
+        const nextErrors = validateApplication(cleanedValues, resume);
 
         setErrors(nextErrors);
 
         const firstError = Object.keys(nextErrors)[0];
 
         if (firstError) {
-            requestAnimationFrame(() => {
-                const target = formRef.current?.querySelector(
-                    `[data-field="${firstError}"] input, ` +
-                        `[data-field="${firstError}"] [role="combobox"], ` +
-                        `[data-field="${firstError}"] button`,
-                );
-
-                target?.focus();
-            });
-
+            toast.error("Please check the highlighted fields.");
+            focusFirstError(firstError);
             return;
         }
 
-        // Frontend validation only.
-        // Backend integration: send job ID, name, email, phone, qualification,
-        // experience, skills and resume via FormData. The server derives userId,
-        // openingType and the job snapshot; it must not trust client ownership.
-        setPreviewValidated(true);
-    };
+        const formData = new FormData();
 
-    const textFieldProps = (name) => ({
-        name,
-        value: values[name],
-        onChange: handleChange,
-        error: Boolean(errors[name]),
-        helperText: errors[name],
-        required: true,
-        fullWidth: true,
-        variant: "outlined",
-        className: "website-text-field",
-        "data-field": name,
-    });
+        formData.append("name", cleanedValues.name);
+        formData.append("email", cleanedValues.email);
+        formData.append("phone", cleanedValues.phone);
+        formData.append("qualification", cleanedValues.qualification);
+        formData.append("experience", cleanedValues.experience);
+        formData.append("skills", JSON.stringify(cleanedValues.skills));
+        formData.append("resume", resume);
+
+        submitLockRef.current = true;
+        setSubmitting(true);
+
+        try {
+            // Let the browser set the multipart Content-Type and boundary.
+            const { data } = await api.post(
+                `/applications/jobs/${encodeURIComponent(job.id)}`,
+                formData,
+                {
+                    timeout: 120000,
+                }
+            );
+
+            if (!mountedRef.current) return;
+
+            setApplication(data.application);
+            setResume(null);
+
+            toast.success(
+                data.message || "Application submitted successfully."
+            );
+        } catch (error) {
+            if (!mountedRef.current) return;
+
+            const responseMessage = error.response?.data?.message;
+
+            const fallback = error.response
+                ? "Application could not be submitted. Please try again later."
+                : "Submission confirmation was not received. Your application may have been saved. A retry will not create a duplicate for this job.";
+
+            toast.error(
+                typeof responseMessage === "string" && responseMessage.trim()
+                    ? responseMessage
+                    : fallback
+            );
+        } finally {
+            submitLockRef.current = false;
+
+            if (mountedRef.current) {
+                setSubmitting(false);
+            }
+        }
+    }
+
+    // ================== SHARED INPUT PROPS ==================
+    function textFieldProps(name) {
+        return {
+            name,
+            value: values[name],
+            onChange: handleChange,
+            error: Boolean(errors[name]),
+            helperText: errors[name],
+            required: true,
+            fullWidth: true,
+            disabled: submitting,
+            variant: "outlined",
+            className: "website-text-field",
+            "data-field": name,
+        };
+    }
+
+    // ================== SUBMISSION CONFIRMATION ==================
+    if (application) {
+        return (
+            <section
+                className="job-apply-page website-shell job-success-page"
+                aria-labelledby="application-success-title"
+            >
+                <div className="job-apply-container">
+                    <article className="job-success-card">
+                        <div className="job-success-icon" aria-hidden="true">
+                            <i className="fa-solid fa-check" />
+                        </div>
+
+                        <p className="job-success-eyebrow">APPLICATION RECEIVED</p>
+
+                        <h1 id="application-success-title">
+                            You’re one step closer.
+                        </h1>
+
+                        <p className="job-success-description" role="status">
+                            Your application has been submitted successfully.
+                            You can follow its progress in My Applications.
+                        </p>
+
+                        <div className="job-success-opening">
+                            <span className="job-success-opening-icon" aria-hidden="true">
+                                <i className="fa-solid fa-briefcase" />
+                            </span>
+
+                            <div className="job-success-opening-copy">
+                                <h2>{job.title}</h2>
+                                {job.company && <p>{job.company}</p>}
+                            </div>
+                        </div>
+
+                        <dl className="job-success-details">
+                            <div>
+                                <dt>Application ID</dt>
+                                <dd className="job-success-reference">
+                                    {application.id || application._id}
+                                </dd>
+                            </div>
+
+                            <div>
+                                <dt>Current status</dt>
+                                <dd>
+                                    <span className="job-success-status">
+                                        {application.status}
+                                    </span>
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <div className="job-success-actions">
+                            <Button
+                                component={Link}
+                                to="/manage/my-applications"
+                                variant="contained"
+                                disableElevation
+                                className="job-success-primary"
+                                endIcon={
+                                    <i
+                                        className="fa-solid fa-arrow-right"
+                                        aria-hidden="true"
+                                    />
+                                }
+                            >
+                                My Applications
+                            </Button>
+
+                            <Button
+                                component={Link}
+                                to="/jobs"
+                                variant="outlined"
+                                className="job-success-secondary"
+                            >
+                                Explore more jobs
+                            </Button>
+                        </div>
+
+                        <p className="job-success-note">
+                            <i className="fa-regular fa-circle-check" aria-hidden="true" />
+                            Your details and resume have been received.
+                        </p>
+                    </article>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section
@@ -315,9 +481,14 @@ function ApplicationForm({ job, user }) {
                             ref={formRef}
                             className="job-apply-form"
                             onSubmit={handleSubmit}
+                            aria-busy={submitting}
                             noValidate
                         >
-                            <fieldset className="job-apply-group">
+                            {/* ================== PERSONAL DETAILS ================== */}
+                            <fieldset
+                                className="job-apply-group"
+                                disabled={submitting}
+                            >
                                 <legend>
                                     <span
                                         className="job-apply-section-number"
@@ -338,9 +509,7 @@ function ApplicationForm({ job, user }) {
                                         label="Full name"
                                         autoComplete="name"
                                         slotProps={{
-                                            htmlInput: {
-                                                maxLength: 100,
-                                            },
+                                            htmlInput: { maxLength: 100 },
                                         }}
                                     />
 
@@ -350,9 +519,7 @@ function ApplicationForm({ job, user }) {
                                         type="tel"
                                         autoComplete="tel"
                                         slotProps={{
-                                            htmlInput: {
-                                                maxLength: 25,
-                                            },
+                                            htmlInput: { maxLength: 25 },
                                         }}
                                     />
 
@@ -363,15 +530,17 @@ function ApplicationForm({ job, user }) {
                                         type="email"
                                         autoComplete="email"
                                         slotProps={{
-                                            htmlInput: {
-                                                maxLength: 254,
-                                            },
+                                            htmlInput: { maxLength: 254 },
                                         }}
                                     />
                                 </div>
                             </fieldset>
 
-                            <fieldset className="job-apply-group">
+                            {/* ================== PROFESSIONAL BACKGROUND ================== */}
+                            <fieldset
+                                className="job-apply-group"
+                                disabled={submitting}
+                            >
                                 <legend>
                                     <span
                                         className="job-apply-section-number"
@@ -393,7 +562,7 @@ function ApplicationForm({ job, user }) {
                                         label="Highest qualification"
                                         select
                                     >
-                                        {qualifications.map((item) => (
+                                        {QUALIFICATIONS.map((item) => (
                                             <MenuItem key={item} value={item}>
                                                 {item}
                                             </MenuItem>
@@ -405,7 +574,7 @@ function ApplicationForm({ job, user }) {
                                         label="Total experience"
                                         select
                                     >
-                                        {experienceOptions.map((item) => (
+                                        {EXPERIENCE_OPTIONS.map((item) => (
                                             <MenuItem key={item} value={item}>
                                                 {item}
                                             </MenuItem>
@@ -416,24 +585,25 @@ function ApplicationForm({ job, user }) {
                                         multiple
                                         freeSolo
                                         filterSelectedOptions
-                                        options={skillOptions}
+                                        options={SKILL_OPTIONS}
                                         value={values.skills}
                                         inputValue={skillInput}
+                                        disabled={submitting}
                                         className="job-apply-full-width"
                                         data-field="skills"
                                         onInputChange={(_, value) => {
                                             setSkillInput(value);
-                                            clearFeedback("skills");
+                                            clearError("skills");
                                         }}
                                         onChange={(_, selectedSkills) => {
                                             setValues((previous) => ({
                                                 ...previous,
                                                 skills: normalizeSkills(
-                                                    selectedSkills,
+                                                    selectedSkills
                                                 ),
                                             }));
 
-                                            clearFeedback("skills");
+                                            clearError("skills");
                                         }}
                                         renderInput={(params) => (
                                             <TextField
@@ -452,9 +622,11 @@ function ApplicationForm({ job, user }) {
                                 </div>
                             </fieldset>
 
+                            {/* ================== RESUME ================== */}
                             <fieldset
                                 className="job-apply-group"
                                 data-field="resume"
+                                disabled={submitting}
                             >
                                 <legend>
                                     <span
@@ -499,11 +671,9 @@ function ApplicationForm({ job, user }) {
                                         <p id="resume-help">
                                             {resume
                                                 ? `${Math.max(
-                                                      1,
-                                                      Math.round(
-                                                          resume.size / 1024,
-                                                      ),
-                                                  )} KB · File selected`
+                                                    1,
+                                                    Math.round(resume.size / 1024)
+                                                )} KB · File selected`
                                                 : "PDF, DOC or DOCX · Maximum 5 MB"}
                                         </p>
                                     </div>
@@ -514,12 +684,14 @@ function ApplicationForm({ job, user }) {
                                             type="file"
                                             accept=".pdf,.doc,.docx"
                                             hidden
+                                            disabled={submitting}
                                             onChange={handleResumeChange}
                                         />
 
                                         <Button
                                             type="button"
                                             variant="outlined"
+                                            disabled={submitting}
                                             className="website-button website-button-outline"
                                             onClick={() =>
                                                 fileInputRef.current?.click()
@@ -530,15 +702,14 @@ function ApplicationForm({ job, user }) {
                                                     : "resume-help"
                                             }
                                         >
-                                            {resume
-                                                ? "Change file"
-                                                : "Browse files"}
+                                            {resume ? "Change file" : "Browse files"}
                                         </Button>
 
                                         {resume && (
                                             <Button
                                                 type="button"
                                                 className="job-apply-remove"
+                                                disabled={submitting}
                                                 onClick={removeResume}
                                             >
                                                 Remove
@@ -558,38 +729,40 @@ function ApplicationForm({ job, user }) {
                                 )}
                             </fieldset>
 
-                            {previewValidated && (
-                                <Alert severity="info" role="status">
-                                    Your form passed the frontend checks. No
-                                    application has been submitted. Submission
-                                    will work after the backend is connected.
-                                </Alert>
-                            )}
-
+                            {/* ================== SUBMIT BUTTON ================== */}
                             <div className="job-apply-submit-row">
-                                <p>
-                                    Please review your details before
-                                    submitting.
+                                <p role={submitting ? "status" : undefined}>
+                                    {submitting
+                                        ? "Submitting your application. Please keep this page open."
+                                        : "Please review your details before submitting."}
                                 </p>
 
                                 <Button
                                     type="submit"
                                     variant="contained"
                                     disableElevation
+                                    disabled={submitting}
                                     className="website-button website-button-primary"
                                     endIcon={
                                         <i
-                                            className="fa-solid fa-arrow-right"
+                                            className={
+                                                submitting
+                                                    ? "fa-solid fa-spinner fa-spin"
+                                                    : "fa-solid fa-arrow-right"
+                                            }
                                             aria-hidden="true"
                                         />
                                     }
                                 >
-                                    Submit Application
+                                    {submitting
+                                        ? "Submitting..."
+                                        : "Submit Application"}
                                 </Button>
                             </div>
                         </form>
                     </article>
 
+                    {/* ================== JOB SUMMARY ================== */}
                     <aside
                         className="job-apply-sidebar"
                         aria-labelledby="application-job-title"
@@ -626,7 +799,6 @@ function ApplicationForm({ job, user }) {
                                         />
                                         Location
                                     </dt>
-
                                     <dd>{job.location}</dd>
                                 </div>
 
@@ -638,7 +810,6 @@ function ApplicationForm({ job, user }) {
                                         />
                                         Experience
                                     </dt>
-
                                     <dd>{job.experience}</dd>
                                 </div>
 
@@ -650,7 +821,6 @@ function ApplicationForm({ job, user }) {
                                         />
                                         Salary
                                     </dt>
-
                                     <dd>{job.salary || "Not disclosed"}</dd>
                                 </div>
                             </dl>
@@ -678,26 +848,120 @@ function ApplicationForm({ job, user }) {
     );
 }
 
-export default function JobApply({ jobs = demoJobs, user = null }) {
+// ================== APPLICATION PAGE ==================
+function JobApply({ user = null }) {
     const { id } = useParams();
 
-    const job = Array.isArray(jobs)
-        ? jobs.find((item) => String(item._id || item.id) === id)
-        : null;
+    return <JobApplyContent key={id} id={id} user={user} />;
+}
+
+function JobApplyContent({ id, user }) {
+    const [job, setJob] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    // ================== FETCH JOB ==================
+    useEffect(() => {
+        const controller = new AbortController();
+
+        async function fetchJob() {
+            setLoading(true);
+            setError("");
+            setJob(null);
+
+            if (!/^[a-fA-F0-9]{24}$/.test(id || "")) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const { data } = await api.get(
+                    `/jobs/${encodeURIComponent(id)}`,
+                    { signal: controller.signal }
+                );
+
+                if (controller.signal.aborted) return;
+
+                setJob({
+                    ...data.job,
+                    id: String(data.job.id || data.job._id),
+                });
+            } catch (requestError) {
+                if (controller.signal.aborted) return;
+
+                if (requestError.response?.status !== 404) {
+                    const message = requestError.response?.data?.message;
+
+                    setError(
+                        typeof message === "string" && message.trim()
+                            ? message
+                            : "Job details could not be loaded. Please try again."
+                    );
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchJob();
+
+        return () => controller.abort();
+    }, [id, refreshKey]);
+
+    if (loading) {
+        return (
+            <section className="website-section website-shell">
+                <div className="rms-jobs-empty" role="status">
+                    <i
+                        className="fa-solid fa-spinner fa-spin"
+                        aria-hidden="true"
+                    />
+                    <h1 className="website-section-title">
+                        Loading application...
+                    </h1>
+                </div>
+            </section>
+        );
+    }
+
+    if (error) {
+        return (
+            <section className="website-section website-shell">
+                <Alert
+                    severity="error"
+                    action={
+                        <Button
+                            type="button"
+                            color="inherit"
+                            onClick={() =>
+                                setRefreshKey((previous) => previous + 1)
+                            }
+                        >
+                            Retry
+                        </Button>
+                    }
+                >
+                    {error}
+                </Alert>
+            </section>
+        );
+    }
 
     if (!job || job.status !== "Published") {
         return (
             <section className="website-section website-shell">
                 <div className="rms-jobs-empty">
                     <h1 className="website-section-title">
-                        {job && job.status === "Closed"
+                        {job?.status === "Closed"
                             ? "Applications are closed."
                             : "Position not available."}
                     </h1>
 
                     <p>
-                        Browse the available openings to find your next
-                        opportunity.
+                        Browse the available openings to find your next opportunity.
                     </p>
 
                     <Link
@@ -711,14 +975,33 @@ export default function JobApply({ jobs = demoJobs, user = null }) {
         );
     }
 
+    // App.jsx handles authentication and role-based access to this page.
+    if (!user || user.role !== "user") {
+        return (
+            <section className="website-section website-shell">
+                <div className="rms-jobs-empty">
+                    <h1 className="website-section-title">
+                        A user account is required.
+                    </h1>
+
+                    <Link
+                        to={`/jobs/${encodeURIComponent(job.id)}`}
+                        className="website-button website-button-primary"
+                    >
+                        Back to Job Details
+                    </Link>
+                </div>
+            </section>
+        );
+    }
+
     return (
         <ApplicationForm
-            key={id}
-            job={{
-                ...job,
-                id: String(job._id || job.id),
-            }}
+            key={`${job.id}-${user._id}`}
+            job={job}
             user={user}
         />
     );
 }
+
+export default JobApply;

@@ -1,35 +1,16 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Alert, Button } from "@mui/material";
 
-import { demoJobs } from "../../data/jobData";
+import api from "../../services/api";
 
-/*
-    Supports YYYY-MM-DD dates and ISO timestamps.
-    Missing or invalid dates are not displayed.
-*/
+// ================== POSTING DATE ==================
 function getPostingInfo(value) {
     if (typeof value !== "string" || !value.trim()) {
         return null;
     }
 
-    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
-
-    let postedDate;
-
-    if (dateOnly) {
-        const [year, month, day] = value.split("-").map(Number);
-
-        postedDate = new Date(year, month - 1, day);
-
-        if (
-            postedDate.getFullYear() !== year ||
-            postedDate.getMonth() !== month - 1 ||
-            postedDate.getDate() !== day
-        ) {
-            return null;
-        }
-    } else {
-        postedDate = new Date(value);
-    }
+    const postedDate = new Date(value);
 
     if (Number.isNaN(postedDate.getTime())) {
         return null;
@@ -37,28 +18,31 @@ function getPostingInfo(value) {
 
     const now = new Date();
 
-    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = Date.UTC(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+    );
 
     const postedDay = Date.UTC(
         postedDate.getFullYear(),
         postedDate.getMonth(),
-        postedDate.getDate(),
+        postedDate.getDate()
     );
 
-    const days = Math.floor((today - postedDay) / (1000 * 60 * 60 * 24));
+    const days = Math.floor((today - postedDay) / 86400000);
 
-    const label =
-        days < 0
-            ? "Scheduled"
-            : days === 0
-              ? "Today"
-              : days === 1
-                ? "1 day ago"
-                : `${days} days ago`;
+    const label = days < 0
+        ? "Recently posted"
+        : days === 0
+          ? "Today"
+          : days === 1
+            ? "1 day ago"
+            : `${days} days ago`;
 
     return {
         label,
-        dateTime: dateOnly ? value : postedDate.toISOString(),
+        dateTime: postedDate.toISOString(),
         fullDate: postedDate.toLocaleDateString("en-IN", {
             day: "numeric",
             month: "long",
@@ -67,20 +51,70 @@ function getPostingInfo(value) {
     };
 }
 
-export default function FeaturedJobs({ jobs = demoJobs }) {
-    const featuredJobs = Array.isArray(jobs)
-        ? jobs
-              .filter((job) => job.status === "Published" && job.featured)
-              .slice(0, 5)
-        : [];
+// ================== FEATURED JOBS ==================
+function FeaturedJobs() {
+    const [jobs, setJobs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    // ================== FETCH FEATURED JOBS ==================
+    useEffect(() => {
+        const controller = new AbortController();
+
+        async function fetchFeaturedJobs() {
+            setLoading(true);
+            setError("");
+
+            try {
+                const { data } = await api.get("/jobs", {
+                    params: {
+                        featured: true,
+                        page: 1,
+                        limit: 5,
+                    },
+                    signal: controller.signal,
+                });
+
+                if (controller.signal.aborted) return;
+
+                setJobs(
+                    data.jobs.map((job) => ({
+                        ...job,
+                        id: String(job.id || job._id),
+                    }))
+                );
+            } catch (requestError) {
+                if (controller.signal.aborted) return;
+
+                const message = requestError.response?.data?.message;
+
+                setJobs([]);
+                setError(
+                    typeof message === "string" && message.trim()
+                        ? message
+                        : "Featured jobs could not be loaded. Please try again."
+                );
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchFeaturedJobs();
+
+        return () => controller.abort();
+    }, [refreshKey]);
 
     return (
         <section
             className="website-section rms-featured"
             aria-labelledby="rms-featured-title"
+            aria-busy={loading}
         >
             <div className="website-shell">
-                {/* FEATURED JOBS HEADER */}
+                {/* ================== SECTION HEADER ================== */}
                 <div className="rms-featured-header">
                     <div>
                         <p className="website-section-label">
@@ -113,33 +147,53 @@ export default function FeaturedJobs({ jobs = demoJobs }) {
                     </Link>
                 </div>
 
-                {/* FEATURED JOB CARDS */}
-                {featuredJobs.length > 0 ? (
+                {/* ================== LOADING AND ERROR STATES ================== */}
+                {loading ? (
+                    <div className="rms-jobs-empty" role="status">
+                        <i
+                            className="fa-solid fa-spinner fa-spin"
+                            aria-hidden="true"
+                        />
+
+                        <h3>Loading featured jobs...</h3>
+                        <p>Please wait while we fetch the latest openings.</p>
+                    </div>
+                ) : error ? (
+                    <Alert
+                        severity="error"
+                        action={
+                            <Button
+                                type="button"
+                                color="inherit"
+                                size="small"
+                                onClick={() =>
+                                    setRefreshKey((previous) => previous + 1)
+                                }
+                            >
+                                Retry
+                            </Button>
+                        }
+                    >
+                        {error}
+                    </Alert>
+                ) : jobs.length > 0 ? (
                     <div className="jobs-list-grid">
-                        {featuredJobs.map((job) => {
-                            const jobId = job._id || job.id;
+                        {jobs.map((job) => {
+                            const jobUrl = `/jobs/${encodeURIComponent(job.id)}`;
 
-                            const jobUrl = `/jobs/${encodeURIComponent(jobId)}`;
-
-                            const experience =
-                                job.experience ||
-                                (Number.isFinite(job.minExperience) &&
-                                Number.isFinite(job.maxExperience)
-                                    ? `${job.minExperience}–${job.maxExperience} Years`
-                                    : "Not specified");
-
-                            const posting = getPostingInfo(job.createdAt);
+                            const posting = getPostingInfo(
+                                job.publishedAt || job.createdAt
+                            );
 
                             return (
                                 <article
-                                    key={jobId}
+                                    key={job.id}
                                     className="rms-job-card jobs-position-card"
                                 >
-                                    {/* COMPANY AND POSTING TIME */}
+                                    {/* ================== COMPANY AND DATE ================== */}
                                     <div className="jobs-card-topline">
                                         <p className="rms-job-company">
-                                            {job.company ||
-                                                "Company not specified"}
+                                            {job.company || "Company not specified"}
                                         </p>
 
                                         {posting && (
@@ -159,7 +213,7 @@ export default function FeaturedJobs({ jobs = demoJobs }) {
                                         )}
                                     </div>
 
-                                    {/* JOB TITLE */}
+                                    {/* ================== JOB TITLE ================== */}
                                     <div className="jobs-title-row">
                                         <h3 className="rms-job-title">
                                             <Link to={jobUrl} title={job.title}>
@@ -168,24 +222,19 @@ export default function FeaturedJobs({ jobs = demoJobs }) {
                                         </h3>
                                     </div>
 
-                                    {/* EMPLOYMENT TYPE AND WORK MODE */}
+                                    {/* ================== TYPE AND WORK MODE ================== */}
                                     <div className="rms-job-tags">
-                                        <span>
-                                            {job.type || "Not specified"}
-                                        </span>
-
-                                        <span>
-                                            {job.mode || "Not specified"}
-                                        </span>
+                                        <span>{job.type || "Not specified"}</span>
+                                        <span>{job.mode || "Not specified"}</span>
                                     </div>
 
-                                    {/* JOB DESCRIPTION */}
+                                    {/* ================== SHORT DESCRIPTION ================== */}
                                     <p className="jobs-card-description">
-                                        {job.description ||
-                                            "Explore this career opportunity and learn more about the position."}
+                                        {job.shortDescription ||
+                                            "View the job details for more information."}
                                     </p>
 
-                                    {/* EXPERIENCE AND SALARY */}
+                                    {/* ================== EXPERIENCE AND SALARY ================== */}
                                     <dl className="rms-job-meta jobs-card-meta">
                                         <div>
                                             <dt>
@@ -196,7 +245,9 @@ export default function FeaturedJobs({ jobs = demoJobs }) {
                                                 Experience
                                             </dt>
 
-                                            <dd>{experience}</dd>
+                                            <dd>
+                                                {job.experience || "Not specified"}
+                                            </dd>
                                         </div>
 
                                         <div>
@@ -214,7 +265,7 @@ export default function FeaturedJobs({ jobs = demoJobs }) {
                                         </div>
                                     </dl>
 
-                                    {/* LOCATION AND VIEW DETAILS */}
+                                    {/* ================== LOCATION AND DETAILS ================== */}
                                     <div className="rms-job-footer">
                                         <p
                                             className="rms-job-location"
@@ -226,8 +277,7 @@ export default function FeaturedJobs({ jobs = demoJobs }) {
                                             />
 
                                             <span>
-                                                {job.location ||
-                                                    "Not specified"}
+                                                {job.location || "Not specified"}
                                             </span>
                                         </p>
 
@@ -255,12 +305,11 @@ export default function FeaturedJobs({ jobs = demoJobs }) {
                         />
 
                         <h3>No featured openings right now</h3>
-
                         <p>Check back later or explore our jobs page.</p>
                     </div>
                 )}
 
-                {/* EXPLORE ALL JOBS CTA */}
+                {/* ================== EXPLORE ALL JOBS ================== */}
                 <div className="rms-jobs-cta">
                     <div>
                         <p className="website-section-label">
@@ -290,3 +339,5 @@ export default function FeaturedJobs({ jobs = demoJobs }) {
         </section>
     );
 }
+
+export default FeaturedJobs;

@@ -1,83 +1,263 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Button } from "@mui/material";
+import { Alert, Button } from "@mui/material";
 
-import { demoJobs } from "../../data/jobData";
+import api from "../../services/api";
 import { normalizeJob } from "../../utils/dataFormat";
 
-/* Calendar-day difference using the visitor's local date. */
+// ================== POSTED DATE ==================
 function getPostedLabel(dateString) {
     if (!dateString) return "Date unavailable";
-    const [year, month, day] = dateString.slice(0, 10).split("-").map(Number);
 
-    const postedDay = Date.UTC(year, month - 1, day);
+    const posted = new Date(dateString);
+
+    if (Number.isNaN(posted.getTime())) {
+        return "Date unavailable";
+    }
+
     const now = new Date();
+
+    const postedDay = Date.UTC(
+        posted.getFullYear(),
+        posted.getMonth(),
+        posted.getDate()
+    );
 
     const currentDay = Date.UTC(
         now.getFullYear(),
         now.getMonth(),
-        now.getDate(),
+        now.getDate()
     );
 
-    const days = Math.floor((currentDay - postedDay) / (1000 * 60 * 60 * 24));
+    const days = Math.floor((currentDay - postedDay) / 86400000);
 
-    if (!Number.isFinite(days)) return "Date unavailable";
-    if (days < 0) return "Scheduled";
+    if (days < 0) return "Recently posted";
     if (days === 0) return "Today";
     if (days === 1) return "1 day ago";
 
     return `${days} days ago`;
 }
 
-export default function JobDetails({ user = null }) {
+// ================== RELATED JOB RANKING ==================
+// Rank the fetched suggestions by department, skills and location.
+function getRelatedJobs(jobs, currentJob) {
+    const currentSkills = new Set(
+        currentJob.skills.map((skill) => skill.toLowerCase())
+    );
+
+    return jobs
+        .map(normalizeJob)
+        .filter(
+            (job) =>
+                job.id !== currentJob.id &&
+                job.status === "Published"
+        )
+        .map((job) => {
+            const sameDepartment =
+                Boolean(currentJob.department) &&
+                job.department?.toLowerCase() ===
+                    currentJob.department.toLowerCase();
+
+            const sameLocation =
+                Boolean(currentJob.location) &&
+                job.location?.toLowerCase() ===
+                    currentJob.location.toLowerCase();
+
+            const matchingSkills = job.skills.filter((skill) =>
+                currentSkills.has(skill.toLowerCase())
+            ).length;
+
+            return {
+                ...job,
+                relevance:
+                    (sameDepartment ? 4 : 0) +
+                    matchingSkills +
+                    (sameLocation ? 1 : 0),
+            };
+        })
+        .filter((job) => job.relevance > 0)
+        .sort((first, second) => second.relevance - first.relevance)
+        .slice(0, 3);
+}
+
+// ================== JOB DETAILS PAGE ==================
+function JobDetails({ user = null }) {
     const { id } = useParams();
 
+    // Reset page state when navigating between different jobs.
     return <JobDetailsContent key={id} id={id} user={user} />;
 }
 
 function JobDetailsContent({ id, user }) {
-    const titleRef = useRef(null);
+    const [job, setJob] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [notFound, setNotFound] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
 
-    const source = demoJobs.find(
-        (item) => item.id === id && item.status !== "Draft",
-    );
-    const job = source ? normalizeJob(source) : null;
+    const [relatedJobs, setRelatedJobs] = useState([]);
+    const [relatedLoading, setRelatedLoading] = useState(false);
+    const [relatedError, setRelatedError] = useState("");
+    const [relatedRefreshKey, setRelatedRefreshKey] = useState(0);
 
+    // ================== PAGE POSITION ==================
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: "instant" });
     }, []);
 
-    const relatedJobs = job
-        ? demoJobs
-              .filter(
-                  (item) => item.id !== job.id && item.status === "Published",
-              )
-              .map((item) => ({
-                  ...item,
-                  relevance:
-                      (item.department === job.department ? 4 : 0) +
-                      item.skills.filter((skill) => job.skills.includes(skill))
-                          .length +
-                      (item.location === job.location ? 1 : 0),
-              }))
-              .filter((item) => item.relevance > 0)
-              .sort((first, second) => second.relevance - first.relevance)
-              .slice(0, 3)
-        : [];
+    // ================== FETCH JOB DETAILS ==================
+    useEffect(() => {
+        const controller = new AbortController();
 
-    if (!job) {
+        async function fetchJob() {
+            setLoading(true);
+            setError("");
+            setNotFound(false);
+            setJob(null);
+
+            if (!/^[a-fA-F0-9]{24}$/.test(id || "")) {
+                setNotFound(true);
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const { data } = await api.get(
+                    `/jobs/${encodeURIComponent(id)}`,
+                    { signal: controller.signal }
+                );
+
+                if (controller.signal.aborted) return;
+
+                setJob(normalizeJob(data.job));
+            } catch (requestError) {
+                if (controller.signal.aborted) return;
+
+                if (requestError.response?.status === 404) {
+                    setNotFound(true);
+                } else {
+                    const message = requestError.response?.data?.message;
+
+                    setError(
+                        typeof message === "string" && message.trim()
+                            ? message
+                            : "Job details could not be loaded. Please try again."
+                    );
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchJob();
+
+        return () => controller.abort();
+    }, [id, refreshKey]);
+
+    // ================== FETCH RELATED JOB SUGGESTIONS ==================
+    useEffect(() => {
+        if (!job) return;
+
+        const controller = new AbortController();
+
+        async function fetchRelatedJobs() {
+            setRelatedLoading(true);
+            setRelatedError("");
+            setRelatedJobs([]);
+
+            try {
+                // Use the existing public endpoint for a bounded candidate list.
+                const params = {
+                    page: 1,
+                    limit: 20,
+                };
+
+                if (job.department) {
+                    params.search = job.department;
+                }
+
+                const { data } = await api.get("/jobs", {
+                    params,
+                    signal: controller.signal,
+                });
+
+                if (controller.signal.aborted) return;
+
+                setRelatedJobs(getRelatedJobs(data.jobs, job));
+            } catch {
+                if (controller.signal.aborted) return;
+
+                setRelatedError("Related jobs could not be loaded.");
+            } finally {
+                if (!controller.signal.aborted) {
+                    setRelatedLoading(false);
+                }
+            }
+        }
+
+        fetchRelatedJobs();
+
+        return () => controller.abort();
+    }, [job, relatedRefreshKey]);
+
+    // ================== LOADING STATE ==================
+    if (loading) {
+        return (
+            <section
+                className="website-section website-shell"
+                aria-busy="true"
+            >
+                <div className="rms-jobs-empty jd-not-found" role="status">
+                    <i
+                        className="fa-solid fa-spinner fa-spin"
+                        aria-hidden="true"
+                    />
+
+                    <h1 className="website-section-title">
+                        Loading job details...
+                    </h1>
+
+                    <p>Please wait while we fetch this opportunity.</p>
+                </div>
+            </section>
+        );
+    }
+
+    // ================== REQUEST ERROR ==================
+    if (error) {
+        return (
+            <section className="website-section website-shell">
+                <div className="rms-jobs-empty jd-not-found">
+                    <h1 className="website-section-title">
+                        Unable to load this job.
+                    </h1>
+
+                    <Alert severity="error">{error}</Alert>
+
+                    <Button
+                        type="button"
+                        onClick={() => setRefreshKey((previous) => previous + 1)}
+                        className="website-button website-button-primary"
+                    >
+                        Try Again
+                    </Button>
+
+                    <Link to="/jobs">Back to Jobs</Link>
+                </div>
+            </section>
+        );
+    }
+
+    // ================== UNAVAILABLE JOB ==================
+    if (notFound || !job) {
         return (
             <section className="website-section website-shell">
                 <div className="rms-jobs-empty jd-not-found">
                     <i className="fa-solid fa-briefcase" aria-hidden="true" />
 
-                    <h1
-                        ref={titleRef}
-                        tabIndex={-1}
-                        className="website-section-title"
-                    >
-                        Job not found.
-                    </h1>
+                    <h1 className="website-section-title">Job not found.</h1>
 
                     <p>
                         This position is unavailable or the link is incorrect.
@@ -95,15 +275,26 @@ function JobDetailsContent({ id, user }) {
         );
     }
 
+    // ================== JOB DISPLAY VALUES ==================
+    const isOpen = job.status === "Published";
+    const restrictedAccount = Boolean(user && user.role !== "user");
+    const canContinue = isOpen && !restrictedAccount;
+    const postedAt = job.publishedAt || job.createdAt;
+
+    const descriptionParagraphs = String(job.description || "")
+        .split(/\r?\n/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean);
+
     const summaryItems = [
         {
             label: "Location",
-            value: job.location,
+            value: job.location || "Not specified",
             icon: "fa-location-dot",
         },
         {
             label: "Experience",
-            value: job.experience,
+            value: job.experience || "Not specified",
             icon: "fa-briefcase",
         },
         {
@@ -113,9 +304,23 @@ function JobDetailsContent({ id, user }) {
         },
     ];
 
+    const applyLabel = !isOpen
+        ? "Applications closed"
+        : restrictedAccount
+          ? "User account required"
+          : "Apply Now";
+
+    const applyMessage = !isOpen
+        ? "This position is no longer accepting applications."
+        : restrictedAccount
+          ? "Applications are available to user accounts."
+          : user
+            ? "Continue to the application form."
+            : "Login is required to apply for this job.";
+
     return (
         <div className="jd-page">
-            {/* WEBSITE BANNER */}
+            {/* ================== WEBSITE BANNER ================== */}
             <section
                 className="about-hero"
                 aria-labelledby="job-details-page-title"
@@ -130,14 +335,8 @@ function JobDetailsContent({ id, user }) {
                 <div className="website-shell about-hero-inner">
                     <nav className="about-breadcrumb" aria-label="Breadcrumb">
                         <ol>
-                            <li>
-                                <Link to="/">Home</Link>
-                            </li>
-
-                            <li>
-                                <Link to="/jobs">Jobs</Link>
-                            </li>
-
+                            <li><Link to="/">Home</Link></li>
+                            <li><Link to="/jobs">Jobs</Link></li>
                             <li aria-current="page">Job Details</li>
                         </ol>
                     </nav>
@@ -148,10 +347,8 @@ function JobDetailsContent({ id, user }) {
                         </p>
 
                         <h1
-                            ref={titleRef}
                             id="job-details-page-title"
                             className="website-section-title"
-                            tabIndex={-1}
                         >
                             Explore the role.
                             <span>Picture your next step.</span>
@@ -165,7 +362,7 @@ function JobDetailsContent({ id, user }) {
                 </div>
             </section>
 
-            {/* JOB CONTENT AND RELATED JOBS */}
+            {/* ================== JOB CONTENT ================== */}
             <section className="website-section">
                 <div className="website-shell">
                     <div className="jd-container">
@@ -174,7 +371,6 @@ function JobDetailsContent({ id, user }) {
                                 className="jd-content-card"
                                 aria-labelledby="job-title"
                             >
-                                {/* SUMMARY INSIDE ABOUT THE ROLE */}
                                 <header className="jd-role-header">
                                     <p className="website-section-label">
                                         ABOUT THE ROLE
@@ -193,40 +389,36 @@ function JobDetailsContent({ id, user }) {
                                             <h2 id="job-title">{job.title}</h2>
 
                                             <div className="jd-job-tags">
-                                                <span>{job.type}</span>
-                                                <span>{job.mode}</span>
+                                                {job.type && <span>{job.type}</span>}
+                                                {job.mode && <span>{job.mode}</span>}
+                                                {!isOpen && <span>Closed</span>}
                                             </div>
                                         </div>
 
                                         <div className="jd-summary-action">
                                             <Button
-                                                component={Link}
+                                                component={canContinue ? Link : "button"}
                                                 to={
-                                                    job.status === "Published"
-                                                        ? `/jobs/${encodeURIComponent(id)}/apply`
+                                                    canContinue
+                                                        ? `/jobs/${encodeURIComponent(job.id)}/apply`
                                                         : undefined
                                                 }
-                                                disabled={
-                                                    job.status !== "Published"
-                                                }
+                                                disabled={!canContinue}
                                                 variant="contained"
                                                 disableElevation
                                                 className="website-button website-button-primary"
                                             >
-                                                {job.status === "Published"
-                                                    ? "Apply Now"
-                                                    : "Applications closed"}
-                                                <i
-                                                    className="fa-solid fa-arrow-right"
-                                                    aria-hidden="true"
-                                                />
+                                                {applyLabel}
+
+                                                {canContinue && (
+                                                    <i
+                                                        className="fa-solid fa-arrow-right"
+                                                        aria-hidden="true"
+                                                    />
+                                                )}
                                             </Button>
 
-                                            <p>
-                                                {user?.role === "user"
-                                                    ? "Continue your application."
-                                                    : "Preview the application form."}
-                                            </p>
+                                            <p>{applyMessage}</p>
                                         </div>
                                     </div>
 
@@ -252,12 +444,11 @@ function JobDetailsContent({ id, user }) {
                                                 className="fa-solid fa-users"
                                                 aria-hidden="true"
                                             />
+
                                             <span>
-                                                Openings:
+                                                Openings:{" "}
                                                 <strong>
-                                                    {" "}
-                                                    {job.openings ||
-                                                        "Not specified"}
+                                                    {job.openings ?? "Not specified"}
                                                 </strong>
                                             </span>
                                         </p>
@@ -267,12 +458,11 @@ function JobDetailsContent({ id, user }) {
                                                 className="fa-regular fa-clock"
                                                 aria-hidden="true"
                                             />
+
                                             <span>
                                                 Posted:{" "}
-                                                <time dateTime={job.createdAt}>
-                                                    {getPostedLabel(
-                                                        job.createdAt,
-                                                    )}
+                                                <time dateTime={postedAt || undefined}>
+                                                    {getPostedLabel(postedAt)}
                                                 </time>
                                             </span>
                                         </p>
@@ -284,50 +474,71 @@ function JobDetailsContent({ id, user }) {
                                         Job description
                                     </h3>
 
-                                    <p className="website-section-description">
-                                        {job.description}
-                                    </p>
+                                    {descriptionParagraphs.length ? (
+                                        descriptionParagraphs.map((paragraph, index) => (
+                                            <p
+                                                key={index}
+                                                className="website-section-description"
+                                            >
+                                                {paragraph}
+                                            </p>
+                                        ))
+                                    ) : (
+                                        <p className="website-section-description">
+                                            No description provided.
+                                        </p>
+                                    )}
                                 </section>
 
-                                <section className="jd-content-section">
-                                    <h3 className="jd-section-title">
-                                        What we’re looking for
-                                    </h3>
+                                {job.requirements.length > 0 && (
+                                    <section className="jd-content-section">
+                                        <h3 className="jd-section-title">
+                                            What we’re looking for
+                                        </h3>
 
-                                    <ul className="jd-point-list">
-                                        {job.requirements.map((item) => (
-                                            <li key={item}>{item}</li>
-                                        ))}
-                                    </ul>
-                                </section>
+                                        <ul className="jd-point-list">
+                                            {job.requirements.map((item, index) => (
+                                                <li key={`${index}-${item}`}>
+                                                    {item}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </section>
+                                )}
 
-                                <section className="jd-content-section">
-                                    <h3 className="jd-section-title">
-                                        Qualification
-                                    </h3>
+                                {job.qualification && (
+                                    <section className="jd-content-section">
+                                        <h3 className="jd-section-title">
+                                            Qualification
+                                        </h3>
 
-                                    <p className="website-section-description">
-                                        {job.qualification}
-                                    </p>
-                                </section>
+                                        <p className="website-section-description">
+                                            {job.qualification}
+                                        </p>
+                                    </section>
+                                )}
 
-                                <section className="jd-content-section">
-                                    <h3 className="jd-section-title">
-                                        Relevant skills
-                                    </h3>
+                                {job.skills.length > 0 && (
+                                    <section className="jd-content-section">
+                                        <h3 className="jd-section-title">
+                                            Relevant skills
+                                        </h3>
 
-                                    <ul
-                                        className="jd-skills"
-                                        aria-label="Relevant skills"
-                                    >
-                                        {job.skills.map((skill) => (
-                                            <li key={skill}>{skill}</li>
-                                        ))}
-                                    </ul>
-                                </section>
+                                        <ul
+                                            className="jd-skills"
+                                            aria-label="Relevant skills"
+                                        >
+                                            {job.skills.map((skill, index) => (
+                                                <li key={`${index}-${skill}`}>
+                                                    {skill}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </section>
+                                )}
                             </article>
 
-                            {/* RELATED JOBS */}
+                            {/* ================== RELATED JOBS ================== */}
                             <aside
                                 className="jd-sidebar"
                                 aria-labelledby="related-jobs-title"
@@ -345,82 +556,100 @@ function JobDetailsContent({ id, user }) {
                                             Related jobs
                                         </h2>
 
-                                        <p>
-                                            More roles you might want to
-                                            explore.
-                                        </p>
+                                        <p>More roles you might want to explore.</p>
                                     </div>
 
-                                    {relatedJobs.length > 0 ? (
-                                        <div className="jd-related-list">
-                                            {relatedJobs.map((relatedJob) => (
-                                                <article
-                                                    key={relatedJob.id}
-                                                    className="jd-related-card"
+                                    {relatedLoading ? (
+                                        <p className="jd-related-empty" role="status">
+                                            Loading related jobs...
+                                        </p>
+                                    ) : relatedError ? (
+                                        <Alert
+                                            severity="warning"
+                                            action={
+                                                <Button
+                                                    type="button"
+                                                    color="inherit"
+                                                    size="small"
+                                                    onClick={() =>
+                                                        setRelatedRefreshKey(
+                                                            (previous) => previous + 1
+                                                        )
+                                                    }
                                                 >
-                                                    <p className="jd-related-company">
-                                                        {relatedJob.company}
-                                                    </p>
+                                                    Retry
+                                                </Button>
+                                            }
+                                        >
+                                            {relatedError}
+                                        </Alert>
+                                    ) : relatedJobs.length > 0 ? (
+                                        <div className="jd-related-list">
+                                            {relatedJobs.map((relatedJob) => {
+                                                const path = `/jobs/${encodeURIComponent(relatedJob.id)}`;
 
-                                                    <h3>
-                                                        <Link
-                                                            to={`/jobs/${relatedJob.id}`}
-                                                        >
-                                                            {relatedJob.title}
-                                                        </Link>
-                                                    </h3>
+                                                return (
+                                                    <article
+                                                        key={relatedJob.id}
+                                                        className="jd-related-card"
+                                                    >
+                                                        <p className="jd-related-company">
+                                                            {relatedJob.company}
+                                                        </p>
 
-                                                    <p className="jd-related-location">
-                                                        <i
-                                                            className="fa-solid fa-location-dot"
-                                                            aria-hidden="true"
-                                                        />
-                                                        {relatedJob.location}
-                                                    </p>
+                                                        <h3>
+                                                            <Link to={path}>
+                                                                {relatedJob.title}
+                                                            </Link>
+                                                        </h3>
 
-                                                    <dl className="jd-related-meta">
-                                                        <div>
-                                                            <dt>Experience</dt>
-                                                            <dd>
-                                                                {
-                                                                    relatedJob.experience
-                                                                }
-                                                            </dd>
-                                                        </div>
-
-                                                        <div>
-                                                            <dt>Salary</dt>
-                                                            <dd>
-                                                                {
-                                                                    relatedJob.salary
-                                                                }
-                                                            </dd>
-                                                        </div>
-                                                    </dl>
-
-                                                    <div className="jd-related-footer">
-                                                        <span>
-                                                            {relatedJob.mode}
-                                                        </span>
-
-                                                        <Link
-                                                            to={`/jobs/${relatedJob.id}`}
-                                                            aria-label={`View details for ${relatedJob.title}`}
-                                                        >
-                                                            View Details
+                                                        <p className="jd-related-location">
                                                             <i
-                                                                className="fa-solid fa-arrow-right"
+                                                                className="fa-solid fa-location-dot"
                                                                 aria-hidden="true"
                                                             />
-                                                        </Link>
-                                                    </div>
-                                                </article>
-                                            ))}
+                                                            {relatedJob.location}
+                                                        </p>
+
+                                                        <dl className="jd-related-meta">
+                                                            <div>
+                                                                <dt>Experience</dt>
+                                                                <dd>
+                                                                    {relatedJob.experience ||
+                                                                        "Not specified"}
+                                                                </dd>
+                                                            </div>
+
+                                                            <div>
+                                                                <dt>Salary</dt>
+                                                                <dd>
+                                                                    {relatedJob.salary ||
+                                                                        "Not disclosed"}
+                                                                </dd>
+                                                            </div>
+                                                        </dl>
+
+                                                        <div className="jd-related-footer">
+                                                            <span>{relatedJob.mode}</span>
+
+                                                            <Link
+                                                                to={path}
+                                                                aria-label={`View details for ${relatedJob.title}`}
+                                                            >
+                                                                View Details
+                                                                <i
+                                                                    className="fa-solid fa-arrow-right"
+                                                                    aria-hidden="true"
+                                                                />
+                                                            </Link>
+                                                        </div>
+                                                    </article>
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <p className="jd-related-empty">
-                                            No related positions available right
-                                            now.
+                                            No related positions available right now.
                                         </p>
                                     )}
 
@@ -440,3 +669,5 @@ function JobDetailsContent({ id, user }) {
         </div>
     );
 }
+
+export default JobDetails;

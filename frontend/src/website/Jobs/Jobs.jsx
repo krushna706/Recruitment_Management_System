@@ -1,63 +1,51 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Button, MenuItem, Pagination, TextField } from "@mui/material";
+import { Alert, Button, MenuItem, Pagination, TextField } from "@mui/material";
 
+import api from "../../services/api";
 import JobSearchBar from "../../components/JobSearchBar";
 
-import { demoJobs } from "../../data/jobData";
-import { getExperienceRange } from "../../utils/dataFormat";
-
-const employmentTypes = [...new Set(demoJobs.map((job) => job.type))];
-
-const workModes = [...new Set(demoJobs.map((job) => job.mode))];
-
+// ================== JOB CONFIGURATION ==================
+const EMPLOYMENT_TYPES = ["Full Time", "Part Time", "Contract", "Internship"];
+const WORK_MODES = ["On-site", "Hybrid", "Remote"];
 const PAGE_SIZE = 20;
 
-/* Calendar-day difference using the visitor's local date. */
+// ================== POSTED DATE ==================
+// Compare calendar dates in the visitor's local timezone.
 function getPostedLabel(dateString) {
     if (!dateString) return "Date unavailable";
-    const [year, month, day] = dateString.slice(0, 10).split("-").map(Number);
 
-    const postedDay = Date.UTC(year, month - 1, day);
+    const posted = new Date(dateString);
+
+    if (Number.isNaN(posted.getTime())) {
+        return "Date unavailable";
+    }
+
     const now = new Date();
+
+    const postedDay = Date.UTC(
+        posted.getFullYear(),
+        posted.getMonth(),
+        posted.getDate()
+    );
 
     const currentDay = Date.UTC(
         now.getFullYear(),
         now.getMonth(),
-        now.getDate(),
+        now.getDate()
     );
 
-    const days = Math.floor((currentDay - postedDay) / (1000 * 60 * 60 * 24));
+    const days = Math.floor((currentDay - postedDay) / 86400000);
 
-    if (!Number.isFinite(days)) return "Date unavailable";
-    if (days < 0) return "Scheduled";
+    if (days < 0) return "Recently posted";
     if (days === 0) return "Today";
     if (days === 1) return "1 day ago";
 
     return `${days} days ago`;
 }
 
-function matchesExperience(job, experience) {
-    if (!experience) return true;
-
-    const range = getExperienceRange(job.experience);
-    if (!range) return false;
-
-    if (experience === "30+") {
-        return range.max > 30;
-    }
-
-    const years = Number(experience);
-
-    return (
-        Number.isFinite(years) &&
-        years >= 0 &&
-        years >= range.min &&
-        years <= range.max
-    );
-}
-
-export default function Jobs() {
+// ================== JOBS PAGE ==================
+function Jobs() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [pagination, setPagination] = useState({
@@ -65,6 +53,18 @@ export default function Jobs() {
         page: 1,
     });
 
+    const [result, setResult] = useState({
+        requestKey: "",
+        jobs: [],
+        total: 0,
+        totalPages: 0,
+        error: "",
+    });
+
+    const [loading, setLoading] = useState(true);
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    // ================== URL FILTERS ==================
     const designation = (searchParams.get("designation") || "").trim();
     const location = (searchParams.get("location") || "").trim();
     const experience = searchParams.get("experience") || "";
@@ -79,46 +79,115 @@ export default function Jobs() {
         workMode,
     ]);
 
-    const filteredJobs = useMemo(() => {
-        const titleQuery = designation.toLowerCase();
-        const locationQuery = location.toLowerCase();
+    // A new filter starts from the first page.
+    const currentPage = pagination.filterKey === filterKey
+        ? pagination.page
+        : 1;
 
-        return demoJobs.filter((job) => {
-            if (job.status !== "Published") return false;
-            const searchableText = [job.title, job.company, job.description]
-                .join(" ")
-                .toLowerCase();
+    const requestKey = JSON.stringify([
+        filterKey,
+        currentPage,
+        refreshKey,
+    ]);
 
-            const searchableLocation =
-                `${job.location} ${job.mode}`.toLowerCase();
-
-            return (
-                (!titleQuery || searchableText.includes(titleQuery)) &&
-                (!locationQuery ||
-                    searchableLocation.includes(locationQuery)) &&
-                matchesExperience(job, experience) &&
-                (!employmentType || job.type === employmentType) &&
-                (!workMode || job.mode === workMode)
-            );
-        });
-    }, [designation, location, experience, employmentType, workMode]);
-
-    const pageCount = Math.ceil(filteredJobs.length / PAGE_SIZE);
-
-    const currentPage =
-        pagination.filterKey === filterKey
-            ? Math.min(pagination.page, Math.max(1, pageCount))
-            : 1;
-
+    const isCurrentResult = result.requestKey === requestKey;
+    const isLoading = loading || !isCurrentResult;
+    const error = isCurrentResult ? result.error : "";
+    const jobs = isCurrentResult ? result.jobs : [];
+    const total = isCurrentResult ? result.total : 0;
+    const pageCount = isCurrentResult ? result.totalPages : 0;
     const startIndex = (currentPage - 1) * PAGE_SIZE;
 
-    const visibleJobs = filteredJobs.slice(startIndex, startIndex + PAGE_SIZE);
-
     const hasFilters = Boolean(
-        designation || location || experience || employmentType || workMode,
+        designation || location || experience || employmentType || workMode
     );
 
-    const updateFilter = (name, value) => {
+    // ================== FETCH PUBLISHED JOBS ==================
+    useEffect(() => {
+        const controller = new AbortController();
+
+        async function fetchJobs() {
+            setLoading(true);
+
+            const params = {
+                page: currentPage,
+                limit: PAGE_SIZE,
+            };
+
+            if (designation) params.search = designation;
+            if (location) params.location = location;
+            if (experience) params.experience = experience;
+            if (employmentType) params.type = employmentType;
+            if (workMode) params.mode = workMode;
+
+            try {
+                const { data } = await api.get("/jobs", {
+                    params,
+                    signal: controller.signal,
+                });
+
+                if (controller.signal.aborted) return;
+
+                const lastPage = Math.max(data.pagination.totalPages, 1);
+
+                // Handle jobs being closed while the visitor is browsing.
+                if (currentPage > lastPage) {
+                    setPagination({
+                        filterKey,
+                        page: lastPage,
+                    });
+
+                    return;
+                }
+
+                setResult({
+                    requestKey,
+                    jobs: data.jobs.map((job) => ({
+                        ...job,
+                        id: String(job.id || job._id),
+                    })),
+                    total: data.pagination.total,
+                    totalPages: data.pagination.totalPages,
+                    error: "",
+                });
+            } catch (requestError) {
+                if (controller.signal.aborted) return;
+
+                const message = requestError.response?.data?.message;
+
+                setResult({
+                    requestKey,
+                    jobs: [],
+                    total: 0,
+                    totalPages: 0,
+                    error: typeof message === "string" && message.trim()
+                        ? message
+                        : "Jobs could not be loaded. Please try again.",
+                });
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchJobs();
+
+        // Ignore older responses after filters change or the page unmounts.
+        return () => controller.abort();
+    }, [
+        designation,
+        location,
+        experience,
+        employmentType,
+        workMode,
+        currentPage,
+        filterKey,
+        requestKey,
+    ]);
+
+    // ================== FILTER HANDLERS ==================
+    function updateFilter(name, value) {
         const nextParams = new URLSearchParams(searchParams);
 
         if (value) {
@@ -127,12 +196,14 @@ export default function Jobs() {
             nextParams.delete(name);
         }
 
+        setPagination({ filterKey: "", page: 1 });
+
         setSearchParams(nextParams, {
             preventScrollReset: true,
         });
-    };
+    }
 
-    const clearFilters = () => {
+    function clearFilters() {
         const nextParams = new URLSearchParams(searchParams);
 
         [
@@ -143,34 +214,47 @@ export default function Jobs() {
             "workMode",
         ].forEach((name) => nextParams.delete(name));
 
+        setPagination({ filterKey: "", page: 1 });
+
         setSearchParams(nextParams, {
             preventScrollReset: true,
         });
-    };
+    }
 
-    const handlePageChange = (_, page) => {
+    function handlePageChange(_, page) {
         setPagination({ filterKey, page });
+
         document.getElementById("jobs-results-title")?.focus();
-    };
+    }
 
     const filterOptions = [
         {
             name: "employmentType",
             label: "Job type",
             value: employmentType,
-            options: employmentTypes,
+            options: EMPLOYMENT_TYPES,
         },
         {
             name: "workMode",
             label: "Work mode",
             value: workMode,
-            options: workModes,
+            options: WORK_MODES,
         },
     ];
 
+    let resultLabel = "No matching positions found.";
+
+    if (isLoading) {
+        resultLabel = "Loading opportunities...";
+    } else if (error) {
+        resultLabel = "Job listings are currently unavailable.";
+    } else if (total > 0) {
+        resultLabel = `Showing ${startIndex + 1}–${startIndex + jobs.length} of ${total} positions`;
+    }
+
     return (
         <div className="jobs-page">
-            {/* IMAGE BANNER */}
+            {/* ================== IMAGE BANNER ================== */}
             <section className="about-hero" aria-labelledby="jobs-page-title">
                 <img
                     className="about-hero-image"
@@ -182,10 +266,7 @@ export default function Jobs() {
                 <div className="website-shell about-hero-inner">
                     <nav className="about-breadcrumb" aria-label="Breadcrumb">
                         <ol>
-                            <li>
-                                <Link to="/">Home</Link>
-                            </li>
-
+                            <li><Link to="/">Home</Link></li>
                             <li aria-current="page">Jobs</li>
                         </ol>
                     </nav>
@@ -211,7 +292,7 @@ export default function Jobs() {
                 </div>
             </section>
 
-            {/* CENTERED SEARCH CONTAINER */}
+            {/* ================== SEARCH AND FILTERS ================== */}
             <section
                 className="website-shell jobs-search-section"
                 aria-label="Search and filter jobs"
@@ -230,10 +311,7 @@ export default function Jobs() {
                                 label={filter.label}
                                 value={filter.value}
                                 onChange={(event) =>
-                                    updateFilter(
-                                        filter.name,
-                                        event.target.value,
-                                    )
+                                    updateFilter(filter.name, event.target.value)
                                 }
                                 className="website-text-field"
                             >
@@ -266,10 +344,11 @@ export default function Jobs() {
                 </div>
             </section>
 
-            {/* FLUID JOB RESULTS */}
+            {/* ================== JOB RESULTS ================== */}
             <section
                 className="website-section jobs-results"
                 aria-labelledby="jobs-results-title"
+                aria-busy={isLoading}
             >
                 <div className="website-shell jobs-results-fluid">
                     <div className="jobs-results-header">
@@ -287,126 +366,146 @@ export default function Jobs() {
                         </h2>
 
                         <p className="jobs-result-count" role="status">
-                            {filteredJobs.length === 0
-                                ? "No matching positions found."
-                                : `Showing ${startIndex + 1}–${Math.min(
-                                      startIndex + PAGE_SIZE,
-                                      filteredJobs.length,
-                                  )} of ${filteredJobs.length} positions`}
+                            {resultLabel}
                         </p>
                     </div>
 
-                    {visibleJobs.length > 0 ? (
+                    {isLoading ? (
+                        <div className="rms-jobs-empty jobs-empty">
+                            <i
+                                className="fa-solid fa-spinner fa-spin"
+                                aria-hidden="true"
+                            />
+                            <h3>Loading jobs...</h3>
+                            <p>Please wait while we fetch the latest openings.</p>
+                        </div>
+                    ) : error ? (
+                        <Alert
+                            severity="error"
+                            action={
+                                <Button
+                                    type="button"
+                                    color="inherit"
+                                    size="small"
+                                    onClick={() =>
+                                        setRefreshKey((previous) => previous + 1)
+                                    }
+                                >
+                                    Retry
+                                </Button>
+                            }
+                        >
+                            {error}
+                        </Alert>
+                    ) : jobs.length > 0 ? (
                         <>
                             <div className="jobs-list-grid">
-                                {visibleJobs.map((job) => (
-                                    <article
-                                        key={job.id}
-                                        className="rms-job-card jobs-position-card"
-                                    >
-                                        {/* Company left, posting age right */}
-                                        <div className="jobs-card-topline">
-                                            <p className="rms-job-company">
-                                                {job.company}
-                                            </p>
+                                {jobs.map((job) => {
+                                    const postedAt = job.publishedAt || job.createdAt;
+                                    const detailsPath = `/jobs/${encodeURIComponent(job.id)}`;
 
-                                            <time
-                                                className="jobs-posted"
-                                                dateTime={job.createdAt}
-                                                title={`Posted on ${job.createdAt}`}
-                                                aria-label={`Posted ${getPostedLabel(
-                                                    job.createdAt,
-                                                )}`}
-                                            >
-                                                <i
-                                                    className="fa-regular fa-clock"
-                                                    aria-hidden="true"
-                                                />
+                                    return (
+                                        <article
+                                            key={job.id}
+                                            className="rms-job-card jobs-position-card"
+                                        >
+                                            <div className="jobs-card-topline">
+                                                <p className="rms-job-company">
+                                                    {job.company}
+                                                </p>
 
-                                                {getPostedLabel(job.createdAt)}
-                                            </time>
-                                        </div>
-
-                                        <div className="jobs-title-row">
-                                            <h3 className="rms-job-title">
-                                                <Link
-                                                    to={`/jobs/${job.id}`}
-                                                    title={job.title}
+                                                <time
+                                                    className="jobs-posted"
+                                                    dateTime={postedAt || undefined}
+                                                    aria-label={`Posted ${getPostedLabel(postedAt)}`}
                                                 >
-                                                    {job.title}
-                                                </Link>
-                                            </h3>
-                                        </div>
-
-                                        <div className="rms-job-tags">
-                                            <span>{job.type}</span>
-
-                                            <span>{job.mode}</span>
-                                        </div>
-
-                                        <p className="jobs-card-description">
-                                            {job.description}
-                                        </p>
-
-                                        {/* Experience and salary */}
-                                        <dl className="rms-job-meta jobs-card-meta">
-                                            <div>
-                                                <dt>
                                                     <i
-                                                        className="fa-solid fa-briefcase"
+                                                        className="fa-regular fa-clock"
                                                         aria-hidden="true"
                                                     />
-                                                    Experience
-                                                </dt>
-
-                                                <dd>{job.experience}</dd>
+                                                    {getPostedLabel(postedAt)}
+                                                </time>
                                             </div>
 
-                                            <div>
-                                                <dt>
-                                                    <i
-                                                        className="fa-solid fa-indian-rupee-sign"
-                                                        aria-hidden="true"
-                                                    />
-                                                    Salary
-                                                </dt>
-
-                                                <dd>
-                                                    {job.salary ||
-                                                        "Not disclosed"}
-                                                </dd>
+                                            <div className="jobs-title-row">
+                                                <h3 className="rms-job-title">
+                                                    <Link
+                                                        to={detailsPath}
+                                                        title={job.title}
+                                                    >
+                                                        {job.title}
+                                                    </Link>
+                                                </h3>
                                             </div>
-                                        </dl>
 
-                                        {/* Location and details button */}
-                                        <div className="rms-job-footer">
-                                            <p
-                                                className="rms-job-location"
-                                                title={job.location}
-                                            >
-                                                <i
-                                                    className="fa-solid fa-location-dot"
-                                                    aria-hidden="true"
-                                                />
+                                            <div className="rms-job-tags">
+                                                <span>{job.type}</span>
+                                                <span>{job.mode}</span>
+                                            </div>
 
-                                                <span>{job.location}</span>
+                                            <p className="jobs-card-description">
+                                                {job.shortDescription ||
+                                                    "View the job details for more information."}
                                             </p>
 
-                                            <Button
-                                                component={Link}
-                                                to={`/jobs/${job.id}`}
-                                                className="website-button website-button-outline jobs-details-button"
-                                                aria-label={`View details for ${job.title}`}
-                                            >
-                                                View Details
-                                                <i
-                                                    className="fa-solid fa-arrow-right"
-                                                    aria-hidden="true"
-                                                />
-                                            </Button>
-                                        </div>
-                                    </article>
-                                ))}
+                                            <dl className="rms-job-meta jobs-card-meta">
+                                                <div>
+                                                    <dt>
+                                                        <i
+                                                            className="fa-solid fa-briefcase"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Experience
+                                                    </dt>
+
+                                                    <dd>
+                                                        {job.experience || "Not specified"}
+                                                    </dd>
+                                                </div>
+
+                                                <div>
+                                                    <dt>
+                                                        <i
+                                                            className="fa-solid fa-indian-rupee-sign"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Salary
+                                                    </dt>
+
+                                                    <dd>
+                                                        {job.salary || "Not disclosed"}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+
+                                            <div className="rms-job-footer">
+                                                <p
+                                                    className="rms-job-location"
+                                                    title={job.location}
+                                                >
+                                                    <i
+                                                        className="fa-solid fa-location-dot"
+                                                        aria-hidden="true"
+                                                    />
+                                                    <span>{job.location}</span>
+                                                </p>
+
+                                                <Button
+                                                    component={Link}
+                                                    to={detailsPath}
+                                                    className="website-button website-button-outline jobs-details-button"
+                                                    aria-label={`View details for ${job.title}`}
+                                                >
+                                                    View Details
+                                                    <i
+                                                        className="fa-solid fa-arrow-right"
+                                                        aria-hidden="true"
+                                                    />
+                                                </Button>
+                                            </div>
+                                        </article>
+                                    );
+                                })}
                             </div>
 
                             {pageCount > 1 && (
@@ -457,3 +556,5 @@ export default function Jobs() {
         </div>
     );
 }
+
+export default Jobs;

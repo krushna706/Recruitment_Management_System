@@ -2,7 +2,7 @@ const { rateLimit } = require("express-rate-limit");
 const { createHash } = require("node:crypto");
 
 // ================== LOGIN IP LIMITER ==================
-// Limit all login requests from the same IP address.
+// Limit login requests from the same IP address.
 const loginIpLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 30,
@@ -16,7 +16,7 @@ const loginIpLimiter = rateLimit({
 });
 
 // ================== LOGIN ACCOUNT LIMITER ==================
-// Apply after login validation to use the normalized email.
+// Run after login validation so the email is normalized.
 // Successful responses are removed from this counter.
 const loginAccountLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -25,7 +25,6 @@ const loginAccountLimiter = rateLimit({
     legacyHeaders: false,
     skipSuccessfulRequests: true,
 
-    // Avoid storing the raw email as the rate-limit key.
     keyGenerator: (req) => {
         return createHash("sha256")
             .update(req.body.email)
@@ -39,7 +38,7 @@ const loginAccountLimiter = rateLimit({
 });
 
 // ================== SIGNUP IP LIMITER ==================
-// Count all signup requests, including unsuccessful requests.
+// Count both successful and unsuccessful signup requests.
 const signupLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     limit: 5,
@@ -52,9 +51,29 @@ const signupLimiter = rateLimit({
     },
 });
 
+// ================== APPLICATION SUBMISSION LIMITER ==================
+// Run after authentication and before receiving the resume.
+// Limit each account independently, including failed submissions.
+const applicationLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+
+    keyGenerator: (req) => {
+        return String(req.user._id);
+    },
+
+    message: {
+        success: false,
+        message: "Too many application attempts. Please try again later.",
+    },
+});
+
 // ================== EXPORTS ==================
 module.exports = {
     loginIpLimiter,
     loginAccountLimiter,
     signupLimiter,
+    applicationLimiter,
 };

@@ -1,28 +1,12 @@
-import { useRef, useState } from "react";
-import {
-    Alert,
-    Button,
-    Chip,
-    FormControlLabel,
-    MenuItem,
-    Switch,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TextField,
-} from "@mui/material";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Button, Chip, FormControlLabel, MenuItem, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField } from "@mui/material";
 import { toast } from "react-toastify";
 
+import api from "../services/api";
 import { getExperienceRange } from "../utils/dataFormat";
 
-const STORAGE_KEY = "rms-client-jobs-v1";
-
+// ================== JOB CONFIGURATION ==================
 const JOB_TYPES = ["Full Time", "Part Time", "Contract", "Internship"];
-
 const WORK_MODES = ["On-site", "Hybrid", "Remote"];
 const JOB_STATUSES = ["Draft", "Published", "Closed"];
 
@@ -38,10 +22,25 @@ const EMPTY_FORM = {
     openings: "",
     qualification: "",
     skills: "",
+    shortDescription: "",
     description: "",
     requirements: "",
     status: "Draft",
     featured: false,
+};
+
+const FIELD_LIMITS = {
+    company: 150,
+    title: 150,
+    department: 100,
+    location: 200,
+    experience: 100,
+    salary: 100,
+    qualification: 500,
+    skills: 10000,
+    shortDescription: 150,
+    description: 20000,
+    requirements: 10000,
 };
 
 const STATUS_COLORS = {
@@ -56,67 +55,37 @@ const STATUS_DESCRIPTIONS = {
     Closed: "Stop new applications while retaining the job and its existing applications.",
 };
 
-// Only retain supported form fields.
-// Old local records may still contain a deadline; it is ignored.
+// ================== FORM VALUES ==================
+// Convert API values into editable input values.
 function getFormValues(source = {}) {
     return Object.fromEntries(
-        Object.entries(EMPTY_FORM).map(([key, fallback]) => [
-            key,
-            key === "openings" && Number.isInteger(source[key])
-                ? String(source[key])
-                : ["skills", "requirements"].includes(key) &&
-                    Array.isArray(source[key])
-                  ? source[key].join(key === "skills" ? ", " : "\n")
-                  : typeof source[key] === typeof fallback
+        Object.entries(EMPTY_FORM).map(([key, fallback]) => {
+            if (key === "openings") {
+                return [
+                    key,
+                    Number.isInteger(source[key]) ? String(source[key]) : "",
+                ];
+            }
+
+            if (key === "skills" && Array.isArray(source[key])) {
+                return [key, source[key].join(", ")];
+            }
+
+            if (key === "requirements" && Array.isArray(source[key])) {
+                return [key, source[key].join("\n")];
+            }
+
+            return [
+                key,
+                typeof source[key] === typeof fallback
                     ? source[key]
                     : fallback,
-        ]),
+            ];
+        })
     );
 }
 
-function loadJobs() {
-    try {
-        const stored = window.localStorage.getItem(STORAGE_KEY);
-
-        if (!stored) return { jobs: [], error: "" };
-
-        const parsed = JSON.parse(stored);
-
-        const valid =
-            Array.isArray(parsed) &&
-            parsed.every(
-                (job) =>
-                    job &&
-                    typeof job.id === "string" &&
-                    typeof job.company === "string" &&
-                    typeof job.title === "string" &&
-                    JOB_STATUSES.includes(job.status),
-            );
-
-        if (!valid) throw new Error("Invalid job data");
-
-        return {
-            jobs: parsed.map((job) => ({
-                ...getFormValues(job),
-                id: job.id,
-                openingType: "client",
-                createdAt:
-                    typeof job.createdAt === "string" ? job.createdAt : "",
-                updatedAt:
-                    typeof job.updatedAt === "string" ? job.updatedAt : "",
-            })),
-            error: "",
-        };
-    } catch {
-        return {
-            jobs: [],
-            error:
-                "Saved jobs could not be loaded. Saving is disabled to " +
-                "avoid overwriting existing data. Check browser storage and reload.",
-        };
-    }
-}
-
+// ================== FORM VALIDATION ==================
 function validateJob(form) {
     const errors = {};
 
@@ -140,21 +109,38 @@ function validateJob(form) {
         errors.status = "Select a valid status.";
     }
 
+    Object.entries(FIELD_LIMITS).forEach(([name, limit]) => {
+        if (form[name].trim().length > limit) {
+            errors[name] = `Use no more than ${limit} characters.`;
+        }
+    });
+
+    const openings = form.openings.trim();
+
     if (
-        form.openings &&
-        (!/^\d+$/.test(form.openings) ||
-            Number(form.openings) < 1 ||
-            Number(form.openings) > 10000)
+        openings &&
+        (!/^\d+$/.test(openings) ||
+            Number(openings) < 1 ||
+            Number(openings) > 10000)
     ) {
         errors.openings = "Enter a whole number between 1 and 10,000.";
     }
 
-    if (
-        form.status === "Published" &&
-        form.experience.trim() &&
-        !getExperienceRange(form.experience)
-    ) {
-        errors.experience = "Use Fresher, 2 years, 2–4 years or 5+ years.";
+    const skills = [
+        ...new Set(
+            form.skills
+                .split(/[,\n]/)
+                .map((skill) => skill.trim())
+                .filter(Boolean)
+        ),
+    ];
+
+    if (skills.length > 50) {
+        errors.skills = "A maximum of 50 skills is allowed.";
+    }
+
+    if (skills.some((skill) => skill.length > 100)) {
+        errors.skills = "Each skill cannot exceed 100 characters.";
     }
 
     if (form.status === "Published") {
@@ -164,21 +150,47 @@ function validateJob(form) {
             experience: "Enter the experience requirement.",
             qualification: "Enter the qualification requirement.",
             skills: "Enter the required skills.",
-            description: "Enter the job description.",
+            shortDescription: "Enter a short description for job cards.",
+            description: "Enter the full job description.",
             requirements: "Enter the job requirements.",
         };
 
-        Object.entries(requiredFields).forEach(([field, message]) => {
-            if (!form[field].trim()) {
-                errors[field] = message;
+        Object.entries(requiredFields).forEach(([name, message]) => {
+            if (!form[name].trim()) {
+                errors[name] = message;
             }
         });
+
+        if (!skills.length) {
+            errors.skills = "Add at least one skill before publishing.";
+        }
+
+        if (form.experience.trim()) {
+            const range = getExperienceRange(form.experience);
+
+            if (
+                !range ||
+                !Number.isFinite(range.min) ||
+                (range.max !== Infinity && !Number.isFinite(range.max))
+            ) {
+                errors.experience = "Use Fresher, 2 years, 2–4 years or 5+ years.";
+            }
+        }
     }
 
     return errors;
 }
 
-function getInitials(company) {
+// ================== RESPONSE HELPERS ==================
+function getErrorMessage(error, fallback) {
+    const message = error.response?.data?.message;
+
+    return typeof message === "string" && message.trim()
+        ? message
+        : fallback;
+}
+
+function getInitials(company = "") {
     return (
         company
             .trim()
@@ -190,6 +202,7 @@ function getInitials(company) {
     );
 }
 
+// ================== FORM SECTION ==================
 function FormSection({ number, title, description, children }) {
     return (
         <section className="mj-form-section">
@@ -209,89 +222,163 @@ function FormSection({ number, title, description, children }) {
     );
 }
 
+// ================== MANAGE JOBS ==================
 function ManageJobs() {
-    const [initialData] = useState(loadJobs);
-    const [jobs, setJobs] = useState(initialData.jobs);
+    const [jobs, setJobs] = useState([]);
+    const [counts, setCounts] = useState(null);
+    const [total, setTotal] = useState(0);
+
     const [form, setForm] = useState({ ...EMPTY_FORM });
     const [errors, setErrors] = useState({});
     const [editingId, setEditingId] = useState(null);
 
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
 
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [editLoading, setEditLoading] = useState(false);
+    const [listError, setListError] = useState("");
+    const [refreshKey, setRefreshKey] = useState(0);
+
     const formRef = useRef(null);
     const companyInputRef = useRef(null);
+    const listRequestRef = useRef(null);
+    const editRequestRef = useRef(null);
+    const busyRef = useRef(false);
+    const mountedRef = useRef(false);
 
     const isEditing = editingId !== null;
     const publishing = form.status === "Published";
+    const formBusy = saving || editLoading;
 
-    const counts = jobs.reduce(
-        (result, job) => {
-            result.total += 1;
-            result[job.status] += 1;
-            return result;
-        },
-        { total: 0, Draft: 0, Published: 0, Closed: 0 },
-    );
+    // ================== REQUEST CLEANUP ==================
+    useEffect(() => {
+        mountedRef.current = true;
 
+        return () => {
+            mountedRef.current = false;
+            listRequestRef.current?.abort();
+            editRequestRef.current?.abort();
+        };
+    }, []);
+
+    // ================== SEARCH DEBOUNCE ==================
+    // Wait briefly before requesting results while typing.
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            setDebouncedSearch(search.trim());
+            setPage(0);
+        }, 350);
+
+        return () => window.clearTimeout(timer);
+    }, [search]);
+
+    // ================== FETCH JOBS ==================
+    useEffect(() => {
+        const controller = new AbortController();
+
+        listRequestRef.current = controller;
+
+        async function fetchJobs() {
+            setLoading(true);
+            setListError("");
+
+            const params = {
+                page: page + 1,
+                limit: rowsPerPage,
+            };
+
+            if (debouncedSearch) {
+                params.search = debouncedSearch;
+            }
+
+            if (statusFilter !== "All") {
+                params.status = statusFilter;
+            }
+
+            try {
+                const { data } = await api.get("/jobs/admin", {
+                    params,
+                    signal: controller.signal,
+                });
+
+                if (controller.signal.aborted) return;
+
+                const lastPage = Math.max(data.pagination.totalPages - 1, 0);
+
+                if (page > lastPage) {
+                    setPage(lastPage);
+                    return;
+                }
+
+                setJobs(
+                    data.jobs.map((job) => ({
+                        ...job,
+                        id: String(job.id || job._id),
+                    }))
+                );
+
+                setCounts(data.counts);
+                setTotal(data.pagination.total);
+            } catch (error) {
+                if (controller.signal.aborted) return;
+
+                setJobs([]);
+                setListError(
+                    getErrorMessage(
+                        error,
+                        "Jobs could not be loaded. Please try again."
+                    )
+                );
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchJobs();
+
+        return () => controller.abort();
+    }, [debouncedSearch, statusFilter, page, rowsPerPage, refreshKey]);
+
+    // ================== OVERVIEW CARDS ==================
     const metrics = [
         {
             label: "Total jobs",
-            value: counts.total,
+            value: counts?.total,
             detail: "All client opportunities",
             icon: "fa-solid fa-briefcase",
             tone: "blue",
         },
         {
             label: "Published",
-            value: counts.Published,
+            value: counts?.published,
             detail: "Open for applications",
             icon: "fa-solid fa-circle-check",
             tone: "green",
         },
         {
             label: "Drafts",
-            value: counts.Draft,
+            value: counts?.draft,
             detail: "Not yet published",
             icon: "fa-regular fa-file-lines",
             tone: "amber",
         },
         {
             label: "Closed",
-            value: counts.Closed,
+            value: counts?.closed,
             detail: "Hiring currently stopped",
             icon: "fa-solid fa-lock",
             tone: "red",
         },
     ];
 
-    const query = search.trim().toLowerCase();
-
-    const filteredJobs = jobs
-        .filter((job) => {
-            const matchesSearch = [
-                job.title,
-                job.company,
-                job.department,
-                job.location,
-            ].some((value) => value.toLowerCase().includes(query));
-
-            const matchesStatus =
-                statusFilter === "All" || job.status === statusFilter;
-
-            return matchesSearch && matchesStatus;
-        })
-        .sort((first, second) =>
-            second.createdAt.localeCompare(first.createdAt),
-        );
-
-    const visibleJobs = filteredJobs.slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage,
-    );
-
+    // ================== FORM HANDLERS ==================
     function handleChange(event) {
         const { name, value } = event.target;
 
@@ -301,7 +388,7 @@ function ManageJobs() {
         }));
 
         setErrors((previous) =>
-            name === "status" ? {} : { ...previous, [name]: "" },
+            name === "status" ? {} : { ...previous, [name]: "" }
         );
     }
 
@@ -313,33 +400,64 @@ function ManageJobs() {
 
     function focusForm() {
         const reduceMotion = window.matchMedia(
-            "(prefers-reduced-motion: reduce)",
+            "(prefers-reduced-motion: reduce)"
         ).matches;
 
         formRef.current?.scrollIntoView({
             behavior: reduceMotion ? "auto" : "smooth",
             block: "start",
         });
-
-        companyInputRef.current?.focus({ preventScroll: true });
     }
 
-    function handleNewJob() {
-        resetForm();
-        focusForm();
+    // Focus after edit inputs become enabled.
+    useEffect(() => {
+        if (editingId && !editLoading) {
+            companyInputRef.current?.focus({ preventScroll: true });
+        }
+    }, [editingId, editLoading]);
+
+    // ================== FETCH JOB FOR EDITING ==================
+    async function handleEdit(job) {
+        if (busyRef.current) return;
+
+        busyRef.current = true;
+        setEditLoading(true);
+
+        const controller = new AbortController();
+        editRequestRef.current = controller;
+
+        try {
+            const { data } = await api.get(
+                `/jobs/admin/${encodeURIComponent(job.id)}`,
+                { signal: controller.signal }
+            );
+
+            if (controller.signal.aborted || !mountedRef.current) return;
+
+            setForm(getFormValues(data.job));
+            setEditingId(String(data.job.id || data.job._id));
+            setErrors({});
+            focusForm();
+        } catch (error) {
+            if (controller.signal.aborted || !mountedRef.current) return;
+
+            toast.error(
+                getErrorMessage(error, "Job details could not be loaded.")
+            );
+        } finally {
+            busyRef.current = false;
+
+            if (mountedRef.current) {
+                setEditLoading(false);
+            }
+        }
     }
 
-    function handleEdit(job) {
-        setForm(getFormValues(job));
-        setEditingId(job.id);
-        setErrors({});
-        focusForm();
-    }
-
-    function handleSubmit(event) {
+    // ================== CREATE OR UPDATE JOB ==================
+    async function handleSubmit(event) {
         event.preventDefault();
 
-        if (initialData.error) return;
+        if (busyRef.current) return;
 
         const validationErrors = validateJob(form);
 
@@ -349,64 +467,61 @@ function ManageJobs() {
             return;
         }
 
-        const existingJob = isEditing
-            ? jobs.find((job) => job.id === editingId)
-            : null;
-
-        if (isEditing && !existingJob) {
-            toast.error("Job not found. Reload and try again.");
-            return;
-        }
-
-        const normalizedForm = Object.fromEntries(
+        const payload = Object.fromEntries(
             Object.entries(form).map(([key, value]) => [
                 key,
                 typeof value === "string" ? value.trim() : value,
-            ]),
+            ])
         );
 
-        let nextJobs;
+        payload.openings = payload.openings
+            ? Number(payload.openings)
+            : null;
+
+        busyRef.current = true;
+        setSaving(true);
 
         try {
-            const now = new Date().toISOString();
+            const response = isEditing
+                ? await api.put(
+                    `/jobs/admin/${encodeURIComponent(editingId)}`,
+                    payload
+                )
+                : await api.post("/jobs/admin", payload);
 
-            const savedJob = {
-                ...normalizedForm,
-                openings: normalizedForm.openings
-                    ? Number(normalizedForm.openings)
-                    : null,
-                id: existingJob?.id ?? window.crypto.randomUUID(),
-                openingType: "client",
-                createdAt: existingJob?.createdAt || now,
-                updatedAt: now,
-            };
+            if (!mountedRef.current) return;
 
-            nextJobs = isEditing
-                ? jobs.map((job) => (job.id === editingId ? savedJob : job))
-                : [savedJob, ...jobs];
-
-            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextJobs));
-        } catch {
-            toast.error(
-                "Could not save the job. Check browser storage and try again.",
+            toast.success(
+                response.data.message ||
+                (isEditing
+                    ? "Job updated successfully."
+                    : "Job created successfully.")
             );
-            return;
+
+            // Cancel an older list request before refreshing saved data.
+            listRequestRef.current?.abort();
+            setLoading(true);
+            resetForm();
+            setPage(0);
+            setRefreshKey((previous) => previous + 1);
+        } catch (error) {
+            if (!mountedRef.current) return;
+
+            const fallback = error.response
+                ? "The job could not be saved. Please try again."
+                : "Save confirmation was not received. Refresh the job list before retrying to check whether it was saved.";
+
+            toast.error(getErrorMessage(error, fallback));
+        } finally {
+            busyRef.current = false;
+
+            if (mountedRef.current) {
+                setSaving(false);
+            }
         }
-
-        setJobs(nextJobs);
-        setSearch("");
-        setStatusFilter("All");
-        setPage(0);
-
-        toast.success(
-            isEditing
-                ? "Job updated successfully."
-                : "Job created successfully.",
-        );
-
-        resetForm();
     }
 
+    // ================== SHARED INPUT PROPS ==================
     function field(name, label, options = {}) {
         return {
             name,
@@ -416,29 +531,37 @@ function ManageJobs() {
             fullWidth: true,
             size: "small",
             variant: "outlined",
+            disabled: formBusy,
+            slotProps: {
+                htmlInput: {
+                    maxLength: FIELD_LIMITS[name],
+                },
+            },
             ...options,
             error: Boolean(errors[name]),
             helperText: errors[name] || options.helperText,
         };
     }
 
+    const submitLabel = saving
+        ? "Saving..."
+        : isEditing
+          ? "Save changes"
+          : publishing
+            ? "Publish job"
+            : form.status === "Closed"
+              ? "Save closed job"
+              : "Save draft";
+
     return (
         <div className="manage-jobs">
             <header className="mj-heading">
                 <div>
                     <span className="mj-eyebrow">RECRUITMENT WORKSPACE</span>
-
                     <h1>Manage Jobs</h1>
-
                     <p>Create opportunities. Keep your hiring organised.</p>
                 </div>
             </header>
-
-            {initialData.error && (
-                <Alert severity="error" className="mj-alert">
-                    {initialData.error}
-                </Alert>
-            )}
 
             <section className="mj-metrics" aria-label="Job overview">
                 {metrics.map((metric) => (
@@ -456,7 +579,7 @@ function ManageJobs() {
                             </span>
                         </div>
 
-                        <strong>{metric.value}</strong>
+                        <strong>{listError ? "—" : metric.value ?? "—"}</strong>
                         <p>{metric.detail}</p>
                     </article>
                 ))}
@@ -466,6 +589,7 @@ function ManageJobs() {
                 ref={formRef}
                 className="mj-card mj-form-card"
                 aria-labelledby="mj-form-title"
+                aria-busy={formBusy}
             >
                 <header className="mj-card-header">
                     <div className="mj-card-heading">
@@ -481,15 +605,15 @@ function ManageJobs() {
 
                         <div>
                             <h2 id="mj-form-title">
-                                {isEditing
-                                    ? "Edit job details"
-                                    : "Create a job"}
+                                {isEditing ? "Edit job details" : "Create a job"}
                             </h2>
 
                             <p>
-                                {isEditing
-                                    ? "Update the role or change its availability."
-                                    : "Start with the basics and publish when ready."}
+                                {editLoading
+                                    ? "Loading the latest job details..."
+                                    : isEditing
+                                      ? "Update the role or change its availability."
+                                      : "Start with the basics and publish when ready."}
                             </p>
                         </div>
                     </div>
@@ -521,8 +645,7 @@ function ManageJobs() {
                                 <TextField
                                     {...field("title", "Job title", {
                                         required: true,
-                                        placeholder:
-                                            "e.g. MERN Stack Developer",
+                                        placeholder: "e.g. MERN Stack Developer",
                                     })}
                                 />
 
@@ -536,13 +659,14 @@ function ManageJobs() {
                                 <TextField
                                     {...field("location", "Location", {
                                         required: publishing,
-                                        placeholder:
-                                            "e.g. Bengaluru or Remote — India",
+                                        placeholder: "e.g. Bengaluru or Remote — India",
                                     })}
                                 />
 
                                 <TextField
-                                    {...field("type", "Job type")}
+                                    {...field("type", "Job type", {
+                                        required: true,
+                                    })}
                                     select
                                 >
                                     {JOB_TYPES.map((type) => (
@@ -553,7 +677,9 @@ function ManageJobs() {
                                 </TextField>
 
                                 <TextField
-                                    {...field("mode", "Work mode")}
+                                    {...field("mode", "Work mode", {
+                                        required: true,
+                                    })}
                                     select
                                 >
                                     {WORK_MODES.map((mode) => (
@@ -574,19 +700,14 @@ function ManageJobs() {
                                 <TextField
                                     {...field("experience", "Experience", {
                                         required: publishing,
-                                        placeholder: "e.g. 2–4 years",
+                                        placeholder: "e.g. Fresher or 2–4 years",
                                     })}
                                 />
 
                                 <TextField
-                                    {...field(
-                                        "openings",
-                                        "Number of openings",
-                                        {
-                                            helperText:
-                                                "Optional. Leave blank if not specified.",
-                                        },
-                                    )}
+                                    {...field("openings", "Openings (optional)", {
+                                        helperText: "Leave blank if unspecified.",
+                                    })}
                                     type="number"
                                     slotProps={{
                                         htmlInput: {
@@ -598,28 +719,24 @@ function ManageJobs() {
                                 />
 
                                 <TextField
-                                    {...field("salary", "Salary", {
+                                    {...field("salary", "Salary (optional)", {
                                         placeholder: "e.g. ₹6–10 LPA",
-                                        helperText:
-                                            "Optional. Leave blank if undisclosed.",
+                                        helperText: "Leave blank if undisclosed.",
                                     })}
                                 />
 
                                 <TextField
-                                    {...field(
-                                        "qualification",
-                                        "Qualification",
-                                        {
-                                            required: publishing,
-                                            placeholder: "e.g. Any graduate",
-                                        },
-                                    )}
+                                    {...field("qualification", "Qualification", {
+                                        required: publishing,
+                                        placeholder: "e.g. Any graduate",
+                                    })}
                                 />
 
                                 <TextField
                                     {...field("skills", "Required skills", {
                                         required: publishing,
                                         placeholder: "React, Node.js, MongoDB",
+                                        helperText: "Separate skills with commas.",
                                     })}
                                 />
                             </div>
@@ -628,18 +745,32 @@ function ManageJobs() {
                         <FormSection
                             number="03"
                             title="About the role"
-                            description="Write clear responsibilities and requirements."
+                            description="Add a short card summary and complete job details."
                         >
                             <div className="mj-description-grid">
                                 <TextField
                                     {...field(
-                                        "description",
-                                        "Job description",
+                                        "shortDescription",
+                                        "Short description",
                                         {
                                             required: publishing,
-                                            placeholder:
-                                                "Describe the role and daily responsibilities.",
-                                        },
+                                            placeholder: "Write a brief summary for homepage and job cards.",
+                                            helperText: `${form.shortDescription.length}/150 characters. Used on job cards.`,
+                                        }
+                                    )}
+                                    multiline
+                                    minRows={3}
+                                />
+
+                                <TextField
+                                    {...field(
+                                        "description",
+                                        "Full job description",
+                                        {
+                                            required: publishing,
+                                            placeholder: "Describe the role and daily responsibilities.",
+                                            helperText: "Displayed on the Job Details page.",
+                                        }
                                     )}
                                     multiline
                                     minRows={5}
@@ -651,9 +782,8 @@ function ManageJobs() {
                                         "Job requirements",
                                         {
                                             required: publishing,
-                                            placeholder:
-                                                "Describe the abilities and experience needed.",
-                                        },
+                                            placeholder: "Describe the abilities and experience needed.",
+                                        }
                                     )}
                                     multiline
                                     minRows={5}
@@ -668,7 +798,9 @@ function ManageJobs() {
                         >
                             <div className="mj-publish-grid">
                                 <TextField
-                                    {...field("status", "Job status")}
+                                    {...field("status", "Job status", {
+                                        required: true,
+                                    })}
                                     select
                                 >
                                     {JOB_STATUSES.map((status) => (
@@ -688,9 +820,7 @@ function ManageJobs() {
                                             Homepage visibility
                                         </span>
 
-                                        <p>
-                                            Highlight this job when published.
-                                        </p>
+                                        <p>Highlight this job when published.</p>
                                     </div>
 
                                     <FormControlLabel
@@ -700,14 +830,15 @@ function ManageJobs() {
                                             <Switch
                                                 name="featured"
                                                 checked={form.featured}
-                                                onChange={(event) =>
+                                                disabled={formBusy}
+                                                onChange={(event) => {
+                                                    const checked = event.target.checked;
+
                                                     setForm((previous) => ({
                                                         ...previous,
-                                                        featured:
-                                                            event.target
-                                                                .checked,
-                                                    }))
-                                                }
+                                                        featured: checked,
+                                                    }));
+                                                }}
                                             />
                                         }
                                     />
@@ -726,7 +857,8 @@ function ManageJobs() {
 
                     <footer className="mj-form-footer">
                         <p>
-                            <span>*</span> Required fields
+                            <span>*</span> Required fields.
+                            Additional fields become required when publishing.
                         </p>
 
                         <div className="mj-form-actions">
@@ -734,6 +866,7 @@ function ManageJobs() {
                                 type="button"
                                 variant="outlined"
                                 onClick={resetForm}
+                                disabled={formBusy}
                             >
                                 {isEditing ? "Cancel edit" : "Reset"}
                             </Button>
@@ -742,7 +875,7 @@ function ManageJobs() {
                                 type="submit"
                                 variant="contained"
                                 disableElevation
-                                disabled={Boolean(initialData.error)}
+                                disabled={formBusy}
                                 startIcon={
                                     <i
                                         className="fa-regular fa-floppy-disk"
@@ -750,13 +883,7 @@ function ManageJobs() {
                                     />
                                 }
                             >
-                                {isEditing
-                                    ? "Save changes"
-                                    : publishing
-                                      ? "Publish job"
-                                      : form.status === "Closed"
-                                        ? "Save closed job"
-                                        : "Save draft"}
+                                {submitLabel}
                             </Button>
                         </div>
                     </footer>
@@ -766,6 +893,7 @@ function ManageJobs() {
             <section
                 className="mj-card mj-list-card"
                 aria-labelledby="mj-list-title"
+                aria-busy={loading}
             >
                 <header className="mj-card-header">
                     <div className="mj-card-heading">
@@ -775,26 +903,43 @@ function ManageJobs() {
 
                         <div>
                             <h2 id="mj-list-title">Job listings</h2>
-                            <p>
-                                Manage your published, draft and closed roles.
-                            </p>
+                            <p>Manage your published, draft and closed roles.</p>
                         </div>
                     </div>
 
                     <span className="mj-result-count">
-                        {filteredJobs.length} of {jobs.length} jobs
+                        {loading
+                            ? "Loading..."
+                            : listError
+                              ? "Unavailable"
+                              : `${total} matching jobs`}
                     </span>
+
+                    <Button
+                        type="button"
+                        variant="outlined"
+                        size="small"
+                        disabled={loading || formBusy}
+                        onClick={() => setRefreshKey((previous) => previous + 1)}
+                    >
+                        Refresh
+                    </Button>
                 </header>
+
+                {listError && (
+                    <Alert severity="error" className="mj-alert">
+                        {listError}
+                    </Alert>
+                )}
 
                 <div className="mj-table-toolbar">
                     <TextField
                         label="Search jobs"
                         placeholder="Title, company, department or location"
                         value={search}
-                        onChange={(event) => {
-                            setSearch(event.target.value);
-                            setPage(0);
-                        }}
+                        onChange={(event) => setSearch(event.target.value)}
+                        slotProps={{ htmlInput: { maxLength: 200 } }}
+                        disabled={formBusy}
                         size="small"
                         fullWidth
                     />
@@ -806,6 +951,7 @@ function ManageJobs() {
                             setStatusFilter(event.target.value);
                             setPage(0);
                         }}
+                        disabled={formBusy}
                         size="small"
                         select
                         fullWidth
@@ -833,7 +979,23 @@ function ManageJobs() {
                         </TableHead>
 
                         <TableBody>
-                            {visibleJobs.map((job) => (
+                            {loading && (
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center">
+                                        <p role="status">Loading jobs...</p>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+
+                            {!loading && listError && (
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center">
+                                        <p>Use Refresh to load the jobs again.</p>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+
+                            {!loading && !listError && jobs.map((job) => (
                                 <TableRow
                                     key={job.id}
                                     hover
@@ -854,9 +1016,7 @@ function ManageJobs() {
 
                                                 <div className="mj-job-tags">
                                                     {job.department && (
-                                                        <span>
-                                                            {job.department}
-                                                        </span>
+                                                        <span>{job.department}</span>
                                                     )}
 
                                                     {job.featured && (
@@ -896,7 +1056,7 @@ function ManageJobs() {
                                     <TableCell>
                                         <Chip
                                             label={job.status}
-                                            color={STATUS_COLORS[job.status]}
+                                            color={STATUS_COLORS[job.status] || "default"}
                                             size="small"
                                             variant="outlined"
                                         />
@@ -907,6 +1067,7 @@ function ManageJobs() {
                                             type="button"
                                             size="small"
                                             variant="outlined"
+                                            disabled={formBusy}
                                             onClick={() => handleEdit(job)}
                                             aria-label={`Edit ${job.title} at ${job.company}`}
                                             startIcon={
@@ -922,7 +1083,7 @@ function ManageJobs() {
                                 </TableRow>
                             ))}
 
-                            {!visibleJobs.length && (
+                            {!loading && !listError && !jobs.length && (
                                 <TableRow>
                                     <TableCell colSpan={5}>
                                         <div className="mj-empty">
@@ -931,13 +1092,13 @@ function ManageJobs() {
                                             </span>
 
                                             <h3>
-                                                {jobs.length
+                                                {counts?.total
                                                     ? "No matching jobs"
                                                     : "Create your first opportunity"}
                                             </h3>
 
                                             <p>
-                                                {jobs.length
+                                                {counts?.total
                                                     ? "Try another search or status filter."
                                                     : "Jobs you save using the form will appear here."}
                                             </p>
@@ -951,7 +1112,7 @@ function ManageJobs() {
 
                 <TablePagination
                     component="div"
-                    count={filteredJobs.length}
+                    count={total}
                     page={page}
                     onPageChange={(_, nextPage) => setPage(nextPage)}
                     rowsPerPage={rowsPerPage}
@@ -960,6 +1121,7 @@ function ManageJobs() {
                         setPage(0);
                     }}
                     rowsPerPageOptions={[5, 10, 25]}
+                    disabled={loading || formBusy || Boolean(listError)}
                 />
             </section>
         </div>
