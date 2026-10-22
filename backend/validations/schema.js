@@ -742,6 +742,121 @@ const applicationStatusSchema = Joi.object({
          "object.unknown": "Unsupported account status field.",
      });
 
+     
+ // ================== ADMIN VALIDATION RULES ==================
+ // Use the same 10-digit Indian mobile rule as Signup.
+ const adminNameRule = Joi.string()
+     .trim()
+     .min(2)
+     .max(100);
+
+ const adminPhoneRule = Joi.string()
+     .trim()
+     .pattern(/^[6-9]\d{9}$/)
+     .messages({
+         "string.pattern.base": "Enter a valid 10-digit Indian mobile number.",
+     });
+
+ // Require stronger passwords for administrator accounts.
+ const adminPasswordRule = passwordRule
+     .min(6)
+     .messages({
+         "string.min": "Admin password must contain at least 6 characters.",
+     });
+
+ // ================== CREATE ADMIN VALIDATION ==================
+ // Only authorized admins can create another admin.
+ const adminCreateSchema = Joi.object({
+     name: adminNameRule.required(),
+     email: emailRule,
+     phone: adminPhoneRule.required(),
+     password: adminPasswordRule,
+
+     // Verify the acting admin before creating another admin.
+     currentPassword: passwordRule,
+ })
+     .required()
+     .unknown(false);
+
+ // ================== EDIT ADMIN VALIDATION ==================
+ // Account role and permission fields cannot be changed here.
+ const adminEditSchema = Joi.object({
+     name: adminNameRule.optional(),
+     email: emailRule.optional(),
+     phone: adminPhoneRule.optional(),
+
+     // Changing another admin's email requires reauthentication.
+     currentPassword: Joi.when("email", {
+         is: Joi.exist(),
+         then: passwordRule.required(),
+         otherwise: Joi.forbidden(),
+     }),
+ })
+     .or("name", "email", "phone")
+     .required()
+     .unknown(false);
+
+ // ================== ADMIN PROFILE VALIDATION ==================
+ // Admins can update their own name and phone.
+ const adminProfileSchema = Joi.object({
+     name: adminNameRule.optional(),
+     phone: adminPhoneRule.optional(),
+ })
+     .min(1)
+     .required()
+     .unknown(false);
+
+ // ================== ADMIN PASSWORD CHANGE VALIDATION ==================
+ // Require the current password before setting a new one.
+ const adminPasswordChangeSchema = Joi.object({
+     currentPassword: passwordRule,
+     newPassword: adminPasswordRule,
+ })
+     .custom((value, helpers) => {
+         if (value.currentPassword === value.newPassword) {
+             return helpers.message(
+                 "New password must be different from your current password."
+             );
+         }
+
+         return value;
+     })
+     .required()
+     .unknown(false);
+
+     
+ // ================== ADMIN ACCOUNT STATUS VALIDATION ==================
+ // Validate admin activation/deactivation requests.
+ // Current password is required for security.
+ const adminStatusSchema = Joi.object({
+     expectedStatus: Joi.string()
+         .valid("Active", "Inactive")
+         .required(),
+
+     status: Joi.string()
+         .valid("Active", "Inactive")
+         .required(),
+
+     currentPassword: passwordRule.required(),
+ })
+     .custom((value, helpers) => {
+         if (value.expectedStatus === value.status) {
+             return helpers.message(
+                 "New status must be different from the current status."
+             );
+         }
+
+         return value;
+     })
+     .required()
+     .unknown(false)
+     .messages({
+         "object.base": "Status update must be a JSON object.",
+         "object.unknown": "Unsupported admin status field.",
+     });
+
+
+
 
 
 // ================== EXPORTS ==================
@@ -756,4 +871,9 @@ module.exports = {
     profileUpdateSchema,
     contactEnquirySchema,
     userStatusSchema,
+    adminCreateSchema,
+    adminEditSchema,
+    adminProfileSchema,
+    adminPasswordChangeSchema,
+    adminStatusSchema,
 };

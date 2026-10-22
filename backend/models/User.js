@@ -107,6 +107,13 @@ const userSchema = new Schema(
             default: null,
         },
 
+        // Require newly provisioned admins to change their initial password.
+        mustChangePassword: {
+            type: Boolean,
+            default: false,
+            select: false,
+        },
+
         // ================== CANDIDATE PROFILE ==================
         address: {
             type: String,
@@ -198,6 +205,7 @@ const userSchema = new Schema(
             transform: function (doc, result) {
                 delete result.passwordHash;
                 delete result.tokenVersion;
+                delete result.mustChangePassword;
                 delete result.__v;
 
                 if (result.resume) {

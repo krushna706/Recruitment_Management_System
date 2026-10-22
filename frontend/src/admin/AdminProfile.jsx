@@ -1,28 +1,25 @@
-import { useState } from "react";
-import { useOutletContext } from "react-router-dom";
+
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import {
     Alert,
+    Avatar,
     Button,
     Chip,
+    CircularProgress,
     TextField,
 } from "@mui/material";
 import { toast } from "react-toastify";
 
-const ADMIN_STORAGE_KEY = "rms-demo-admins-v1";
-const PROFILE_STORAGE_PREFIX = "rms-demo-admin-profile-v1:";
+import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
-function getInitials(name = "") {
-    return (
-        name
-            .trim()
-            .split(/\s+/)
-            .slice(0, 2)
-            .map((part) => part.charAt(0))
-            .join("")
-            .toUpperCase() || "AD"
-    );
-}
+// ================== PROFILE CONFIGURATION ==================
+const DEFAULT_AVATAR = "/images/default-avatar.svg";
+const MAX_AVATAR_SIZE = 3 * 1024 * 1024;
+const MAX_PASSWORD_BYTES = 72;
 
+// ================== DATE FORMATTING ==================
 function formatDate(value) {
     const date = new Date(value);
 
@@ -38,92 +35,12 @@ function formatDate(value) {
     }).format(date);
 }
 
-function readProfile(user, userId) {
-    const baseProfile = {
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        role: "admin",
-        status: user.status || "",
-        createdAt: user.createdAt || "",
-        updatedAt: "",
-    };
-
-    try {
-        // Use editable contact details from Manage Admins, if available.
-        const storedAdmins = window.localStorage.getItem(
-            ADMIN_STORAGE_KEY
-        );
-
-        let adminRecord = null;
-
-        if (storedAdmins) {
-            const admins = JSON.parse(storedAdmins);
-
-            if (!Array.isArray(admins)) {
-                throw new Error("Invalid admin records");
-            }
-
-            adminRecord = admins.find(
-                (admin) => admin?.id === userId
-            );
-        }
-
-        const storedProfile = window.localStorage.getItem(
-            `${PROFILE_STORAGE_PREFIX}${userId}`
-        );
-
-        let savedProfile = null;
-
-        if (storedProfile) {
-            savedProfile = JSON.parse(storedProfile);
-
-            if (
-                !savedProfile ||
-                typeof savedProfile.name !== "string" ||
-                typeof savedProfile.phone !== "string" ||
-                typeof savedProfile.updatedAt !== "string"
-            ) {
-                throw new Error("Invalid saved profile");
-            }
-        }
-
-        const adminUpdatedAt = Date.parse(
-            adminRecord?.updatedAt || ""
-        ) || 0;
-
-        const profileUpdatedAt = Date.parse(
-            savedProfile?.updatedAt || ""
-        ) || 0;
-
-        const latestContact =
-            adminRecord && adminUpdatedAt > profileUpdatedAt
-                ? adminRecord
-                : savedProfile || adminRecord;
-
-        return {
-            profile: {
-                ...baseProfile,
-                name: latestContact?.name ?? baseProfile.name,
-                phone: latestContact?.phone ?? baseProfile.phone,
-                createdAt:
-                    baseProfile.createdAt ||
-                    adminRecord?.createdAt ||
-                    "",
-                updatedAt: latestContact?.updatedAt || "",
-            },
-            error: "",
-        };
-    } catch {
-        return {
-            profile: baseProfile,
-            error:
-                "Saved profile details could not be loaded. Saving is disabled " +
-                "to avoid overwriting existing data. Check browser storage and reload.",
-        };
-    }
+// ================== API ERROR MESSAGE ==================
+function getApiError(error, fallback) {
+    return error.response?.data?.message || fallback;
 }
 
+// ================== PROFILE DETAILS ==================
 function Detail({ label, value }) {
     return (
         <div className="mu-detail">
@@ -133,24 +50,169 @@ function Detail({ label, value }) {
     );
 }
 
-function AdminProfileContent({ user, userId }) {
-    const [initialData] = useState(() =>
-        readProfile(user, userId)
-    );
+// ================== AVATAR VALIDATION ==================
+function validateAvatar(file) {
+    if (!file) {
+        return "Please choose a profile image.";
+    }
 
-    const [profile, setProfile] = useState(initialData.profile);
+    if (!/\.(jpg|jpeg|png|webp)$/i.test(file.name)) {
+        return "Choose a JPG, JPEG, PNG or WebP image.";
+    }
+
+    if (
+        !["image/jpeg", "image/png", "image/webp"].includes(
+            file.type
+        )
+    ) {
+        return "Invalid image format.";
+    }
+
+    if (!file.size || file.size > MAX_AVATAR_SIZE) {
+        return "Profile image must not exceed 3 MB.";
+    }
+
+    return "";
+}
+
+// ================== TEMPORARY IMAGE PREVIEW ==================
+// Revoke local object URLs to avoid memory leaks.
+function useAvatarPreview(file) {
+    const [preview, setPreview] = useState(null);
+
+    useEffect(() => {
+        if (!file) return undefined;
+
+        const url = URL.createObjectURL(file);
+
+        setPreview({
+            file,
+            url,
+        });
+
+        return () => URL.revokeObjectURL(url);
+    }, [file]);
+
+    return preview?.file === file ? preview.url : null;
+}
+
+// ================== ADMIN PROFILE CONTENT ==================
+function AdminProfileContent({ user, userId }) {
+    const navigate = useNavigate();
+
+    const { updateUserProfile, refreshUser } = useAuth();
+
+    const avatarInputRef = useRef(null);
+
+    // ================== PROFILE STATES ==================
+    const [profile, setProfile] = useState(null);
 
     const [form, setForm] = useState({
-        name: initialData.profile.name,
-        phone: initialData.profile.phone,
+        name: user.name || "",
+        phone: user.phone || "",
     });
 
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
+    const [reloadRevision, setReloadRevision] = useState(0);
+
+    const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState({});
 
-    const hasChanges =
-        form.name.trim() !== profile.name.trim() ||
-        form.phone.trim() !== profile.phone.trim();
+    // ================== AVATAR STATES ==================
+    const [selectedAvatar, setSelectedAvatar] = useState(null);
+    const [avatarError, setAvatarError] = useState("");
+    const [avatarUploading, setAvatarUploading] = useState(false);
 
+    const avatarPreview = useAvatarPreview(selectedAvatar);
+
+    // ================== PASSWORD STATES ==================
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+    });
+
+    const [passwordErrors, setPasswordErrors] = useState({});
+    const [passwordSaving, setPasswordSaving] = useState(false);
+
+    // ================== DERIVED VALUES ==================
+    const hasChanges = Boolean(
+        profile &&
+        (
+            form.name.trim() !== profile.name ||
+            form.phone.trim() !== (profile.phone || "")
+        )
+    );
+
+    const displayName = profile?.name || user.name || "Administrator";
+
+    const avatarUrl =
+        avatarPreview ||
+        profile?.avatar?.url ||
+        DEFAULT_AVATAR;
+
+    const isBusy =
+        saving || avatarUploading || passwordSaving;
+
+    // ================== FETCH ADMIN PROFILE ==================
+    // MongoDB is the source of truth, not localStorage.
+    useEffect(() => {
+        const controller = new AbortController();
+        let active = true;
+
+        async function loadProfile() {
+            setLoading(true);
+            setLoadError("");
+
+            try {
+                const { data } = await api.get(
+                    "/admin/me/profile",
+                    {
+                        signal: controller.signal,
+                    }
+                );
+
+                if (!active) return;
+
+                if (!data?.success || !data.profile) {
+                    throw new Error("Invalid admin profile response.");
+                }
+
+                const admin = data.profile;
+
+                setProfile(admin);
+
+                setForm({
+                    name: admin.name || "",
+                    phone: admin.phone || "",
+                });
+
+                // Sync header name and avatar with MongoDB.
+                updateUserProfile(admin);
+            } catch (error) {
+                if (!active) return;
+
+                setLoadError(
+                    getApiError(
+                        error,
+                        "Unable to load your admin profile."
+                    )
+                );
+            } finally {
+                if (active) setLoading(false);
+            }
+        }
+
+        loadProfile();
+
+        return () => {
+            active = false;
+            controller.abort();
+        };
+    }, [userId, reloadRevision, updateUserProfile]);
+
+    // ================== HANDLE PROFILE INPUT ==================
     function handleChange(event) {
         const { name, value } = event.target;
 
@@ -165,75 +227,357 @@ function AdminProfileContent({ user, userId }) {
         }));
     }
 
+    // ================== RESET PROFILE FORM ==================
     function resetForm() {
+        if (!profile) return;
+
         setForm({
-            name: profile.name,
-            phone: profile.phone,
+            name: profile.name || "",
+            phone: profile.phone || "",
         });
 
         setErrors({});
     }
 
-    function handleSubmit(event) {
+    // ================== UPDATE ADMIN PROFILE ==================
+    async function handleSubmit(event) {
         event.preventDefault();
 
-        if (initialData.error || !hasChanges) return;
+        if (!profile || !hasChanges || isBusy) return;
 
-        const validationErrors = {};
+        const name = form.name.trim();
+        const phone = form.phone.trim();
 
-        if (form.name.trim().length < 2) {
-            validationErrors.name =
-                "Enter a name with at least 2 characters.";
+        const nextErrors = {};
+
+        // ================== NAME VALIDATION ==================
+        if (name.length < 2 || name.length > 100) {
+            nextErrors.name =
+                "Enter a name containing 2–100 characters.";
         }
 
+        // ================== PHONE VALIDATION ==================
+        // Same 10-digit Indian mobile rule as Signup.
         if (
-            form.phone.trim() &&
-            !/^\+?[0-9\s()-]{7,20}$/.test(form.phone.trim())
+            phone !== (profile.phone || "") &&
+            !/^[6-9]\d{9}$/.test(phone)
         ) {
-            validationErrors.phone =
-                "Enter a valid phone number.";
+            nextErrors.phone =
+                "Enter a valid 10-digit Indian mobile number.";
         }
 
-        if (Object.keys(validationErrors).length) {
-            setErrors(validationErrors);
+        setErrors(nextErrors);
+
+        if (Object.keys(nextErrors).length) {
             toast.error("Please check the highlighted fields.");
             return;
         }
 
-        const savedContact = {
-            name: form.name.trim(),
-            phone: form.phone.trim(),
-            updatedAt: new Date().toISOString(),
-        };
+        // Send only changed fields.
+        const changes = {};
+
+        if (name !== profile.name) {
+            changes.name = name;
+        }
+
+        if (phone !== (profile.phone || "")) {
+            changes.phone = phone;
+        }
+
+        if (!Object.keys(changes).length) return;
+
+        setSaving(true);
 
         try {
-            window.localStorage.setItem(
-                `${PROFILE_STORAGE_PREFIX}${userId}`,
-                JSON.stringify(savedContact)
+            // ================== SAVE TO MONGODB ==================
+            const { data } = await api.patch(
+                "/admin/me/profile",
+                changes
             );
-        } catch {
+
+            if (!data?.success || !data.profile) {
+                throw new Error(
+                    "The server did not confirm the profile update."
+                );
+            }
+
+            const updated = data.profile;
+
+            setProfile((previous) => ({
+                ...previous,
+                ...updated,
+            }));
+
+            setForm({
+                name: updated.name || "",
+                phone: updated.phone || "",
+            });
+
+            setErrors({});
+
+            // Update shared header details.
+            updateUserProfile(updated);
+
+            toast.success("Admin profile updated successfully.");
+        } catch (error) {
             toast.error(
-                "Could not save the profile. Check browser storage."
+                getApiError(
+                    error,
+                    "Unable to update admin profile."
+                )
             );
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    // ================== SELECT ADMIN PROFILE IMAGE ==================
+    function handleAvatarChange(event) {
+        const file = event.target.files?.[0];
+
+        event.target.value = "";
+
+        if (!file) return;
+
+        const error = validateAvatar(file);
+
+        setAvatarError(error);
+        setSelectedAvatar(error ? null : file);
+    }
+
+    // ================== CANCEL SELECTED IMAGE ==================
+    function cancelAvatar() {
+        if (avatarUploading) return;
+
+        setSelectedAvatar(null);
+        setAvatarError("");
+    }
+
+    // ================== UPLOAD / REPLACE ADMIN AVATAR ==================
+    async function handleAvatarUpload() {
+        if (!selectedAvatar || !profile || isBusy) return;
+
+        const error = validateAvatar(selectedAvatar);
+
+        if (error) {
+            setAvatarError(error);
             return;
         }
 
-        setProfile((previous) => ({
+        setAvatarUploading(true);
+        setAvatarError("");
+
+        try {
+            const formData = new FormData();
+
+            formData.append("avatar", selectedAvatar);
+
+            // ================== CLOUDINARY AVATAR API ==================
+            // Backend uploads new image, updates MongoDB,
+            // then deletes the previous Cloudinary image.
+            const { data } = await api.post(
+                "/admin/me/avatar",
+                formData,
+                {
+                    timeout: 60000,
+                }
+            );
+
+            if (!data?.success || !data.profile) {
+                throw new Error(
+                    "The server did not confirm image upload."
+                );
+            }
+
+            // ================== UPDATE PROFILE IMAGE ==================
+            setProfile((previous) => ({
+                ...previous,
+                ...data.profile,
+            }));
+
+            setSelectedAvatar(null);
+
+            // Shared AuthContext updates the PanelHeader image.
+            updateUserProfile(data.profile);
+
+            toast.success(
+                "Profile image updated successfully."
+            );
+        } catch (error) {
+            const message = getApiError(
+                error,
+                "Unable to upload profile image."
+            );
+
+            setAvatarError(message);
+            toast.error(message);
+        } finally {
+            setAvatarUploading(false);
+        }
+    }
+
+    // ================== HANDLE PASSWORD INPUT ==================
+    function handlePasswordChange(event) {
+        const { name, value } = event.target;
+
+        setPasswordForm((previous) => ({
             ...previous,
-            ...savedContact,
+            [name]: value,
         }));
 
-        setForm({
-            name: savedContact.name,
-            phone: savedContact.phone,
-        });
+        setPasswordErrors((previous) => ({
+            ...previous,
+            [name]: "",
+        }));
+    }
 
-        setErrors({});
-        toast.success("Profile saved in this browser.");
+    // ================== CHANGE ADMIN PASSWORD ==================
+    async function handlePasswordSubmit(event) {
+        event.preventDefault();
+
+        if (isBusy) return;
+
+        const {
+            currentPassword,
+            newPassword,
+            confirmPassword,
+        } = passwordForm;
+
+        const nextErrors = {};
+
+        if (!currentPassword) {
+            nextErrors.currentPassword =
+                "Enter your current password.";
+        }
+
+        if (
+            newPassword.length < 6 ||
+            new TextEncoder().encode(newPassword).length >
+                MAX_PASSWORD_BYTES
+        ) {
+            nextErrors.newPassword =
+                "Password must contain at least 6 characters and not exceed 72 UTF-8 bytes.";
+        }
+
+        if (
+            currentPassword &&
+            newPassword === currentPassword
+        ) {
+            nextErrors.newPassword =
+                "New password must be different from your current password.";
+        }
+
+        if (confirmPassword !== newPassword) {
+            nextErrors.confirmPassword =
+                "New passwords do not match.";
+        }
+
+        setPasswordErrors(nextErrors);
+
+        if (Object.keys(nextErrors).length) {
+            toast.error("Please check your password details.");
+            return;
+        }
+
+        setPasswordSaving(true);
+
+        try {
+            // ================== PASSWORD CHANGE API ==================
+            const { data } = await api.patch(
+                "/admin/me/password",
+                {
+                    currentPassword,
+                    newPassword,
+                }
+            );
+
+            if (!data?.success) {
+                throw new Error(
+                    "The server did not confirm password change."
+                );
+            }
+
+            setPasswordForm({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
+            });
+
+            setPasswordErrors({});
+
+            // ================== SESSION INVALIDATION ==================
+            // Backend increments tokenVersion and clears JWT cookie.
+            // Refreshing authentication state removes the old session.
+            if (data.requiresLogin) {
+                await refreshUser();
+
+                toast.success(
+                    "Password changed. Please sign in again."
+                );
+
+                navigate("/manage", {
+                    replace: true,
+                });
+
+                return;
+            }
+
+            toast.success("Password updated successfully.");
+        } catch (error) {
+            toast.error(
+                getApiError(
+                    error,
+                    "Unable to change password."
+                )
+            );
+        } finally {
+            setPasswordSaving(false);
+        }
+    }
+
+    // ================== LOADING STATE ==================
+    if (loading) {
+        return (
+            <div
+                className="manage-jobs admin-profile"
+                role="status"
+                style={{
+                    padding: 32,
+                    textAlign: "center",
+                }}
+            >
+                <CircularProgress size={28} />
+                <p>Loading admin profile...</p>
+            </div>
+        );
+    }
+
+    // ================== API ERROR STATE ==================
+    if (loadError || !profile) {
+        return (
+            <div className="manage-jobs admin-profile">
+                <Alert severity="error">
+                    {loadError || "Admin profile is unavailable."}
+                </Alert>
+
+                <Button
+                    variant="outlined"
+                    sx={{ mt: 2 }}
+                    onClick={() =>
+                        setReloadRevision(
+                            (previous) => previous + 1
+                        )
+                    }
+                >
+                    Retry
+                </Button>
+            </div>
+        );
     }
 
     return (
         <div className="manage-jobs admin-profile">
+            {/* ================== PAGE HEADING ================== */}
             <header className="mj-heading">
                 <div>
                     <span className="mj-eyebrow">
@@ -243,7 +587,7 @@ function AdminProfileContent({ user, userId }) {
                     <h1>Admin Profile</h1>
 
                     <p>
-                        Review your account and keep your contact details updated.
+                        Manage your profile, photo and account security.
                     </p>
                 </div>
 
@@ -256,38 +600,176 @@ function AdminProfileContent({ user, userId }) {
                 </span>
             </header>
 
-            {initialData.error && (
-                <Alert severity="error" className="mj-alert">
-                    {initialData.error}
+            {/* ================== INITIAL PASSWORD ALERT ================== */}
+            {profile.mustChangePassword && (
+                <Alert
+                    severity="warning"
+                    className="mj-alert"
+                    sx={{ mb: 2 }}
+                >
+                    You are using an initial admin password.
+                    Change your password before managing other admins.
                 </Alert>
             )}
 
+            {/* ================== ADMIN PROFILE BANNER ================== */}
             <section
                 className="mu-profile-banner admin-profile-banner"
                 aria-label="Profile summary"
             >
-                <span className="mu-avatar" aria-hidden="true">
-                    {getInitials(profile.name)}
-                </span>
+                {/* ================== PROFILE IMAGE ================== */}
+                <div
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 8,
+                        flexShrink: 0,
+                    }}
+                >
+                    <Avatar
+                        src={avatarUrl}
+                        alt={displayName}
+                        className="mu-avatar"
+                    />
 
+                    <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp"
+                        hidden
+                        onChange={handleAvatarChange}
+                    />
+
+                    <Button
+                        type="button"
+                        size="small"
+                        variant="outlined"
+                        disabled={isBusy}
+                        onClick={() =>
+                            avatarInputRef.current?.click()
+                        }
+                        startIcon={
+                            <i
+                                className="fa-solid fa-camera"
+                                aria-hidden="true"
+                            />
+                        }
+                        sx={{
+                            fontSize: 11,
+                            textTransform: "none",
+                        }}
+                    >
+                        Change photo
+                    </Button>
+                </div>
+
+                {/* ================== ADMIN DETAILS ================== */}
                 <div className="mu-profile-copy">
-                    <h2>{profile.name || "Administrator"}</h2>
-                    <p>{profile.email || "Email not available"}</p>
+                    <h2>{displayName}</h2>
+
+                    <p>
+                        {profile.email || "Email not available"}
+                    </p>
 
                     <span>
                         Manage your personal administration account
                     </span>
+
+                    {/* ================== SELECTED IMAGE ACTIONS ================== */}
+                    {selectedAvatar && (
+                        <div
+                            style={{
+                                marginTop: 12,
+                                display: "flex",
+                                gap: 8,
+                                alignItems: "center",
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <Button
+                                type="button"
+                                size="small"
+                                variant="contained"
+                                disableElevation
+                                disabled={isBusy}
+                                onClick={handleAvatarUpload}
+                                startIcon={
+                                    avatarUploading ? (
+                                        <CircularProgress
+                                            size={15}
+                                            color="inherit"
+                                        />
+                                    ) : (
+                                        <i
+                                            className="fa-solid fa-cloud-arrow-up"
+                                            aria-hidden="true"
+                                        />
+                                    )
+                                }
+                            >
+                                {avatarUploading
+                                    ? "Uploading..."
+                                    : "Save photo"}
+                            </Button>
+
+                            <Button
+                                type="button"
+                                size="small"
+                                disabled={isBusy}
+                                onClick={cancelAvatar}
+                            >
+                                Cancel
+                            </Button>
+
+                            <span
+                                style={{
+                                    fontSize: 11,
+                                    overflowWrap: "anywhere",
+                                }}
+                            >
+                                {selectedAvatar.name}
+                            </span>
+                        </div>
+                    )}
+
+                    {avatarError && (
+                        <p
+                            role="alert"
+                            style={{
+                                color: "#b91c1c",
+                                fontSize: 12,
+                                marginTop: 8,
+                            }}
+                        >
+                            {avatarError}
+                        </p>
+                    )}
+
+                    <span
+                        style={{
+                            display: "block",
+                            marginTop: 6,
+                        }}
+                    >
+                        JPG, PNG or WebP · Max 3 MB
+                    </span>
                 </div>
 
                 <Chip
-                    label="Admin"
-                    color="primary"
+                    label={profile.status || "Admin"}
+                    color={
+                        profile.status === "Active"
+                            ? "success"
+                            : "default"
+                    }
                     variant="outlined"
                     size="small"
                 />
             </section>
 
             <div className="admin-profile-grid">
+                {/* ================== PERSONAL INFORMATION ================== */}
                 <section
                     className="mj-card"
                     aria-labelledby="admin-profile-form-title"
@@ -316,6 +798,7 @@ function AdminProfileContent({ user, userId }) {
                     <form onSubmit={handleSubmit} noValidate>
                         <div className="mj-form-body">
                             <div className="mj-form-grid">
+                                {/* ================== ADMIN NAME ================== */}
                                 <TextField
                                     label="Full name"
                                     name="name"
@@ -325,10 +808,17 @@ function AdminProfileContent({ user, userId }) {
                                     fullWidth
                                     size="small"
                                     autoComplete="name"
+                                    disabled={isBusy}
                                     error={Boolean(errors.name)}
                                     helperText={errors.name}
+                                    slotProps={{
+                                        htmlInput: {
+                                            maxLength: 100,
+                                        },
+                                    }}
                                 />
 
+                                {/* ================== ADMIN PHONE ================== */}
                                 <TextField
                                     label="Phone number"
                                     name="phone"
@@ -338,38 +828,54 @@ function AdminProfileContent({ user, userId }) {
                                     fullWidth
                                     size="small"
                                     autoComplete="tel"
+                                    disabled={isBusy}
                                     error={Boolean(errors.phone)}
                                     helperText={
                                         errors.phone ||
-                                        "Optional contact number."
+                                        "10-digit Indian mobile number."
                                     }
+                                    slotProps={{
+                                        htmlInput: {
+                                            maxLength: 10,
+                                            inputMode: "numeric",
+                                        },
+                                    }}
                                 />
 
+                                {/* ================== ADMIN EMAIL ================== */}
                                 <TextField
                                     label="Email address"
-                                    value={profile.email}
+                                    value={profile.email || ""}
                                     fullWidth
                                     size="small"
                                     slotProps={{
-                                        input: { readOnly: true },
-                                        inputLabel: { shrink: true },
+                                        input: {
+                                            readOnly: true,
+                                        },
+                                        inputLabel: {
+                                            shrink: true,
+                                        },
                                     }}
-                                    helperText="Managed through your account settings."
+                                    helperText="Email is managed through Manage Admins."
                                 />
 
+                                {/* ================== ADMIN ROLE ================== */}
                                 <TextField
                                     label="Account role"
                                     value="Admin"
                                     fullWidth
                                     size="small"
                                     slotProps={{
-                                        input: { readOnly: true },
+                                        input: {
+                                            readOnly: true,
+                                        },
                                     }}
-                                    helperText="Assigned administration role."
+                                    helperText="Assigned administrator role."
                                 />
                             </div>
                         </div>
 
+                        {/* ================== SAVE PROFILE ================== */}
                         <footer className="mj-form-footer">
                             <p>
                                 <span>*</span> Required fields
@@ -379,8 +885,8 @@ function AdminProfileContent({ user, userId }) {
                                 <Button
                                     type="button"
                                     variant="outlined"
+                                    disabled={!hasChanges || isBusy}
                                     onClick={resetForm}
-                                    disabled={!hasChanges}
                                 >
                                     Cancel changes
                                 </Button>
@@ -389,90 +895,254 @@ function AdminProfileContent({ user, userId }) {
                                     type="submit"
                                     variant="contained"
                                     disableElevation
-                                    disabled={
-                                        !hasChanges ||
-                                        Boolean(initialData.error)
-                                    }
+                                    disabled={!hasChanges || isBusy}
                                     startIcon={
-                                        <i
-                                            className="fa-regular fa-floppy-disk"
-                                            aria-hidden="true"
-                                        />
+                                        saving ? (
+                                            <CircularProgress
+                                                size={16}
+                                                color="inherit"
+                                            />
+                                        ) : (
+                                            <i
+                                                className="fa-regular fa-floppy-disk"
+                                                aria-hidden="true"
+                                            />
+                                        )
                                     }
                                 >
-                                    Save changes
+                                    {saving
+                                        ? "Saving..."
+                                        : "Save changes"}
                                 </Button>
                             </div>
                         </footer>
                     </form>
                 </section>
 
-                <section
-                    className="mj-card"
-                    aria-labelledby="admin-account-title"
+                {/* ================== ACCOUNT AND SECURITY COLUMN ================== */}
+                <div
+                    style={{
+                        display: "grid",
+                        gap: 24,
+                        alignContent: "start",
+                    }}
                 >
-                    <header className="mj-card-header">
-                        <div className="mj-card-heading">
-                            <span
-                                className="mj-header-icon"
-                                aria-hidden="true"
-                            >
-                                <i className="fa-solid fa-user-shield" />
-                            </span>
+                    {/* ================== ACCOUNT INFORMATION ================== */}
+                    <section
+                        className="mj-card"
+                        aria-labelledby="admin-account-title"
+                    >
+                        <header className="mj-card-header">
+                            <div className="mj-card-heading">
+                                <span
+                                    className="mj-header-icon"
+                                    aria-hidden="true"
+                                >
+                                    <i className="fa-solid fa-user-shield" />
+                                </span>
 
-                            <div>
-                                <h2 id="admin-account-title">
-                                    Account information
-                                </h2>
+                                <div>
+                                    <h2 id="admin-account-title">
+                                        Account information
+                                    </h2>
 
-                                <p>Your administration account.</p>
+                                    <p>
+                                        Your administration account.
+                                    </p>
+                                </div>
                             </div>
+                        </header>
+
+                        <div className="mj-form-body">
+                            <dl className="mu-detail-grid admin-account-details">
+                                <Detail
+                                    label="Account ID"
+                                    value={String(profile.id || profile._id)}
+                                />
+
+                                <Detail
+                                    label="Role"
+                                    value="Administrator"
+                                />
+
+                                <Detail
+                                    label="Account status"
+                                    value={profile.status}
+                                />
+
+                                <Detail
+                                    label="Created on"
+                                    value={formatDate(profile.createdAt)}
+                                />
+
+                                <Detail
+                                    label="Profile last updated"
+                                    value={formatDate(profile.updatedAt)}
+                                />
+
+                                <Detail
+                                    label="Last login"
+                                    value={formatDate(profile.lastLoginAt)}
+                                />
+                            </dl>
                         </div>
-                    </header>
+                    </section>
 
-                    <div className="mj-form-body">
-                        <dl className="mu-detail-grid admin-account-details">
-                            <Detail
-                                label="Account ID"
-                                value={String(userId)}
-                            />
+                    {/* ================== CHANGE PASSWORD ================== */}
+                    <section
+                        className="mj-card"
+                        aria-labelledby="admin-password-title"
+                    >
+                        <header className="mj-card-header">
+                            <div className="mj-card-heading">
+                                <span
+                                    className="mj-header-icon"
+                                    aria-hidden="true"
+                                >
+                                    <i className="fa-solid fa-lock" />
+                                </span>
 
-                            <Detail
-                                label="Role"
-                                value="Administrator"
-                            />
+                                <div>
+                                    <h2 id="admin-password-title">
+                                        Change password
+                                    </h2>
 
-                            <Detail
-                                label="Account status"
-                                value={profile.status || "Not available"}
-                            />
+                                    <p>
+                                        Keep your admin account secure.
+                                    </p>
+                                </div>
+                            </div>
+                        </header>
 
-                            <Detail
-                                label="Created on"
-                                value={formatDate(profile.createdAt)}
-                            />
+                        <form
+                            onSubmit={handlePasswordSubmit}
+                            noValidate
+                        >
+                            <div
+                                className="mj-form-body"
+                                style={{
+                                    display: "grid",
+                                    gap: 18,
+                                }}
+                            >
+                                {/* ================== CURRENT PASSWORD ================== */}
+                                <TextField
+                                    label="Current password"
+                                    name="currentPassword"
+                                    type="password"
+                                    value={passwordForm.currentPassword}
+                                    onChange={handlePasswordChange}
+                                    required
+                                    fullWidth
+                                    size="small"
+                                    disabled={isBusy}
+                                    autoComplete="current-password"
+                                    error={Boolean(
+                                        passwordErrors.currentPassword
+                                    )}
+                                    helperText={
+                                        passwordErrors.currentPassword
+                                    }
+                                />
 
-                            <Detail
-                                label="Profile last updated"
-                                value={formatDate(profile.updatedAt)}
-                            />
-                        </dl>
-                    </div>
-                </section>
+                                {/* ================== NEW PASSWORD ================== */}
+                                <TextField
+                                    label="New password"
+                                    name="newPassword"
+                                    type="password"
+                                    value={passwordForm.newPassword}
+                                    onChange={handlePasswordChange}
+                                    required
+                                    fullWidth
+                                    size="small"
+                                    disabled={isBusy}
+                                    autoComplete="new-password"
+                                    error={Boolean(
+                                        passwordErrors.newPassword
+                                    )}
+                                    helperText={
+                                        passwordErrors.newPassword ||
+                                        "Minimum 6 characters."
+                                    }
+                                />
+
+                                {/* ================== CONFIRM NEW PASSWORD ================== */}
+                                <TextField
+                                    label="Confirm new password"
+                                    name="confirmPassword"
+                                    type="password"
+                                    value={passwordForm.confirmPassword}
+                                    onChange={handlePasswordChange}
+                                    required
+                                    fullWidth
+                                    size="small"
+                                    disabled={isBusy}
+                                    autoComplete="new-password"
+                                    error={Boolean(
+                                        passwordErrors.confirmPassword
+                                    )}
+                                    helperText={
+                                        passwordErrors.confirmPassword
+                                    }
+                                />
+                            </div>
+
+                            {/* ================== PASSWORD SAVE ================== */}
+                            <footer className="mj-form-footer">
+                                <p>
+                                    You will need to sign in again.
+                                </p>
+
+                                <div className="mj-form-actions">
+                                    <Button
+                                        type="submit"
+                                        variant="contained"
+                                        disableElevation
+                                        disabled={isBusy}
+                                        startIcon={
+                                            passwordSaving ? (
+                                                <CircularProgress
+                                                    size={16}
+                                                    color="inherit"
+                                                />
+                                            ) : (
+                                                <i
+                                                    className="fa-solid fa-key"
+                                                    aria-hidden="true"
+                                                />
+                                            )
+                                        }
+                                    >
+                                        {passwordSaving
+                                            ? "Updating..."
+                                            : "Update password"}
+                                    </Button>
+                                </div>
+                            </footer>
+                        </form>
+                    </section>
+                </div>
             </div>
         </div>
     );
 }
 
-function AdminProfile({ user }) {
+// ================== ADMIN PROFILE EXPORT ==================
+function AdminProfile({ user: propUser }) {
+    const { user: authUser } = useAuth();
     const outletContext = useOutletContext();
-    const currentUser = user ?? outletContext?.user;
-    const userId = currentUser?.id ?? currentUser?._id;
+
+    const currentUser =
+        authUser ?? propUser ?? outletContext?.user;
+
+    const userId =
+        currentUser?._id ?? currentUser?.id;
 
     if (currentUser?.role !== "admin" || !userId) {
         return (
             <Alert severity="error">
-                An authenticated admin account is required to view this profile.
+                An authenticated admin account is required
+                to view this profile.
             </Alert>
         );
     }

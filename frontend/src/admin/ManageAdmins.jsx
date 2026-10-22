@@ -1,9 +1,12 @@
-import { useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import {
     Alert,
+    Avatar,
     Button,
     Chip,
+    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -20,96 +23,33 @@ import {
 } from "@mui/material";
 import { toast } from "react-toastify";
 
-const STORAGE_KEY = "rms-demo-admins-v1";
+import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
+
+// ================== ADMIN CONFIGURATION ==================
+const DEFAULT_AVATAR = "/images/default-avatar.svg";
 
 const EMPTY_FORM = {
     name: "",
     email: "",
     phone: "",
+    password: "",
+    currentPassword: "",
 };
 
-const DEMO_ADMINS = [
-    {
-        id: "demo-account",
-        name: "Krushna Chandra Mohanty",
-        email: "admin@example.com",
-        phone: "",
-        role: "admin",
-        status: "Active",
-        isInitialAdmin: true,
-        accessVerifiedAt: "2026-10-18T10:00:00+05:30",
-        createdAt: "2026-10-10T09:00:00+05:30",
-        updatedAt: "",
-    },
-    {
-        id: "admin-demo-2",
-        name: "Sample Recruitment Admin",
-        email: "recruitment@example.com",
-        phone: "",
-        role: "admin",
-        status: "Active",
-        isInitialAdmin: false,
-        accessVerifiedAt: "",
-        createdAt: "2026-10-15T11:00:00+05:30",
-        updatedAt: "",
-    },
-];
+const INITIAL_COUNTS = {
+    total: 0,
+    active: 0,
+    inactive: 0,
+};
 
-function loadAdmins() {
-    try {
-        const stored = window.localStorage.getItem(STORAGE_KEY);
+// ================== DATE FORMATTING ==================
+function formatDate(value, includeTime = false) {
+    if (!value) return "Not available";
 
-        if (!stored) {
-            return { admins: DEMO_ADMINS, error: "" };
-        }
-
-        const parsed = JSON.parse(stored);
-
-        const valid =
-            Array.isArray(parsed) &&
-            parsed.every(
-                (admin) =>
-                    admin &&
-                    ["id", "name", "email", "createdAt"].every(
-                        (key) => typeof admin[key] === "string"
-                    ) &&
-                    admin.role === "admin" &&
-                    ["Active", "Inactive"].includes(admin.status) &&
-                    typeof admin.isInitialAdmin === "boolean" &&
-                    typeof admin.accessVerifiedAt === "string"
-            );
-
-        if (!valid) {
-            throw new Error("Invalid admin data");
-        }
-
-        return { admins: parsed, error: "" };
-    } catch {
-        return {
-            admins: [],
-            error:
-                "Saved admins could not be loaded. Saving is disabled " +
-                "to avoid overwriting existing records. Check browser storage and reload.",
-        };
-    }
-}
-
-function getInitials(name) {
-    return (
-        name
-            .trim()
-            .split(/\s+/)
-            .slice(0, 2)
-            .map((part) => part.charAt(0))
-            .join("")
-            .toUpperCase() || "?"
-    );
-}
-
-function formatDate(value) {
     const date = new Date(value);
 
-    if (!value || Number.isNaN(date.getTime())) {
+    if (Number.isNaN(date.getTime())) {
         return "Not available";
     }
 
@@ -118,218 +58,419 @@ function formatDate(value) {
         month: "short",
         year: "numeric",
         timeZone: "Asia/Kolkata",
+        ...(includeTime
+            ? { hour: "numeric", minute: "2-digit" }
+            : {}),
     }).format(date);
 }
 
-function validateAdmin(form, admins, editingId) {
+// ================== API ERROR MESSAGE ==================
+function getApiError(error, fallback) {
+    return error.response?.data?.message || fallback;
+}
+
+// ================== ADMIN AVATAR ==================
+// Show Cloudinary image or existing default profile image.
+function AdminAvatar({ admin }) {
+    return (
+        <Avatar
+            src={admin?.avatar?.url || DEFAULT_AVATAR}
+            alt={admin?.name || "Administrator"}
+            variant="rounded"
+            className="mj-company-avatar"
+        />
+    );
+}
+
+// ================== ADMIN STATUS ==================
+function AdminStatus({ status }) {
+    return (
+        <Chip
+            label={status}
+            color={status === "Active" ? "success" : "default"}
+            variant="outlined"
+            size="small"
+        />
+    );
+}
+
+// ================== ADMIN FORM VALIDATION ==================
+function validateAdmin(form, isEditing, emailChanged) {
     const errors = {};
-    const normalizedEmail = form.email.trim().toLowerCase();
 
-    if (form.name.trim().length < 2) {
-        errors.name = "Enter a name with at least 2 characters.";
-    }
+    const name = form.name.trim();
+    const email = form.email.trim();
+    const phone = form.phone.trim();
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-        errors.email = "Enter a valid email address.";
-    } else if (
-        admins.some(
-            (admin) =>
-                admin.id !== editingId &&
-                admin.email.trim().toLowerCase() === normalizedEmail
-        )
-    ) {
-        errors.email = "An admin with this email already exists.";
+    if (name.length < 2 || name.length > 100) {
+        errors.name = "Enter a name containing 2–100 characters.";
     }
 
     if (
-        form.phone.trim() &&
-        !/^\+?[0-9\s()-]{7,20}$/.test(form.phone.trim())
+        email.length > 254 ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     ) {
-        errors.phone = "Enter a valid phone number.";
+        errors.email = "Enter a valid email address.";
+    }
+
+    // Same Indian mobile rule as Signup and User Profile.
+    if (
+        (!isEditing || phone) &&
+        !/^[6-9]\d{9}$/.test(phone)
+    ) {
+        errors.phone = "Enter a valid 10-digit Indian mobile number.";
+    }
+
+    // ================== ADMIN PASSWORD VALIDATION ==================
+    if (!isEditing) {
+        if (
+            form.password.length < 6 ||
+            new TextEncoder().encode(form.password).length > 72
+        ) {
+            errors.password =
+                "Password must have at least 6 characters and not exceed 72 UTF-8 bytes.";
+        }
+    }
+
+    // Creation and sensitive email changes require reauthentication.
+    if (!isEditing || emailChanged) {
+        if (!form.currentPassword) {
+            errors.currentPassword =
+                "Enter your current admin password.";
+        }
     }
 
     return errors;
 }
 
-function ManageAdmins({ user }) {
+// ================== ADMIN DETAILS HELPER ==================
+function AdminDetail({ label, value }) {
+    return (
+        <div className="mu-detail">
+            <dt>{label}</dt>
+            <dd>{value || "Not provided"}</dd>
+        </div>
+    );
+}
+
+// ================== MANAGE ADMINS PAGE ==================
+function ManageAdmins({ user: propUser }) {
+    const navigate = useNavigate();
     const outletContext = useOutletContext();
-    const currentUser = user ?? outletContext?.user;
-    const currentUserId = currentUser?.id ?? currentUser?._id;
 
-    const [initialData] = useState(loadAdmins);
-    const [admins, setAdmins] = useState(initialData.admins);
+    const {
+        user: authUser,
+        updateUserProfile,
+        refreshUser,
+    } = useAuth();
 
-    const [form, setForm] = useState({ ...EMPTY_FORM });
-    const [editingId, setEditingId] = useState(null);
-    const [errors, setErrors] = useState({});
+    const currentUser =
+        authUser ?? propUser ?? outletContext?.user;
 
-    const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [statusAction, setStatusAction] = useState(null);
+    const currentUserId = String(
+        currentUser?._id || currentUser?.id || ""
+    );
+
+    const isAuthorized = currentUser?.role === "admin";
 
     const formRef = useRef(null);
     const nameInputRef = useRef(null);
 
-    const isEditing = editingId !== null;
-    const isAuthorized = currentUser?.role === "admin";
+    // ================== ADMIN DATA ==================
+    const [admins, setAdmins] = useState([]);
+    const [counts, setCounts] = useState(INITIAL_COUNTS);
+    const [total, setTotal] = useState(0);
 
-    const actionAdmin = admins.find(
-        (admin) => admin.id === statusAction?.id
+    const [loading, setLoading] = useState(true);
+    const [listError, setListError] = useState("");
+    const [listRevision, setListRevision] = useState(0);
+
+    // ================== ADMIN FORM ==================
+    const [form, setForm] = useState({ ...EMPTY_FORM });
+    const [editingId, setEditingId] = useState(null);
+    const [editingOriginal, setEditingOriginal] = useState(null);
+
+    const [errors, setErrors] = useState({});
+    const [saving, setSaving] = useState(false);
+
+    // ================== SEARCH AND PAGINATION ==================
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All");
+
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
+
+    // ================== ADMIN DETAILS ==================
+    const [selectedId, setSelectedId] = useState(null);
+    const [selectedAdmin, setSelectedAdmin] = useState(null);
+    const [detailsLoading, setDetailsLoading] = useState(false);
+    const [detailsError, setDetailsError] = useState("");
+
+    // ================== STATUS CHANGE ==================
+    const [statusAction, setStatusAction] = useState(null);
+    const [statusPassword, setStatusPassword] = useState("");
+    const [statusSaving, setStatusSaving] = useState(false);
+
+    // ================== DERIVED VALUES ==================
+    const isEditing = Boolean(editingId);
+
+    const emailChanged = Boolean(
+        isEditing &&
+        editingOriginal &&
+        form.email.trim().toLowerCase() !==
+            editingOriginal.email.toLowerCase()
     );
 
-    const activeAdmins = admins.filter(
-        (admin) => admin.status === "Active"
-    );
+    const hasFormChanges = isEditing
+        ? Boolean(
+              editingOriginal &&
+              (
+                  form.name.trim() !== editingOriginal.name ||
+                  form.email.trim().toLowerCase() !==
+                      editingOriginal.email.toLowerCase() ||
+                  form.phone.trim() !==
+                      (editingOriginal.phone || "")
+              )
+          )
+        : true;
 
-    const verifiedActiveAdmins = activeAdmins.filter(
-        (admin) => Boolean(admin.accessVerifiedAt)
-    );
+    // ================== DEBOUNCED SEARCH ==================
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search.trim());
+        }, 350);
 
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    // ================== FETCH ADMINS FROM MONGODB ==================
+    useEffect(() => {
+        if (!isAuthorized) return;
+
+        const controller = new AbortController();
+        let active = true;
+
+        async function fetchAdmins() {
+            setLoading(true);
+            setListError("");
+
+            try {
+                const params = {
+                    page: page + 1,
+                    limit: rowsPerPage,
+                    status: statusFilter,
+                };
+
+                if (debouncedSearch) {
+                    params.search = debouncedSearch;
+                }
+
+                const { data } = await api.get(
+                    "/admin/admins",
+                    {
+                        params,
+                        signal: controller.signal,
+                    }
+                );
+
+                if (!active) return;
+
+                if (
+                    !data?.success ||
+                    !Array.isArray(data.admins) ||
+                    !data.pagination ||
+                    !data.counts
+                ) {
+                    throw new Error("Invalid admin API response.");
+                }
+
+                const nextTotal = Number(
+                    data.pagination.total
+                );
+
+                if (
+                    !Number.isSafeInteger(nextTotal) ||
+                    nextTotal < 0
+                ) {
+                    throw new Error("Invalid pagination data.");
+                }
+
+                // ================== PAGE CORRECTION ==================
+                const lastPage = Math.max(
+                    0,
+                    Math.ceil(nextTotal / rowsPerPage) - 1
+                );
+
+                if (page > lastPage) {
+                    setPage(lastPage);
+                    return;
+                }
+
+                setAdmins(data.admins);
+                setTotal(nextTotal);
+
+                setCounts({
+                    total: Number(data.counts.total) || 0,
+                    active: Number(data.counts.active) || 0,
+                    inactive: Number(data.counts.inactive) || 0,
+                });
+            } catch (error) {
+                if (!active) return;
+
+                setAdmins([]);
+                setTotal(0);
+                setListError(
+                    getApiError(
+                        error,
+                        "Unable to load admin accounts."
+                    )
+                );
+            } finally {
+                if (active) setLoading(false);
+            }
+        }
+
+        fetchAdmins();
+
+        return () => {
+            active = false;
+            controller.abort();
+        };
+    }, [
+        isAuthorized,
+        page,
+        rowsPerPage,
+        debouncedSearch,
+        statusFilter,
+        listRevision,
+    ]);
+
+    // ================== FETCH SINGLE ADMIN ==================
+    useEffect(() => {
+        if (!selectedId || !isAuthorized) return;
+
+        const controller = new AbortController();
+        let active = true;
+
+        async function fetchAdminDetails() {
+            setDetailsLoading(true);
+            setDetailsError("");
+            setSelectedAdmin(null);
+
+            try {
+                const { data } = await api.get(
+                    `/admin/admins/${encodeURIComponent(selectedId)}`,
+                    {
+                        signal: controller.signal,
+                    }
+                );
+
+                if (!active) return;
+
+                if (!data?.success || !data.admin) {
+                    throw new Error("Invalid admin details response.");
+                }
+
+                setSelectedAdmin(data.admin);
+            } catch (error) {
+                if (!active) return;
+
+                setDetailsError(
+                    getApiError(
+                        error,
+                        "Unable to load admin details."
+                    )
+                );
+            } finally {
+                if (active) setDetailsLoading(false);
+            }
+        }
+
+        fetchAdminDetails();
+
+        return () => {
+            active = false;
+            controller.abort();
+        };
+    }, [selectedId, isAuthorized, listRevision]);
+
+    // ================== ADMIN METRICS ==================
     const metrics = [
         {
             label: "Total admins",
-            value: admins.length,
+            value: counts.total,
             detail: "Administration accounts",
             icon: "fa-solid fa-user-shield",
             tone: "blue",
         },
         {
             label: "Active",
-            value: activeAdmins.length,
+            value: counts.active,
             detail: "Accounts enabled",
             icon: "fa-solid fa-user-check",
             tone: "green",
         },
         {
             label: "Inactive",
-            value: admins.length - activeAdmins.length,
+            value: counts.inactive,
             detail: "Accounts deactivated",
             icon: "fa-solid fa-user-slash",
             tone: "red",
         },
         {
-            label: "Access pending",
-            value: activeAdmins.length - verifiedActiveAdmins.length,
-            detail: "First login not verified",
-            icon: "fa-regular fa-clock",
+            label: "Search results",
+            value: total,
+            detail: "Matching current filters",
+            icon: "fa-solid fa-magnifying-glass",
             tone: "amber",
         },
     ];
 
-    const query = search.trim().toLowerCase();
-
-    const filteredAdmins = admins
-        .filter((admin) => {
-            const matchesSearch = [
-                admin.name,
-                admin.email,
-                admin.phone,
-            ].some((value) =>
-                String(value || "").toLowerCase().includes(query)
-            );
-
-            return (
-                matchesSearch &&
-                (statusFilter === "All" ||
-                    admin.status === statusFilter)
-            );
-        })
-        .sort((first, second) =>
-            second.createdAt.localeCompare(first.createdAt)
-        );
-
-    const visibleAdmins = filteredAdmins.slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
-    );
-
-    function getDeactivationReason(admin) {
-        if (!currentUserId) {
-            return "Current admin identity is unavailable.";
-        }
-
-        if (admin.id === currentUserId) {
-            return "You cannot deactivate your own account here.";
-        }
-
-        if (admin.status !== "Active") return "";
-
-        if (activeAdmins.length <= 1) {
-            return "At least one active admin must remain.";
-        }
-
-        if (
-            admin.isInitialAdmin &&
-            !admins.some(
-                (other) =>
-                    other.id !== admin.id &&
-                    other.status === "Active" &&
-                    Boolean(other.accessVerifiedAt)
-            )
-        ) {
-            return "Verify another active admin's login before deactivating the initial admin.";
-        }
-
-        return "";
-    }
-
-    function persistAdmins(nextAdmins) {
-        if (!isAuthorized || initialData.error) return false;
-
-        try {
-            window.localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify(nextAdmins)
-            );
-
-            setAdmins(nextAdmins);
-            return true;
-        } catch {
-            toast.error(
-                "Could not save the changes. Check browser storage."
-            );
-            return false;
-        }
-    }
-
+    // ================== RESET FORM ==================
     function resetForm() {
         setForm({ ...EMPTY_FORM });
         setEditingId(null);
+        setEditingOriginal(null);
         setErrors({});
     }
 
+    // ================== FOCUS ADMIN FORM ==================
     function focusForm() {
-        const reduceMotion = window.matchMedia(
-            "(prefers-reduced-motion: reduce)"
-        ).matches;
-
         formRef.current?.scrollIntoView({
-            behavior: reduceMotion ? "auto" : "smooth",
+            behavior: "smooth",
             block: "start",
         });
 
-        nameInputRef.current?.focus({ preventScroll: true });
+        nameInputRef.current?.focus({
+            preventScroll: true,
+        });
     }
 
+    // ================== NEW ADMIN ==================
     function handleNewAdmin() {
         resetForm();
         focusForm();
     }
 
+    // ================== EDIT ADMIN ==================
     function handleEdit(admin) {
+        setEditingId(admin.id);
+        setEditingOriginal(admin);
+
         setForm({
             name: admin.name,
             email: admin.email,
             phone: admin.phone || "",
+            password: "",
+            currentPassword: "",
         });
 
-        setEditingId(admin.id);
         setErrors({});
         focusForm();
     }
 
+    // ================== HANDLE FORM INPUT ==================
     function handleChange(event) {
         const { name, value } = event.target;
 
@@ -344,148 +485,237 @@ function ManageAdmins({ user }) {
         }));
     }
 
-    function handleSubmit(event) {
+    // ================== SAVE ADMIN ACCOUNT ==================
+    async function handleSubmit(event) {
         event.preventDefault();
 
-        if (!isAuthorized || initialData.error) return;
+        if (!isAuthorized || saving || !hasFormChanges) {
+            return;
+        }
 
-        const validationErrors = validateAdmin(
+        const nextErrors = validateAdmin(
             form,
-            admins,
-            editingId
+            isEditing,
+            emailChanged
         );
 
-        if (Object.keys(validationErrors).length) {
-            setErrors(validationErrors);
+        setErrors(nextErrors);
+
+        if (Object.keys(nextErrors).length) {
             toast.error("Please check the highlighted fields.");
             return;
         }
 
-        const existingAdmin = isEditing
-            ? admins.find((admin) => admin.id === editingId)
-            : null;
-
-        if (isEditing && !existingAdmin) {
-            toast.error("Admin not found. Reload and try again.");
-            return;
-        }
-
-        const email = form.email.trim().toLowerCase();
-        const emailChanged =
-            existingAdmin &&
-            existingAdmin.email.toLowerCase() !== email;
-
-        const now = new Date().toISOString();
-
-        let id;
+        setSaving(true);
 
         try {
-            id = existingAdmin?.id ?? window.crypto.randomUUID();
-        } catch {
-            toast.error("Could not create an account ID.");
+            const normalized = {
+                name: form.name.trim(),
+                email: form.email.trim().toLowerCase(),
+                phone: form.phone.trim(),
+            };
+
+            let response;
+
+            if (isEditing) {
+                // ================== UPDATE EXISTING ADMIN ==================
+                // Send only changed fields.
+                const changes = {};
+
+                if (normalized.name !== editingOriginal.name) {
+                    changes.name = normalized.name;
+                }
+
+                if (
+                    normalized.phone !==
+                    (editingOriginal.phone || "")
+                ) {
+                    changes.phone = normalized.phone;
+                }
+
+                if (emailChanged) {
+                    changes.email = normalized.email;
+                    changes.currentPassword = form.currentPassword;
+                }
+
+                response = await api.patch(
+                    `/admin/admins/${encodeURIComponent(editingId)}`,
+                    changes
+                );
+            } else {
+                // ================== CREATE NEW ADMIN ==================
+                // Initial password must be changed after first login.
+                response = await api.post(
+                    "/admin/admins",
+                    {
+                        ...normalized,
+                        password: form.password,
+                        currentPassword: form.currentPassword,
+                    }
+                );
+            }
+
+            const data = response.data;
+
+            if (!data?.success || !data.admin) {
+                throw new Error(
+                    "Server did not confirm the admin update."
+                );
+            }
+
+            const editedSelf =
+                isEditing &&
+                String(data.admin.id) === currentUserId;
+
+            // ================== SYNC CURRENT ADMIN PROFILE ==================
+            if (editedSelf && !emailChanged) {
+                updateUserProfile(data.admin);
+            }
+
+            toast.success(
+                data.message ||
+                (isEditing
+                    ? "Admin updated successfully."
+                    : "Admin created successfully.")
+            );
+
+            resetForm();
+            setSearch("");
+            setDebouncedSearch("");
+            setStatusFilter("All");
+            setPage(0);
+            setListRevision((previous) => previous + 1);
+
+            // Own email change invalidates previous JWT sessions.
+            if (editedSelf && emailChanged) {
+                await refreshUser();
+
+                navigate("/manage", {
+                    replace: true,
+                });
+            }
+        } catch (error) {
+            toast.error(
+                getApiError(
+                    error,
+                    "Unable to save admin details."
+                )
+            );
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    // ================== VIEW ADMIN DETAILS ==================
+    function openAdminDetails(admin) {
+        setDetailsError("");
+        setSelectedAdmin(null);
+        setSelectedId(admin.id);
+    }
+
+    function closeAdminDetails() {
+        setSelectedId(null);
+        setSelectedAdmin(null);
+        setDetailsError("");
+    }
+
+    // ================== REQUEST STATUS CHANGE ==================
+    function requestStatusChange(admin) {
+        if (statusSaving) return;
+
+        if (
+            admin.status === "Active" &&
+            String(admin.id) === currentUserId
+        ) {
+            toast.info(
+                "You cannot deactivate your own account here."
+            );
             return;
         }
 
-        const savedAdmin = {
-            ...existingAdmin,
-            id,
-            name: form.name.trim(),
-            email,
-            phone: form.phone.trim(),
-            role: "admin",
-            status: existingAdmin?.status ?? "Active",
-            isInitialAdmin: existingAdmin?.isInitialAdmin ?? false,
-            accessVerifiedAt: emailChanged
-                ? ""
-                : existingAdmin?.accessVerifiedAt || "",
-            createdAt: existingAdmin?.createdAt || now,
-            updatedAt: now,
-        };
-
-        const nextAdmins = isEditing
-            ? admins.map((admin) =>
-                  admin.id === editingId ? savedAdmin : admin
-              )
-            : [savedAdmin, ...admins];
-
-        if (!persistAdmins(nextAdmins)) return;
-
-        toast.success(
-            isEditing
-                ? "Admin details updated."
-                : "Demo admin record created."
-        );
-
-        resetForm();
-        setSearch("");
-        setStatusFilter("All");
-        setPage(0);
-    }
-
-    function requestStatusChange(admin) {
-        if (admin.status === "Active") {
-            const reason = getDeactivationReason(admin);
-
-            if (reason) {
-                toast.info(reason);
-                return;
-            }
+        if (
+            admin.status === "Active" &&
+            counts.active <= 1
+        ) {
+            toast.info(
+                "The last active admin cannot be deactivated."
+            );
+            return;
         }
+
+        setStatusPassword("");
 
         setStatusAction({
             id: admin.id,
+            name: admin.name,
             expectedStatus: admin.status,
             nextStatus:
-                admin.status === "Active" ? "Inactive" : "Active",
+                admin.status === "Active"
+                    ? "Inactive"
+                    : "Active",
         });
     }
 
-    function confirmStatusChange() {
-        if (!actionAdmin || !statusAction || !isAuthorized) return;
+    // ================== CONFIRM ADMIN STATUS CHANGE ==================
+    async function confirmStatusChange() {
+        if (!statusAction || statusSaving) return;
 
-        if (actionAdmin.status !== statusAction.expectedStatus) {
-            toast.error("Account status changed. Please try again.");
-            setStatusAction(null);
+        if (!statusPassword) {
+            toast.error("Enter your current admin password.");
             return;
         }
 
-        if (statusAction.nextStatus === "Inactive") {
-            const reason = getDeactivationReason(actionAdmin);
+        setStatusSaving(true);
 
-            if (reason) {
-                toast.error(reason);
-                setStatusAction(null);
-                return;
+        try {
+            // ================== SECURE STATUS UPDATE ==================
+            const { data } = await api.patch(
+                `/admin/admins/${encodeURIComponent(statusAction.id)}/status`,
+                {
+                    expectedStatus: statusAction.expectedStatus,
+                    status: statusAction.nextStatus,
+                    currentPassword: statusPassword,
+                }
+            );
+
+            if (!data?.success || !data.admin) {
+                throw new Error(
+                    "Server did not confirm account status."
+                );
             }
+
+            toast.success(
+                data.message ||
+                "Admin status updated successfully."
+            );
+
+            setStatusAction(null);
+            setStatusPassword("");
+            setPage(0);
+            setListRevision((previous) => previous + 1);
+        } catch (error) {
+            toast.error(
+                getApiError(
+                    error,
+                    "Unable to change admin account status."
+                )
+            );
+
+            if (
+                [404, 409].includes(error.response?.status)
+            ) {
+                setStatusAction(null);
+                setStatusPassword("");
+                setListRevision(
+                    (previous) => previous + 1
+                );
+            }
+        } finally {
+            setStatusSaving(false);
         }
-
-        const nextAdmins = admins.map((admin) =>
-            admin.id === actionAdmin.id
-                ? {
-                      ...admin,
-                      status: statusAction.nextStatus,
-                      // Reactivated admins must verify access again.
-                      accessVerifiedAt:
-                          statusAction.nextStatus === "Active"
-                              ? ""
-                              : admin.accessVerifiedAt,
-                      updatedAt: new Date().toISOString(),
-                  }
-                : admin
-        );
-
-        if (!persistAdmins(nextAdmins)) return;
-
-        toast.success(
-            statusAction.nextStatus === "Active"
-                ? "Admin activated."
-                : "Admin deactivated."
-        );
-
-        setStatusAction(null);
-        setPage(0);
     }
 
+    // ================== SHARED FIELD PROPERTIES ==================
     function field(name, label, options = {}) {
         return {
             name,
@@ -494,12 +724,14 @@ function ManageAdmins({ user }) {
             onChange: handleChange,
             fullWidth: true,
             size: "small",
+            disabled: saving,
             ...options,
             error: Boolean(errors[name]),
             helperText: errors[name] || options.helperText,
         };
     }
 
+    // ================== ADMIN AUTHORIZATION ==================
     if (!isAuthorized) {
         return (
             <Alert severity="error">
@@ -510,6 +742,7 @@ function ManageAdmins({ user }) {
 
     return (
         <div className="manage-jobs manage-admins">
+            {/* ================== PAGE HEADER ================== */}
             <header className="mj-heading">
                 <div>
                     <span className="mj-eyebrow">
@@ -523,14 +756,32 @@ function ManageAdmins({ user }) {
                     </p>
                 </div>
 
+                <Button
+                    type="button"
+                    variant="outlined"
+                    onClick={() =>
+                        setListRevision((previous) => previous + 1)
+                    }
+                    disabled={loading}
+                    startIcon={
+                        <i
+                            className="fa-solid fa-arrows-rotate"
+                            aria-hidden="true"
+                        />
+                    }
+                >
+                    Refresh
+                </Button>
             </header>
 
-            {initialData.error && (
+            {/* ================== API ERROR ================== */}
+            {listError && (
                 <Alert severity="error" className="mj-alert">
-                    {initialData.error}
+                    {listError}
                 </Alert>
             )}
 
+            {/* ================== ADMIN STATISTICS ================== */}
             <section
                 className="mj-metrics"
                 aria-label="Admin overview"
@@ -559,6 +810,7 @@ function ManageAdmins({ user }) {
                 ))}
             </section>
 
+            {/* ================== ADMIN FORM ================== */}
             <section
                 ref={formRef}
                 className="mj-card mj-form-card"
@@ -581,7 +833,9 @@ function ManageAdmins({ user }) {
                             </h2>
 
                             <p>
-                                Add contact details for an administration account.
+                                {isEditing
+                                    ? "Update administrator contact details."
+                                    : "Create a secure administration account."}
                             </p>
                         </div>
                     </div>
@@ -597,39 +851,99 @@ function ManageAdmins({ user }) {
                 <form onSubmit={handleSubmit} noValidate>
                     <div className="mj-form-body">
                         <div className="mj-form-grid">
+                            {/* ================== ADMIN NAME ================== */}
                             <TextField
                                 {...field("name", "Full name", {
                                     required: true,
                                     inputRef: nameInputRef,
+                                    autoComplete: "name",
                                     placeholder: "Enter admin name",
+                                    slotProps: {
+                                        htmlInput: {
+                                            maxLength: 100,
+                                        },
+                                    },
                                 })}
                             />
 
+                            {/* ================== ADMIN EMAIL ================== */}
                             <TextField
                                 {...field("email", "Email address", {
                                     required: true,
                                     type: "email",
+                                    autoComplete: "email",
                                     placeholder: "admin@company.com",
+                                    slotProps: {
+                                        htmlInput: {
+                                            maxLength: 254,
+                                        },
+                                    },
                                 })}
                             />
 
+                            {/* ================== ADMIN PHONE ================== */}
                             <TextField
                                 {...field("phone", "Phone number", {
+                                    required: !isEditing,
                                     type: "tel",
-                                    helperText: "Optional contact number.",
+                                    autoComplete: "tel",
+                                    helperText:
+                                        "10-digit Indian mobile number.",
+                                    slotProps: {
+                                        htmlInput: {
+                                            maxLength: 10,
+                                            inputMode: "numeric",
+                                        },
+                                    },
                                 })}
                             />
 
+                            {/* ================== ACCOUNT ROLE ================== */}
                             <TextField
                                 label="Account role"
                                 value="Admin"
                                 fullWidth
                                 size="small"
                                 disabled
-                                helperText="Administration access."
+                                helperText="Administrator access."
                             />
+
+                            {/* ================== INITIAL PASSWORD ================== */}
+                            {!isEditing && (
+                                <TextField
+                                    {...field(
+                                        "password",
+                                        "Initial password",
+                                        {
+                                            type: "password",
+                                            required: true,
+                                            autoComplete: "new-password",
+                                            helperText:
+                                                "Minimum 6 characters. Admin must change it after first login.",
+                                        }
+                                    )}
+                                />
+                            )}
+
+                            {/* ================== CURRENT ADMIN PASSWORD ================== */}
+                            {(!isEditing || emailChanged) && (
+                                <TextField
+                                    {...field(
+                                        "currentPassword",
+                                        "Your current password",
+                                        {
+                                            type: "password",
+                                            required: true,
+                                            autoComplete: "current-password",
+                                            helperText:
+                                                "Verify your identity before this action.",
+                                        }
+                                    )}
+                                />
+                            )}
                         </div>
 
+                        {/* ================== SECURITY INFORMATION ================== */}
                         <div className="mj-status-note">
                             <i
                                 className="fa-solid fa-circle-info"
@@ -637,22 +951,36 @@ function ManageAdmins({ user }) {
                             />
 
                             <p>
-                                New administrators must verify access by
-                                successfully signing in before replacing
-                                the initial admin.
+                                New administrators must change their initial
+                                password and successfully log in before
+                                replacing the initial admin. Their profile
+                                photo can be uploaded from Admin Profile.
                             </p>
                         </div>
                     </div>
 
+                    {/* ================== FORM ACTIONS ================== */}
                     <footer className="mj-form-footer">
                         <p>
                             <span>*</span> Required fields
                         </p>
 
                         <div className="mj-form-actions">
+                            {isEditing && (
+                                <Button
+                                    type="button"
+                                    variant="outlined"
+                                    disabled={saving}
+                                    onClick={handleNewAdmin}
+                                >
+                                    Add new
+                                </Button>
+                            )}
+
                             <Button
                                 type="button"
                                 variant="outlined"
+                                disabled={saving}
                                 onClick={resetForm}
                             >
                                 {isEditing ? "Cancel edit" : "Reset"}
@@ -662,23 +990,33 @@ function ManageAdmins({ user }) {
                                 type="submit"
                                 variant="contained"
                                 disableElevation
-                                disabled={Boolean(initialData.error)}
+                                disabled={saving || !hasFormChanges}
                                 startIcon={
-                                    <i
-                                        className="fa-regular fa-floppy-disk"
-                                        aria-hidden="true"
-                                    />
+                                    saving ? (
+                                        <CircularProgress
+                                            size={16}
+                                            color="inherit"
+                                        />
+                                    ) : (
+                                        <i
+                                            className="fa-regular fa-floppy-disk"
+                                            aria-hidden="true"
+                                        />
+                                    )
                                 }
                             >
-                                {isEditing
-                                    ? "Save changes"
-                                    : "Add admin"}
+                                {saving
+                                    ? "Saving..."
+                                    : isEditing
+                                      ? "Save changes"
+                                      : "Add admin"}
                             </Button>
                         </div>
                     </footer>
                 </form>
             </section>
 
+            {/* ================== ADMIN ACCOUNTS ================== */}
             <section
                 className="mj-card"
                 aria-labelledby="ma-list-title"
@@ -694,17 +1032,22 @@ function ManageAdmins({ user }) {
 
                         <div>
                             <h2 id="ma-list-title">Admin accounts</h2>
+
                             <p>
-                                Review access verification and manage availability.
+                                Review administrators, login verification
+                                and account availability.
                             </p>
                         </div>
                     </div>
 
                     <span className="mj-result-count">
-                        {filteredAdmins.length} of {admins.length} admins
+                        {loading
+                            ? "Loading admins..."
+                            : `${total} of ${counts.total} admins`}
                     </span>
                 </header>
 
+                {/* ================== SEARCH AND FILTER ================== */}
                 <div className="ma-filters">
                     <TextField
                         label="Search admins"
@@ -716,6 +1059,11 @@ function ManageAdmins({ user }) {
                         }}
                         size="small"
                         fullWidth
+                        slotProps={{
+                            htmlInput: {
+                                maxLength: 100,
+                            },
+                        }}
                     />
 
                     <TextField
@@ -735,9 +1083,11 @@ function ManageAdmins({ user }) {
                     </TextField>
 
                     <Button
+                        type="button"
                         variant="outlined"
                         onClick={() => {
                             setSearch("");
+                            setDebouncedSearch("");
                             setStatusFilter("All");
                             setPage(0);
                         }}
@@ -746,6 +1096,7 @@ function ManageAdmins({ user }) {
                     </Button>
                 </div>
 
+                {/* ================== ADMIN TABLE ================== */}
                 <TableContainer>
                     <Table
                         className="mj-table ma-table"
@@ -758,142 +1109,184 @@ function ManageAdmins({ user }) {
                                 <TableCell>Access verification</TableCell>
                                 <TableCell>Created on</TableCell>
                                 <TableCell>Status</TableCell>
-                                <TableCell align="right">Actions</TableCell>
+                                <TableCell align="right">
+                                    Actions
+                                </TableCell>
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
-                            {visibleAdmins.map((admin) => {
-                                const reason =
-                                    admin.status === "Active"
-                                        ? getDeactivationReason(admin)
-                                        : "";
-
-                                return (
-                                    <TableRow
-                                        key={admin.id}
-                                        hover
-                                        selected={editingId === admin.id}
+                            {/* ================== LOADING ================== */}
+                            {loading && (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={6}
+                                        align="center"
+                                        sx={{ py: 6 }}
                                     >
-                                        <TableCell>
-                                            <div className="mj-job-cell">
-                                                <span
-                                                    className="mj-company-avatar"
-                                                    aria-hidden="true"
-                                                >
-                                                    {getInitials(admin.name)}
-                                                </span>
+                                        <CircularProgress size={26} />
+                                        <p>Loading admin accounts...</p>
+                                    </TableCell>
+                                </TableRow>
+                            )}
 
-                                                <div>
-                                                    <strong>{admin.name}</strong>
+                            {/* ================== ADMIN RECORDS ================== */}
+                            {!loading &&
+                                admins.map((admin) => {
+                                    const isSelf =
+                                        String(admin.id) === currentUserId;
 
-                                                    <div className="mj-job-tags">
-                                                        <span>Admin</span>
+                                    const isInitial =
+                                        !admin.createdBy;
 
-                                                        {admin.isInitialAdmin && (
-                                                            <span>Initial admin</span>
-                                                        )}
+                                    const cannotDeactivate =
+                                        admin.status === "Active" &&
+                                        (isSelf || counts.active <= 1);
 
-                                                        {admin.id === currentUserId && (
-                                                            <span>You</span>
-                                                        )}
+                                    return (
+                                        <TableRow
+                                            key={admin.id}
+                                            hover
+                                        >
+                                            <TableCell>
+                                                <div className="mj-job-cell">
+                                                    <AdminAvatar
+                                                        admin={admin}
+                                                    />
+
+                                                    <div>
+                                                        <strong>
+                                                            {admin.name}
+                                                        </strong>
+
+                                                        <div className="mj-job-tags">
+                                                            <span>
+                                                                Admin
+                                                            </span>
+
+                                                            {isInitial && (
+                                                                <span>
+                                                                    Initial admin
+                                                                </span>
+                                                            )}
+
+                                                            {isSelf && (
+                                                                <span>
+                                                                    You
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </TableCell>
+                                            </TableCell>
 
-                                        <TableCell>
-                                            <span className="mj-cell-primary">
-                                                {admin.email}
-                                            </span>
+                                            <TableCell>
+                                                <span className="mj-cell-primary">
+                                                    {admin.email}
+                                                </span>
 
-                                            <span className="mj-cell-secondary">
-                                                {admin.phone || "Phone not provided"}
-                                            </span>
-                                        </TableCell>
+                                                <span className="mj-cell-secondary">
+                                                    {admin.phone ||
+                                                        "Phone not provided"}
+                                                </span>
+                                            </TableCell>
 
-                                        <TableCell>
-                                            <Chip
-                                                label={
-                                                    admin.accessVerifiedAt
-                                                        ? "Verified"
-                                                        : "Pending login"
-                                                }
-                                                color={
-                                                    admin.accessVerifiedAt
-                                                        ? "success"
-                                                        : "warning"
-                                                }
-                                                size="small"
-                                                variant="outlined"
-                                            />
-                                        </TableCell>
-
-                                        <TableCell>
-                                            <time dateTime={admin.createdAt}>
-                                                {formatDate(admin.createdAt)}
-                                            </time>
-                                        </TableCell>
-
-                                        <TableCell>
-                                            <Chip
-                                                label={admin.status}
-                                                color={
-                                                    admin.status === "Active"
-                                                        ? "success"
-                                                        : "default"
-                                                }
-                                                size="small"
-                                                variant="outlined"
-                                            />
-                                        </TableCell>
-
-                                        <TableCell align="right">
-                                            <div className="ma-actions">
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    onClick={() => handleEdit(admin)}
-                                                    aria-label={`Edit ${admin.name}`}
-                                                >
-                                                    Edit
-                                                </Button>
-
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
+                                            <TableCell>
+                                                <Chip
+                                                    label={
+                                                        admin.lastLoginAt
+                                                            ? "Logged in"
+                                                            : "Pending login"
+                                                    }
                                                     color={
-                                                        admin.status === "Active"
-                                                            ? "error"
-                                                            : "success"
+                                                        admin.lastLoginAt
+                                                            ? "success"
+                                                            : "warning"
                                                     }
-                                                    disabled={Boolean(reason)}
-                                                    onClick={() =>
-                                                        requestStatusChange(admin)
+                                                    variant="outlined"
+                                                    size="small"
+                                                />
+                                            </TableCell>
+
+                                            <TableCell>
+                                                <time
+                                                    dateTime={
+                                                        admin.createdAt || ""
                                                     }
-                                                    aria-label={`${
-                                                        admin.status === "Active"
-                                                            ? "Deactivate"
-                                                            : "Activate"
-                                                    } ${admin.name}`}
                                                 >
-                                                    {admin.status === "Active"
-                                                        ? "Deactivate"
-                                                        : "Activate"}
-                                                </Button>
-                                            </div>
+                                                    {formatDate(
+                                                        admin.createdAt
+                                                    )}
+                                                </time>
+                                            </TableCell>
 
-                                            {reason && (
-                                                <p className="ma-action-note">
-                                                    {reason}
-                                                </p>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
+                                            <TableCell>
+                                                <AdminStatus
+                                                    status={admin.status}
+                                                />
+                                            </TableCell>
 
-                            {!visibleAdmins.length && (
+                                            <TableCell align="right">
+                                                <div className="ma-actions">
+                                                    <Button
+                                                        type="button"
+                                                        size="small"
+                                                        variant="outlined"
+                                                        onClick={() =>
+                                                            openAdminDetails(admin)
+                                                        }
+                                                    >
+                                                        View
+                                                    </Button>
+
+                                                    <Button
+                                                        type="button"
+                                                        size="small"
+                                                        variant="outlined"
+                                                        onClick={() =>
+                                                            handleEdit(admin)
+                                                        }
+                                                    >
+                                                        Edit
+                                                    </Button>
+
+                                                    <Button
+                                                        type="button"
+                                                        size="small"
+                                                        variant="outlined"
+                                                        disabled={
+                                                            statusSaving ||
+                                                            cannotDeactivate
+                                                        }
+                                                        color={
+                                                            admin.status === "Active"
+                                                                ? "error"
+                                                                : "success"
+                                                        }
+                                                        onClick={() =>
+                                                            requestStatusChange(admin)
+                                                        }
+                                                    >
+                                                        {admin.status === "Active"
+                                                            ? "Deactivate"
+                                                            : "Activate"}
+                                                    </Button>
+                                                </div>
+
+                                                {cannotDeactivate && (
+                                                    <p className="ma-action-note">
+                                                        {isSelf
+                                                            ? "Your own account cannot be deactivated here."
+                                                            : "The last active admin must remain enabled."}
+                                                    </p>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+
+                            {/* ================== EMPTY STATE ================== */}
+                            {!loading && admins.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={6}>
                                         <div className="mj-empty">
@@ -901,9 +1294,16 @@ function ManageAdmins({ user }) {
                                                 <i className="fa-solid fa-user-shield" />
                                             </span>
 
-                                            <h3>No matching admins</h3>
+                                            <h3>
+                                                {listError
+                                                    ? "Unable to load admins"
+                                                    : "No matching admins"}
+                                            </h3>
+
                                             <p>
-                                                Try another search or account status.
+                                                {listError
+                                                    ? "Refresh to try again."
+                                                    : "Try another search or status filter."}
                                             </p>
                                         </div>
                                     </TableCell>
@@ -913,11 +1313,14 @@ function ManageAdmins({ user }) {
                     </Table>
                 </TableContainer>
 
+                {/* ================== PAGINATION ================== */}
                 <TablePagination
                     component="div"
-                    count={filteredAdmins.length}
+                    count={total}
                     page={page}
-                    onPageChange={(_, nextPage) => setPage(nextPage)}
+                    onPageChange={(_, nextPage) =>
+                        setPage(nextPage)
+                    }
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={(event) => {
                         setRowsPerPage(Number(event.target.value));
@@ -927,51 +1330,198 @@ function ManageAdmins({ user }) {
                 />
             </section>
 
+            {/* ================== ADMIN DETAILS DIALOG ================== */}
             <Dialog
-                open={Boolean(actionAdmin)}
-                onClose={() => setStatusAction(null)}
+                open={Boolean(selectedId)}
+                onClose={closeAdminDetails}
+                maxWidth="sm"
+                fullWidth
+                className="ma-dialog"
+            >
+                <DialogTitle>
+                    Administrator details
+                </DialogTitle>
+
+                <DialogContent dividers>
+                    {detailsLoading && (
+                        <div
+                            style={{
+                                textAlign: "center",
+                                padding: 24,
+                            }}
+                        >
+                            <CircularProgress size={26} />
+                            <p>Loading admin details...</p>
+                        </div>
+                    )}
+
+                    {!detailsLoading && detailsError && (
+                        <Alert severity="error">
+                            {detailsError}
+                        </Alert>
+                    )}
+
+                    {!detailsLoading &&
+                        !detailsError &&
+                        selectedAdmin && (
+                            <>
+                                <div
+                                    className="mj-job-cell"
+                                    style={{
+                                        marginBottom: 24,
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    <AdminAvatar
+                                        admin={selectedAdmin}
+                                    />
+
+                                    <div>
+                                        <strong>
+                                            {selectedAdmin.name}
+                                        </strong>
+
+                                        <p>{selectedAdmin.email}</p>
+                                    </div>
+                                </div>
+
+                                <dl className="mu-detail-grid">
+                                    <AdminDetail
+                                        label="Phone"
+                                        value={selectedAdmin.phone}
+                                    />
+
+                                    <AdminDetail
+                                        label="Role"
+                                        value="Administrator"
+                                    />
+
+                                    <AdminDetail
+                                        label="Status"
+                                        value={selectedAdmin.status}
+                                    />
+
+                                    <AdminDetail
+                                        label="Created on"
+                                        value={formatDate(
+                                            selectedAdmin.createdAt
+                                        )}
+                                    />
+
+                                    <AdminDetail
+                                        label="Last login"
+                                        value={formatDate(
+                                            selectedAdmin.lastLoginAt,
+                                            true
+                                        )}
+                                    />
+
+                                    <AdminDetail
+                                        label="Account ID"
+                                        value={selectedAdmin.id}
+                                    />
+                                </dl>
+                            </>
+                        )}
+                </DialogContent>
+
+                <DialogActions>
+                    <Button
+                        type="button"
+                        variant="outlined"
+                        onClick={closeAdminDetails}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* ================== STATUS CONFIRMATION ================== */}
+            <Dialog
+                open={Boolean(statusAction)}
+                onClose={() => {
+                    if (!statusSaving) {
+                        setStatusAction(null);
+                        setStatusPassword("");
+                    }
+                }}
                 maxWidth="xs"
                 fullWidth
                 className="ma-dialog"
-                aria-labelledby="ma-status-title"
-                aria-describedby="ma-status-description"
             >
-                <DialogTitle id="ma-status-title">
+                <DialogTitle>
                     {statusAction?.nextStatus === "Inactive"
                         ? "Deactivate admin?"
                         : "Activate admin?"}
                 </DialogTitle>
 
                 <DialogContent>
-                    <p id="ma-status-description">
+                    <p>
                         {statusAction?.nextStatus === "Inactive"
-                            ? `Deactivate ${actionAdmin?.name}'s administration account?`
-                            : `Activate ${actionAdmin?.name}'s administration account?`}
+                            ? `Deactivate ${statusAction.name}'s account?`
+                            : `Activate ${statusAction?.name}'s account?`}
                     </p>
 
                     <p className="ma-dialog-note">
-                        Account records will be retained.
+                        Existing account records will be retained.
+                        Current sessions will be revoked.
                     </p>
+
+                    <TextField
+                        label="Your current password"
+                        type="password"
+                        value={statusPassword}
+                        onChange={(event) =>
+                            setStatusPassword(event.target.value)
+                        }
+                        required
+                        fullWidth
+                        size="small"
+                        autoComplete="current-password"
+                        disabled={statusSaving}
+                        sx={{ mt: 2 }}
+                    />
                 </DialogContent>
 
                 <DialogActions>
-                    <Button onClick={() => setStatusAction(null)}>
+                    <Button
+                        type="button"
+                        disabled={statusSaving}
+                        onClick={() => {
+                            setStatusAction(null);
+                            setStatusPassword("");
+                        }}
+                    >
                         Cancel
                     </Button>
 
                     <Button
+                        type="button"
                         variant="contained"
                         disableElevation
+                        disabled={
+                            statusSaving || !statusPassword
+                        }
                         color={
                             statusAction?.nextStatus === "Inactive"
                                 ? "error"
                                 : "success"
                         }
                         onClick={confirmStatusChange}
+                        startIcon={
+                            statusSaving ? (
+                                <CircularProgress
+                                    size={16}
+                                    color="inherit"
+                                />
+                            ) : null
+                        }
                     >
-                        {statusAction?.nextStatus === "Inactive"
-                            ? "Deactivate"
-                            : "Activate"}
+                        {statusSaving
+                            ? "Saving..."
+                            : statusAction?.nextStatus === "Inactive"
+                              ? "Deactivate"
+                              : "Activate"}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -979,4 +1529,5 @@ function ManageAdmins({ user }) {
     );
 }
 
+// ================== EXPORT ==================
 export default ManageAdmins;
