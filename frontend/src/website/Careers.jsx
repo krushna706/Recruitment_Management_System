@@ -1,100 +1,96 @@
-import { Button } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Alert, Button, Pagination } from "@mui/material";
 import { Link } from "react-router-dom";
 
-const APPLICATION_EMAIL = "krushna@gmail.cus";
+import api from "../services/api";
 
-// Demo positions only.
-// Replace with backend data during API integration.
-const careerPositions = [
-    {
-        id: "demo-frontend",
-        title: "Frontend Developer",
-        department: "Engineering",
-        location: "Bhubaneswar, Odisha",
-        experience: "0–2 years",
-        mode: "On-site",
-        description:
-            "Build responsive interfaces with React, translate designs into reusable components and improve the user experience.",
-        status: "Published",
-    },
-    {
-        id: "demo-backend",
-        title: "Backend Developer",
-        department: "Engineering",
-        location: "Bhubaneswar, Odisha",
-        experience: "1–3 years",
-        mode: "Hybrid",
-        description:
-            "Develop REST APIs with Node.js and Express, work with MongoDB and contribute to reliable application services.",
-        status: "Published",
-    },
-    {
-        id: "demo-designer",
-        title: "UI/UX Designer",
-        department: "Design",
-        location: "Bhubaneswar, Odisha",
-        experience: "0–2 years",
-        mode: "Remote",
-        description:
-            "Create clear user journeys, wireframes and interface designs while collaborating with the development team.",
-        status: "Published",
-    },
-];
+// ================== CAREERS CONFIGURATION ==================
+const PAGE_SIZE = 10;
 
-const cultureItems = [
-    {
-        icon: "fa-people-group",
-        title: "Work together",
-        description:
-            "Share ideas, learn from different perspectives and contribute to a common goal.",
-    },
-    {
-        icon: "fa-lightbulb",
-        title: "Bring your ideas",
-        description:
-            "Ask questions, explore practical solutions and take ownership of your contribution.",
-    },
-    {
-        icon: "fa-arrow-trend-up",
-        title: "Keep learning",
-        description:
-            "Build your skills through meaningful work, feedback and everyday collaboration.",
-    },
-];
+// ================== DESCRIPTION SUMMARY ==================
+function getSummary(value = "") {
+    const text = value.replace(/\s+/g, " ").trim();
 
-function getApplicationLink(position) {
-    const subject = `Application for ${position.title} (${position.id})`;
+    if (text.length <= 180) return text;
 
-    const body = [
-        "Hello Hiring Team,",
-        "",
-        `I would like to apply for the ${position.title} position.`,
-        `Position reference: ${position.id}`,
-        "",
-        "Full name: ",
-        "Phone number: ",
-        "Current location: ",
-        "Relevant experience: ",
-        "Portfolio / LinkedIn: ",
-        "",
-        "Please find my resume attached.",
-        "",
-        "Thank you.",
-    ].join("\n");
+    const shortened = text.slice(0, 180);
+    const lastSpace = shortened.lastIndexOf(" ");
 
-    return `mailto:${APPLICATION_EMAIL}?subject=${encodeURIComponent(
-        subject,
-    )}&body=${encodeURIComponent(body)}`;
+    return `${shortened.slice(0, lastSpace > 120 ? lastSpace : 180)}…`;
 }
 
+// ================== CAREERS PAGE ==================
 export default function Careers() {
-    const openPositions = careerPositions.filter(
-        (position) => position.status === "Published",
-    );
+    const [positions, setPositions] = useState([]);
+    const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    const [page, setPage] = useState(1);
+    const [revision, setRevision] = useState(0);
+
+    // ================== FETCH PUBLISHED VACANCIES ==================
+    useEffect(() => {
+        const controller = new AbortController();
+
+        async function fetchPositions() {
+            setLoading(true);
+            setError("");
+
+            try {
+                const { data } = await api.get("/jobs/vacancies", {
+                    params: {
+                        page,
+                        limit: PAGE_SIZE,
+                    },
+                    signal: controller.signal,
+                });
+
+                if (controller.signal.aborted) return;
+
+                const lastPage = Math.max(1, data.pagination.totalPages);
+
+                if (page > lastPage) {
+                    setPage(lastPage);
+                    return;
+                }
+
+                setPositions(
+                    data.vacancies.map((position) => ({
+                        ...position,
+                        id: String(position.id || position._id),
+                    }))
+                );
+
+                setTotal(data.pagination.total);
+                setTotalPages(data.pagination.totalPages);
+            } catch (requestError) {
+                if (controller.signal.aborted) return;
+
+                setPositions([]);
+                setTotal(0);
+                setTotalPages(0);
+
+                setError(
+                    requestError.response?.data?.message ||
+                        "Open positions could not be loaded. Please try again."
+                );
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchPositions();
+
+        return () => controller.abort();
+    }, [page, revision]);
 
     return (
         <div className="careers-page">
-            {/* BANNER */}
+            {/* ================== BANNER ================== */}
             <section className="about-hero" aria-labelledby="careers-title">
                 <img
                     className="about-hero-image"
@@ -103,13 +99,10 @@ export default function Careers() {
                     fetchPriority="high"
                 />
 
-                <div className="website-shell about-hero-inner">
+                <div className="container-fluid about-hero-inner">
                     <nav className="about-breadcrumb" aria-label="Breadcrumb">
                         <ol>
-                            <li>
-                                <Link to="/">Home</Link>
-                            </li>
-
+                            <li><Link to="/">Home</Link></li>
                             <li aria-current="page">Careers</li>
                         </ol>
                     </nav>
@@ -117,206 +110,213 @@ export default function Careers() {
                     <div className="about-hero-content">
                         <p className="website-section-label">GROW WITH US</p>
 
-                        <h1
-                            id="careers-title"
-                            className="website-section-title"
-                        >
+                        <h1 id="careers-title" className="website-section-title">
                             Bring your talent.
                             <span>Build what comes next.</span>
                         </h1>
 
                         <p className="website-section-description careers-banner-description">
-                            Explore our approach to work, discover opportunities
-                            and take your next step with us.
+                            Discover opportunities within our team and take
+                            your next career step with us.
                         </p>
                     </div>
                 </div>
             </section>
 
-            {/* WORK CULTURE */}
-            <section
-                className="website-section"
-                aria-labelledby="careers-culture-title"
-            >
-                <div className="website-shell">
-                    <div className="careers-section-heading">
-                        <p className="website-section-label">
-                            LIFE AT OUR ORGANIZATION
-                        </p>
-
-                        <h2
-                            id="careers-culture-title"
-                            className="website-section-title"
-                        >
-                            Different perspectives.
-                            <span> Shared possibilities.</span>
-                        </h2>
-
-                        <p className="website-section-description">
-                            Our approach to work starts with people: listening
-                            to ideas, taking responsibility and making progress
-                            together.
-                        </p>
-                    </div>
-
-                    <div className="careers-culture-grid">
-                        {cultureItems.map((item, index) => (
-                            <article
-                                key={item.title}
-                                className="careers-culture-card"
-                            >
-                                <div className="careers-card-top">
-                                    <span
-                                        className="careers-icon"
-                                        aria-hidden="true"
-                                    >
-                                        <i
-                                            className={`fa-solid ${item.icon}`}
-                                        />
-                                    </span>
-
-                                    <span
-                                        className="careers-card-number"
-                                        aria-hidden="true"
-                                    >
-                                        {String(index + 1).padStart(2, "0")}
-                                    </span>
-                                </div>
-
-                                <h3>{item.title}</h3>
-
-                                <p className="website-section-description">
-                                    {item.description}
-                                </p>
-                            </article>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* OPEN POSITIONS */}
+            {/* ================== OPEN POSITIONS ================== */}
             <section
                 id="career-positions"
                 className="website-section careers-positions"
                 aria-labelledby="careers-positions-title"
             >
-                <div className="website-shell">
-                    <div className="careers-section-heading">
-                        <p className="website-section-label">OPEN POSITIONS</p>
+                <div className="container">
+                    <div className="careers-openings-heading">
+                        <div className="careers-section-heading">
+                            <p className="website-section-label">OPEN POSITIONS</p>
 
-                        <h2
-                            id="careers-positions-title"
-                            className="website-section-title"
-                        >
-                            Find your next
-                            <span> opportunity.</span>
-                        </h2>
+                            <h2
+                                id="careers-positions-title"
+                                className="website-section-title"
+                            >
+                                Find your next
+                                <span> opportunity.</span>
+                            </h2>
 
-                        <p className="website-section-description">
-                            Explore opportunities that match your skills,
-                            interests and career goals.
-                        </p>
+                            <p className="website-section-description">
+                                Explore opportunities with us. Apply through
+                                your account and track your progress in My Applications.
+                            </p>
+                        </div>
+
+                        {!loading && !error && (
+                            <span className="careers-openings-count">
+                                {total} open {total === 1 ? "position" : "positions"}
+                            </span>
+                        )}
                     </div>
 
-                    {openPositions.length > 0 ? (
-                        <>
-                            <div className="careers-position-grid">
-                                {openPositions.map((position) => (
+                    <div aria-busy={loading}>
+                        {loading ? (
+                            <div className="careers-empty" role="status">
+                                <p className="website-section-description">
+                                    Loading opportunities...
+                                </p>
+                            </div>
+                        ) : error ? (
+                            <Alert
+                                severity="error"
+                                action={
+                                    <Button
+                                        color="inherit"
+                                        size="small"
+                                        onClick={() => setRevision((value) => value + 1)}
+                                    >
+                                        Retry
+                                    </Button>
+                                }
+                            >
+                                {error}
+                            </Alert>
+                        ) : positions.length ? (
+                            <div className="careers-openings-list">
+                                {positions.map((position) => (
                                     <article
                                         key={position.id}
-                                        className="rms-job-card"
+                                        id={`vacancy-${position.id}`}
+                                        className="careers-opening-row"
+                                        aria-labelledby={`vacancy-title-${position.id}`}
                                     >
-                                        <div className="rms-job-heading">
-                                            <p className="rms-job-department">
-                                                {position.department}
-                                            </p>
+                                        <div className="careers-opening-main">
+                                            <div className="careers-opening-content">
+                                                <p className="careers-opening-department">
+                                                    {position.department}
+                                                </p>
 
-                                            <h3 className="rms-job-title">
-                                                {position.title}
-                                            </h3>
-                                        </div>
+                                                <h3 id={`vacancy-title-${position.id}`}>
+                                                    {position.title}
+                                                </h3>
 
-                                        <div className="rms-job-tags">
-                                            <span>{position.mode}</span>
-                                        </div>
+                                                {position.company && (
+                                                    <p className="careers-opening-company">
+                                                        {position.company}
+                                                    </p>
+                                                )}
 
-                                        <p className="careers-position-description">
-                                            {position.description}
-                                        </p>
+                                                <ul className="careers-opening-meta">
+                                                    <li>
+                                                        <i
+                                                            className="fa-solid fa-location-dot"
+                                                            aria-hidden="true"
+                                                        />
+                                                        {position.location}
+                                                    </li>
 
-                                        <dl className="rms-job-meta">
-                                            <div>
-                                                <dt>
+                                                    <li>
+                                                        <i
+                                                            className="fa-solid fa-briefcase"
+                                                            aria-hidden="true"
+                                                        />
+                                                        {position.experience}
+                                                    </li>
+
+                                                    {position.type && (
+                                                        <li>
+                                                            <i
+                                                                className="fa-regular fa-clock"
+                                                                aria-hidden="true"
+                                                            />
+                                                            {position.type}
+                                                        </li>
+                                                    )}
+
+                                                    <li>
+                                                        <i
+                                                            className="fa-solid fa-laptop"
+                                                            aria-hidden="true"
+                                                        />
+                                                        {position.mode}
+                                                    </li>
+                                                </ul>
+
+                                                <p className="careers-opening-summary">
+                                                    {getSummary(position.description)}
+                                                </p>
+                                            </div>
+
+                                            <div className="careers-opening-actions">
+                                                <span className="careers-opening-status">
+                                                    <span aria-hidden="true" />
+                                                    Open for applications
+                                                </span>
+
+                                                <Button
+                                                    component={Link}
+                                                    to={`/careers/${encodeURIComponent(position.id)}/apply`}
+                                                    className="website-button website-button-primary"
+                                                    aria-label={`Apply for ${position.title}`}
+                                                >
+                                                    Apply now
                                                     <i
-                                                        className="fa-solid fa-briefcase"
+                                                        className="fa-solid fa-arrow-right"
                                                         aria-hidden="true"
                                                     />
-                                                    Experience
-                                                </dt>
-
-                                                <dd>{position.experience}</dd>
+                                                </Button>
                                             </div>
-                                        </dl>
+                                        </div>
 
-                                        <div className="rms-job-footer">
-                                            <p className="rms-job-location">
+                                        <details className="careers-opening-details">
+                                            <summary>
+                                                View role details
                                                 <i
-                                                    className="fa-solid fa-location-dot"
+                                                    className="fa-solid fa-chevron-down"
                                                     aria-hidden="true"
                                                 />
+                                            </summary>
 
-                                                <span>{position.location}</span>
-                                            </p>
-
-                                            <Button
-                                                component="a"
-                                                href={getApplicationLink(
-                                                    position,
-                                                )}
-                                                className="website-button website-button-primary"
-                                                aria-label={`Apply now for ${position.title} by email`}
-                                            >
-                                                Apply Now
-                                            </Button>
-                                        </div>
+                                            <div className="careers-opening-description">
+                                                <h4>About this role</h4>
+                                                <p>{position.description}</p>
+                                            </div>
+                                        </details>
                                     </article>
                                 ))}
                             </div>
-                        </>
-                    ) : (
-                        <div className="careers-empty">
-                            <span
-                                className="careers-empty-icon"
-                                aria-hidden="true"
-                            >
-                                <i className="fa-solid fa-briefcase" />
-                            </span>
+                        ) : (
+                            <div className="careers-empty">
+                                <span className="careers-empty-icon" aria-hidden="true">
+                                    <i className="fa-solid fa-briefcase" />
+                                </span>
 
-                            <h3>No open positions right now.</h3>
+                                <h3>No open positions right now.</h3>
 
-                            <p className="website-section-description">
-                                We don’t have any openings at the moment. Please
-                                check back for future opportunities. Thank you
-                                for your interest in joining us.
-                            </p>
+                                <p className="website-section-description">
+                                    Please check back for future opportunities.
+                                    Thank you for your interest in joining us.
+                                </p>
 
-                            <div className="careers-empty-actions">
-                                <Button
-                                    component={Link}
-                                    to="/about"
-                                    className="website-button website-button-primary"
-                                >
-                                    Get to Know Us
-                                </Button>
-
-                                <Button
-                                    component={Link}
-                                    to="/contact"
-                                    className="website-button website-button-outline"
-                                >
-                                    Contact Us
-                                </Button>
+                                <div className="careers-empty-actions">
+                                    <Button
+                                        component={Link}
+                                        to="/about"
+                                        className="website-button website-button-primary"
+                                    >
+                                        Get to know us
+                                    </Button>
+                                </div>
                             </div>
+                        )}
+                    </div>
+
+                    {!loading && !error && totalPages > 1 && (
+                        <div className="careers-openings-pagination">
+                            <Pagination
+                                count={totalPages}
+                                page={page}
+                                onChange={(_, nextPage) => setPage(nextPage)}
+                                color="primary"
+                                size="small"
+                                siblingCount={0}
+                            />
                         </div>
                     )}
                 </div>

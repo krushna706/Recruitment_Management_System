@@ -38,6 +38,7 @@ function formatApplicationDate(value) {
         day: "2-digit",
         month: "short",
         year: "numeric",
+        timeZone: "Asia/Kolkata",
     });
 }
 
@@ -45,6 +46,7 @@ function getDetailsPath(id) {
     return `/manage/my-applications/${encodeURIComponent(id)}`;
 }
 
+// ================== STATUS BADGE ==================
 function ApplicationStatusBadge({ status }) {
     return (
         <span
@@ -58,9 +60,10 @@ function ApplicationStatusBadge({ status }) {
     );
 }
 
-// ================== SHARED JOB DETAILS ==================
-function ApplicationJob({ application }) {
-    const job = application.jobSnapshot || {};
+// ================== SHARED OPENING DETAILS ==================
+// Show the company details saved when the application was submitted.
+function ApplicationOpening({ application }) {
+    const opening = application.jobSnapshot || {};
     const applicationId = application.id || application._id;
 
     return (
@@ -72,29 +75,46 @@ function ApplicationJob({ application }) {
             <div className="applications-job-copy">
                 <h3>
                     <Link to={getDetailsPath(applicationId)}>
-                        {job.title || "Job application"}
+                        {opening.title || "Application details"}
                     </Link>
                 </h3>
 
-                {job.company && <p>{job.company}</p>}
+                {opening.company && <p>{opening.company}</p>}
 
                 <div className="applications-job-meta">
-                    {job.location && (
+                    {opening.location && (
                         <span>
-                            <i
-                                className="fa-solid fa-location-dot"
-                                aria-hidden="true"
-                            />
-                            {job.location}
+                            <i className="fa-solid fa-location-dot" aria-hidden="true" />
+                            {opening.location}
                         </span>
                     )}
 
-                    {job.mode && (
-                        <span className="applications-mode">{job.mode}</span>
+                    {opening.type && (
+                        <span className="applications-mode">{opening.type}</span>
+                    )}
+
+                    {opening.mode && (
+                        <span className="applications-mode">{opening.mode}</span>
                     )}
                 </div>
             </div>
         </div>
+    );
+}
+
+// ================== APPLICATION DETAILS LINK ==================
+function ApplicationDetailsLink({ application, mobile = false }) {
+    const id = application.id || application._id;
+
+    return (
+        <Link
+            to={getDetailsPath(id)}
+            className={`panel-text-link${mobile ? " applications-mobile-details" : ""}`}
+            aria-label={`View application for ${application.jobSnapshot?.title || "this opening"}`}
+        >
+            View details
+            <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+        </Link>
     );
 }
 
@@ -120,7 +140,6 @@ function MyApplications() {
     const [refreshKey, setRefreshKey] = useState(0);
 
     // ================== SEARCH DELAY ==================
-    // Wait briefly while typing instead of requesting every keystroke.
     useEffect(() => {
         const timer = window.setTimeout(() => {
             const nextSearch = search.trim();
@@ -139,7 +158,8 @@ function MyApplications() {
         return () => window.clearTimeout(timer);
     }, [search]);
 
-    // ================== FETCH APPLICATIONS ==================
+    // ================== FETCH USER APPLICATIONS ==================
+    // The backend returns both opening types for the logged-in user.
     useEffect(() => {
         const controller = new AbortController();
 
@@ -154,8 +174,13 @@ function MyApplications() {
                     limit: PAGE_SIZE,
                 };
 
-                if (filters.search) params.search = filters.search;
-                if (filters.status) params.status = filters.status;
+                if (filters.search) {
+                    params.search = filters.search;
+                }
+
+                if (filters.status) {
+                    params.status = filters.status;
+                }
 
                 const { data } = await api.get("/applications/my", {
                     params,
@@ -164,14 +189,17 @@ function MyApplications() {
 
                 if (controller.signal.aborted) return;
 
-                // Return to an available page if the result count changed.
-                const lastPage = Math.max(1, data.pagination.totalPages);
+                const lastPage = Math.max(
+                    1,
+                    data.pagination.totalPages
+                );
 
                 if (filters.page > lastPage) {
                     setFilters((previous) => ({
                         ...previous,
                         page: lastPage,
                     }));
+
                     return;
                 }
 
@@ -234,20 +262,25 @@ function MyApplications() {
                     </p>
                 </div>
 
-                <Button
-                    component={Link}
-                    to="/jobs"
-                    variant="outlined"
-                    className="panel-button panel-button-outline"
-                    startIcon={
-                        <i
-                            className="fa-solid fa-magnifying-glass"
-                            aria-hidden="true"
-                        />
-                    }
-                >
-                    Browse Jobs
-                </Button>
+                <div className="d-flex flex-wrap gap-2">
+                    <Button
+                        component={Link}
+                        to="/jobs"
+                        variant="outlined"
+                        className="panel-button panel-button-outline"
+                    >
+                        Browse Jobs
+                    </Button>
+
+                    <Button
+                        component={Link}
+                        to="/careers"
+                        variant="outlined"
+                        className="panel-button panel-button-outline"
+                    >
+                        Browse Careers
+                    </Button>
+                </div>
             </header>
 
             {/* ================== FILTERS ================== */}
@@ -257,7 +290,7 @@ function MyApplications() {
             >
                 <TextField
                     label="Search applications"
-                    placeholder="Job title or company"
+                    placeholder="Position title or company"
                     size="small"
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
@@ -300,9 +333,7 @@ function MyApplications() {
                     <MenuItem value="">All statuses</MenuItem>
 
                     {APPLICATION_STATUSES.map((item) => (
-                        <MenuItem value={item} key={item}>
-                            {item}
-                        </MenuItem>
+                        <MenuItem value={item} key={item}>{item}</MenuItem>
                     ))}
                 </TextField>
 
@@ -324,10 +355,7 @@ function MyApplications() {
             >
                 <header className="panel-card-header">
                     <div>
-                        <h2
-                            className="panel-card-title"
-                            id="application-list-title"
-                        >
+                        <h2 className="panel-card-title" id="application-list-title">
                             Your applications
                         </h2>
 
@@ -339,8 +367,8 @@ function MyApplications() {
                             {loading
                                 ? "Loading your applications..."
                                 : error
-                                    ? "Application list is unavailable."
-                                    : `${pagination.total} ${
+                                  ? "Application list is unavailable."
+                                  : `${pagination.total} ${
                                         pagination.total === 1
                                             ? "application"
                                             : "applications"
@@ -352,30 +380,35 @@ function MyApplications() {
                         </p>
                     </div>
 
-                    <span className="applications-sort-note">
-                        <i
-                            className="fa-solid fa-arrow-down-wide-short"
-                            aria-hidden="true"
-                        />
-                        Newest first
-                    </span>
+                    <div className="d-flex flex-wrap align-items-center gap-2">
+                        <span className="applications-sort-note">
+                            <i
+                                className="fa-solid fa-arrow-down-wide-short"
+                                aria-hidden="true"
+                            />
+                            Newest first
+                        </span>
+
+                        <Button
+                            type="button"
+                            size="small"
+                            disabled={loading}
+                            onClick={() => setRefreshKey((value) => value + 1)}
+                        >
+                            Refresh
+                        </Button>
+                    </div>
                 </header>
 
                 {loading ? (
                     <div className="panel-empty-state" role="status">
-                        <i
-                            className="fa-solid fa-spinner fa-spin"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
                         <h3>Loading applications...</h3>
                         <p>Please wait while we fetch your applications.</p>
                     </div>
                 ) : error ? (
                     <div className="panel-empty-state">
-                        <i
-                            className="fa-solid fa-circle-exclamation"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
 
                         <h3>Unable to load applications.</h3>
                         <p role="alert">{error}</p>
@@ -385,12 +418,12 @@ function MyApplications() {
                             variant="contained"
                             disableElevation
                             className="panel-button panel-button-primary"
-                            onClick={() => setRefreshKey((previous) => previous + 1)}
+                            onClick={() => setRefreshKey((value) => value + 1)}
                         >
                             Try again
                         </Button>
                     </div>
-                ) : applications.length > 0 ? (
+                ) : applications.length ? (
                     <>
                         {/* ================== DESKTOP TABLE ================== */}
                         <TableContainer className="applications-table-container">
@@ -400,7 +433,7 @@ function MyApplications() {
                             >
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell scope="col">Job details</TableCell>
+                                        <TableCell scope="col">Opening details</TableCell>
                                         <TableCell scope="col">Applied on</TableCell>
 
                                         <TableCell scope="col" align="right">
@@ -416,7 +449,7 @@ function MyApplications() {
                                         return (
                                             <TableRow key={id}>
                                                 <TableCell>
-                                                    <ApplicationJob application={application} />
+                                                    <ApplicationOpening application={application} />
                                                 </TableCell>
 
                                                 <TableCell>
@@ -431,18 +464,7 @@ function MyApplications() {
                                                 <TableCell align="right">
                                                     <div className="applications-row-action">
                                                         <ApplicationStatusBadge status={application.status} />
-
-                                                        <Link
-                                                            to={getDetailsPath(id)}
-                                                            className="panel-text-link"
-                                                            aria-label={`View application for ${application.jobSnapshot?.title || "this job"}`}
-                                                        >
-                                                            View details
-                                                            <i
-                                                                className="fa-solid fa-arrow-right"
-                                                                aria-hidden="true"
-                                                            />
-                                                        </Link>
+                                                        <ApplicationDetailsLink application={application} />
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -460,10 +482,10 @@ function MyApplications() {
                                 return (
                                     <li key={id}>
                                         <span className="applications-mobile-label">
-                                            Job details
+                                            Opening details
                                         </span>
 
-                                        <ApplicationJob application={application} />
+                                        <ApplicationOpening application={application} />
 
                                         <div className="applications-mobile-facts">
                                             <div>
@@ -488,17 +510,7 @@ function MyApplications() {
                                             </div>
                                         </div>
 
-                                        <Link
-                                            to={getDetailsPath(id)}
-                                            className="panel-text-link applications-mobile-details"
-                                            aria-label={`View application for ${application.jobSnapshot?.title || "this job"}`}
-                                        >
-                                            View details
-                                            <i
-                                                className="fa-solid fa-arrow-right"
-                                                aria-hidden="true"
-                                            />
-                                        </Link>
+                                        <ApplicationDetailsLink application={application} mobile />
                                     </li>
                                 );
                             })}
@@ -531,10 +543,7 @@ function MyApplications() {
                     </>
                 ) : (
                     <div className="panel-empty-state">
-                        <i
-                            className="fa-regular fa-folder-open"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-regular fa-folder-open" aria-hidden="true" />
 
                         <h3>
                             {appliedFilters
@@ -545,7 +554,7 @@ function MyApplications() {
                         <p>
                             {appliedFilters
                                 ? "Try another search or clear your filters."
-                                : "Explore available roles and take your next step."}
+                                : "Explore available opportunities and take your next career step."}
                         </p>
 
                         {appliedFilters ? (
@@ -559,15 +568,26 @@ function MyApplications() {
                                 Clear filters
                             </Button>
                         ) : (
-                            <Button
-                                component={Link}
-                                to="/jobs"
-                                className="panel-button panel-button-primary"
-                                variant="contained"
-                                disableElevation
-                            >
-                                Browse Jobs
-                            </Button>
+                            <div className="d-flex flex-wrap justify-content-center gap-2">
+                                <Button
+                                    component={Link}
+                                    to="/jobs"
+                                    className="panel-button panel-button-primary"
+                                    variant="contained"
+                                    disableElevation
+                                >
+                                    Browse Jobs
+                                </Button>
+
+                                <Button
+                                    component={Link}
+                                    to="/careers"
+                                    className="panel-button panel-button-outline"
+                                    variant="outlined"
+                                >
+                                    Browse Careers
+                                </Button>
+                            </div>
                         )}
                     </div>
                 )}

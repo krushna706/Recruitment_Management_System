@@ -306,6 +306,27 @@ const vacancySchema = Joi.object({
 
     department: publishedTextRule("Department", 100),
 
+    // Job type is required when publishing; optional for drafts/closed records.
+    type: Joi.when("status", {
+        is: "Published",
+        then: Joi.string()
+            .trim()
+            .valid("Full Time", "Part Time", "Contract", "Internship")
+            .required()
+            .messages({
+                "any.only": "Select a valid job type before publishing.",
+                "string.empty": "Job type is required before publishing.",
+                "any.required": "Job type is required before publishing.",
+            }),
+        otherwise: Joi.string()
+            .trim()
+            .valid("", "Full Time", "Part Time", "Contract", "Internship")
+            .default("")
+            .messages({
+                "any.only": "Select a valid job type.",
+            }),
+    }),
+
     mode: workModeRule,
 
     experience: publishedTextRule("Experience", 100),

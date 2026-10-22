@@ -347,6 +347,7 @@ async function cleanupUnusedResume(applicationId, storageKey) {
 
 // ================== CREATE APPLICATION ==================
 // POST /api/applications/jobs/:jobId
+// Shared submission flow for client jobs and internal vacancies.
 // Authentication, upload and Joi validation run in the router.
 async function createApplication(req, res, next) {
     const applicationId = new mongoose.Types.ObjectId();
@@ -365,20 +366,25 @@ async function createApplication(req, res, next) {
             throw new ExpressError(400, "Please upload your resume.");
         }
 
-        // ================== INITIAL JOB CHECK ==================
-        const availableJob = await Job.exists({
+        // ================== AVAILABLE OPENING ==================
+        // Both types use the same Job model.
+        const openingFilter = {
             _id: jobId,
-            openingType: "client",
+            openingType: { $in: ["client", "internal"] },
             status: "Published",
-        });
+        };
 
-        if (!availableJob) {
+        const availableOpening = await Job.exists(openingFilter);
+
+        if (!availableOpening) {
             throw new ExpressError(
                 409,
-                "This job is unavailable or applications are closed."
+                "This opening is unavailable or applications are closed."
             );
         }
 
+        // ================== DUPLICATE APPLICATION CHECK ==================
+        // A user can apply only once to the same opening.
         const existingApplication = await Application.exists({
             userId: req.user._id,
             jobId,
@@ -387,13 +393,12 @@ async function createApplication(req, res, next) {
         if (existingApplication) {
             throw new ExpressError(
                 409,
-                "You have already applied for this job."
+                "You have already applied for this opening."
             );
         }
 
         // ================== UPLOAD VERIFIED RESUME ==================
         const extension = path.extname(req.file.originalname).toLowerCase();
-
         const storageKey = `recruitment/resumes/${applicationId}${extension}`;
 
         try {
@@ -418,15 +423,12 @@ async function createApplication(req, res, next) {
         }
 
         // ================== SAVE APPLICATION TRANSACTION ==================
-        // Recheck the job inside the transaction during concurrent closing.
+        // Recheck publication status after upload.
+        // Writing the opening document handles concurrent admin closing.
         const application = await mongoose.connection.transaction(
             async (session) => {
-                const job = await Job.findOneAndUpdate(
-                    {
-                        _id: jobId,
-                        openingType: "client",
-                        status: "Published",
-                    },
+                const opening = await Job.findOneAndUpdate(
+                    openingFilter,
                     {
                         $inc: { __v: 1 },
                     },
@@ -437,7 +439,7 @@ async function createApplication(req, res, next) {
                     }
                 );
 
-                if (!job) {
+                if (!opening) {
                     throw new ExpressError(
                         409,
                         "Applications closed before your submission completed."
@@ -450,18 +452,21 @@ async function createApplication(req, res, next) {
                     [
                         {
                             _id: applicationId,
-                            userId: req.user._id,
-                            jobId: job._id,
-                            openingType: job.openingType,
 
+                            // Ownership and opening type come from trusted data.
+                            userId: req.user._id,
+                            jobId: opening._id,
+                            openingType: opening.openingType,
+
+                            // Preserve opening details at submission time.
                             jobSnapshot: {
-                                title: job.title,
-                                company: job.company,
-                                department: job.department,
-                                location: job.location,
-                                type: job.type,
-                                mode: job.mode,
-                                salary: job.salary || "",
+                                title: opening.title,
+                                company: opening.company || "",
+                                department: opening.department,
+                                location: opening.location,
+                                type: opening.type || "",
+                                mode: opening.mode,
+                                salary: opening.salary || "",
                             },
 
                             applicant: {
@@ -473,6 +478,7 @@ async function createApplication(req, res, next) {
                                 skills,
                             },
 
+                            // Preserve the original filename for panels/downloads.
                             resume: {
                                 storageKey: uploadedResume.public_id,
                                 name: req.file.originalname,
@@ -514,12 +520,13 @@ async function createApplication(req, res, next) {
                 _id: application._id,
                 id: String(application._id),
                 jobId: application.jobId,
+                openingType: application.openingType,
                 status: application.status,
                 createdAt: application.createdAt,
             },
         });
     } catch (error) {
-        // An uncertain commit may have succeeded; retain its resume.
+        // An uncertain transaction commit may already have succeeded.
         const uncertainCommit =
             error.hasErrorLabel?.("UnknownTransactionCommitResult");
 
@@ -530,11 +537,12 @@ async function createApplication(req, res, next) {
             );
         }
 
+        // The unique database index also blocks concurrent duplicates.
         if (error.code === 11000) {
             return next(
                 new ExpressError(
                     409,
-                    "You have already applied for this job."
+                    "You have already applied for this opening."
                 )
             );
         }

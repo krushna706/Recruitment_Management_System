@@ -1,6 +1,15 @@
 const Job = require("../models/Job");
 const ExpressError = require("../utils/ExpressError");
 
+// ================== COMPANY CONFIGURATION ==================
+const COMPANY_NAME = process.env.COMPANY_NAME?.trim();
+
+if (!COMPANY_NAME || COMPANY_NAME.length > 150) {
+    throw new Error(
+        "COMPANY_NAME must contain 1–150 characters in environment configuration."
+    );
+}
+
 // ================== JOB CONFIGURATION ==================
 const JOB_TYPES = ["Full Time", "Part Time", "Contract", "Internship"];
 const WORK_MODES = ["On-site", "Hybrid", "Remote"];
@@ -699,6 +708,332 @@ async function updateJob(req, res, next) {
     }
 }
 
+// ================== VACANCY RESPONSE FIELDS ==================
+const PUBLIC_VACANCY_FIELDS = [
+    "openingType",
+    "company",
+    "title",
+    "department",
+    "type",
+    "mode",
+    "experience",
+    "location",
+    "description",
+    "status",
+    "publishedAt",
+    "closedAt",
+    "createdAt",
+    "updatedAt",
+].join(" ");
+
+// ================== ALLOWED VACANCY FIELDS ==================
+// Internal openings use the company name configured on the server.
+// The admin form does not need a separate company input.
+function getVacancyFields(body) {
+    return {
+        company: COMPANY_NAME,
+        title: body.title,
+        department: body.department,
+        type: body.type,
+        mode: body.mode,
+        experience: body.experience,
+        location: body.location,
+        description: body.description,
+        status: body.status,
+    };
+}
+
+// ================== VACANCY FILTERS ==================
+function getVacancyFilters(query, isAdmin) {
+    const allowedKeys = ["page", "limit", "search", "mode"];
+
+    if (isAdmin) {
+        allowedKeys.push("status");
+    }
+
+    if (Object.keys(query).some((key) => !allowedKeys.includes(key))) {
+        throw new ExpressError(
+            400,
+            "Request contains an unsupported vacancy filter."
+        );
+    }
+
+    const filter = {
+        openingType: "internal",
+    };
+
+    if (!isAdmin) {
+        filter.status = "Published";
+    }
+
+    const search = getQueryText(query.search, "Search");
+    const mode = getQueryText(query.mode, "Work mode", 30);
+
+    if (search) {
+        const pattern = new RegExp(escapeRegex(search), "i");
+
+        filter.$or = [
+            { title: pattern },
+            { department: pattern },
+            { location: pattern },
+            { description: pattern },
+        ];
+    }
+
+    if (mode) {
+        if (!WORK_MODES.includes(mode)) {
+            throw new ExpressError(400, "Invalid work mode filter.");
+        }
+
+        filter.mode = mode;
+    }
+
+    if (isAdmin) {
+        const status = getQueryText(query.status, "Status", 30);
+
+        if (status) {
+            if (!JOB_STATUSES.includes(status)) {
+                throw new ExpressError(400, "Invalid vacancy status filter.");
+            }
+
+            filter.status = status;
+        }
+    }
+
+    return filter;
+}
+
+// ================== VACANCY SUMMARY COUNTS ==================
+// Count internal vacancies only, independently of table filters.
+async function getAdminVacancyCounts() {
+    const groupedCounts = await Job.aggregate([
+        {
+            $match: {
+                openingType: "internal",
+            },
+        },
+        {
+            $group: {
+                _id: "$status",
+                count: { $sum: 1 },
+            },
+        },
+    ]);
+
+    const counts = {
+        total: 0,
+        published: 0,
+        draft: 0,
+        closed: 0,
+    };
+
+    const statusKeys = {
+        Published: "published",
+        Draft: "draft",
+        Closed: "closed",
+    };
+
+    for (const group of groupedCounts) {
+        counts.total += group.count;
+
+        const key = statusKeys[group._id];
+
+        if (key) {
+            counts[key] = group.count;
+        }
+    }
+
+    return counts;
+}
+
+// ================== SHARED VACANCY LIST ==================
+async function listVacancies(req, res, next, isAdmin) {
+    try {
+        const filter = getVacancyFilters(req.query, isAdmin);
+        const page = getPositiveInteger(req.query.page, 1, 100000, "Page");
+        const limit = getPositiveInteger(req.query.limit, 10, 100, "Page size");
+
+        const sort = isAdmin
+            ? { createdAt: -1, _id: -1 }
+            : { publishedAt: -1, _id: -1 };
+
+        const query = Job.find(filter)
+            .sort(sort)
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        if (!isAdmin) {
+            query.select(PUBLIC_VACANCY_FIELDS);
+        }
+
+        const [vacancies, total, counts] = await Promise.all([
+            query.lean(),
+            Job.countDocuments(filter),
+            isAdmin ? getAdminVacancyCounts() : Promise.resolve(null),
+        ]);
+
+        const response = {
+            success: true,
+            vacancies: vacancies.map(getJobResponse),
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+
+        if (isAdmin) {
+            response.counts = counts;
+        }
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json(response);
+    } catch (error) {
+        return handleJobError(error, next);
+    }
+}
+
+// ================== ADMIN VACANCY LIST ==================
+function getAdminVacancies(req, res, next) {
+    return listVacancies(req, res, next, true);
+}
+
+// ================== PUBLIC CAREERS LIST ==================
+function getPublicVacancies(req, res, next) {
+    return listVacancies(req, res, next, false);
+}
+
+// ================== SHARED VACANCY DETAILS ==================
+async function getVacancyDetails(req, res, next, isAdmin) {
+    try {
+        validateJobId(req.params.id);
+
+        const filter = {
+            _id: req.params.id,
+            openingType: "internal",
+        };
+
+        // Closed vacancies remain accessible; drafts stay private.
+        if (!isAdmin) {
+            filter.status = {
+                $in: ["Published", "Closed"],
+            };
+        }
+
+        const query = Job.findOne(filter);
+
+        if (!isAdmin) {
+            query.select(PUBLIC_VACANCY_FIELDS);
+        }
+
+        const vacancy = await query.lean();
+
+        if (!vacancy) {
+            throw new ExpressError(404, "Vacancy not found.");
+        }
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            vacancy: getJobResponse(vacancy),
+        });
+    } catch (error) {
+        return handleJobError(error, next);
+    }
+}
+
+// ================== ADMIN VACANCY DETAILS ==================
+function getAdminVacancy(req, res, next) {
+    return getVacancyDetails(req, res, next, true);
+}
+
+// ================== PUBLIC VACANCY DETAILS ==================
+function getPublicVacancy(req, res, next) {
+    return getVacancyDetails(req, res, next, false);
+}
+
+// ================== CREATE INTERNAL VACANCY ==================
+// Authentication, admin authorization and Joi validation run in the router.
+async function createVacancy(req, res, next) {
+    try {
+        const vacancy = new Job({
+            ...getVacancyFields(req.body),
+            openingType: "internal",
+            createdBy: req.user._id,
+            updatedBy: req.user._id,
+        });
+
+        updatePublicationDates(vacancy, null);
+
+        await vacancy.save();
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(201).json({
+            success: true,
+            message: "Vacancy created successfully.",
+            vacancy: getJobResponse(vacancy),
+        });
+    } catch (error) {
+        return handleJobError(error, next);
+    }
+}
+
+// ================== UPDATE INTERNAL VACANCY ==================
+async function updateVacancy(req, res, next) {
+    try {
+        validateJobId(req.params.id);
+
+        const vacancy = await Job.findOne({
+            _id: req.params.id,
+            openingType: "internal",
+        });
+
+        if (!vacancy) {
+            throw new ExpressError(404, "Vacancy not found.");
+        }
+
+        const previousStatus = vacancy.status;
+
+        vacancy.set(getVacancyFields(req.body));
+        vacancy.updatedBy = req.user._id;
+
+        updatePublicationDates(vacancy, previousStatus);
+
+        await vacancy.save();
+
+        let message = "Vacancy updated successfully.";
+
+        if (previousStatus !== vacancy.status) {
+            if (vacancy.status === "Closed") {
+                message = "Vacancy closed successfully.";
+            } else if (
+                previousStatus === "Closed" &&
+                vacancy.status === "Published"
+            ) {
+                message = "Vacancy reopened successfully.";
+            } else if (vacancy.status === "Published") {
+                message = "Vacancy published successfully.";
+            } else {
+                message = "Vacancy saved as draft.";
+            }
+        }
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            message,
+            vacancy: getJobResponse(vacancy),
+        });
+    } catch (error) {
+        return handleJobError(error, next);
+    }
+}
+
 // ================== EXPORTS ==================
 module.exports = {
     getAdminJobs,
@@ -707,4 +1042,10 @@ module.exports = {
     getPublicJob,
     createJob,
     updateJob,
+    getAdminVacancies,
+    getAdminVacancy,
+    getPublicVacancies,
+    getPublicVacancy,
+    createVacancy,
+    updateVacancy,
 };

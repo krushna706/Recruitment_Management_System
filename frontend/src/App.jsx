@@ -48,9 +48,7 @@ function SessionFeedback() {
                         Try again
                     </button>
 
-                    <Link to="/" className="btn btn-link">
-                        Back to website
-                    </Link>
+                    <Link to="/" className="btn btn-link">Back to website</Link>
                 </>
             )}
         </section>
@@ -62,14 +60,8 @@ function AccessDenied() {
     return (
         <section className="container-fluid py-5 text-center">
             <h1>Access denied</h1>
-
-            <p>
-                Your account does not have permission to open this page.
-            </p>
-
-            <Link to="/" className="btn btn-primary">
-                Back to website
-            </Link>
+            <p>Your account does not have permission to open this page.</p>
+            <Link to="/" className="btn btn-primary">Back to website</Link>
         </section>
     );
 }
@@ -84,8 +76,7 @@ function PanelAccess() {
     }
 
     if (!user) {
-        const returnTo =
-            location.pathname + location.search + location.hash;
+        const returnTo = location.pathname + location.search + location.hash;
 
         return <Navigate to="/manage" replace state={{ returnTo }} />;
     }
@@ -97,8 +88,9 @@ function PanelAccess() {
     return <Outlet />;
 }
 
-// ================== JOB APPLICATION ACCESS ==================
-function JobApplicationAccess() {
+// ================== SHARED APPLICATION ACCESS ==================
+// The route selects the opening type; backend authorization remains required.
+function JobApplicationAccess({ openingType = "client" }) {
     const { user, loading, authError } = useAuth();
     const { id } = useParams();
 
@@ -107,15 +99,27 @@ function JobApplicationAccess() {
     }
 
     if (!user) {
-        // Return to the same job details after authentication.
-        return <Navigate to="/manage" replace state={{ returnTo: `/jobs/${encodeURIComponent(id)}` }} />;
+        const encodedId = encodeURIComponent(id);
+
+        // Client jobs return to details; Careers returns to its application form.
+        const returnTo = openingType === "internal"
+            ? `/careers/${encodedId}/apply`
+            : `/jobs/${encodedId}`;
+
+        return <Navigate to="/manage" replace state={{ returnTo }} />;
     }
 
     if (user.role !== "user") {
         return <AccessDenied />;
     }
 
-    return <JobApply user={user} />;
+    return (
+        <JobApply
+            key={`${openingType}:${id}`}
+            user={user}
+            openingType={openingType}
+        />
+    );
 }
 
 // ================== ROLE-BASED DASHBOARD AND PROFILE ==================
@@ -172,9 +176,10 @@ function App() {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/jobs" element={<Jobs />} />
                     <Route path="/jobs/:id" element={<JobDetails user={user} />} />
-                    <Route path="/jobs/:id/apply" element={<JobApplicationAccess />} />
+                    <Route path="/jobs/:id/apply" element={<JobApplicationAccess openingType="client" />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/careers" element={<Careers />} />
+                    <Route path="/careers/:id/apply" element={<JobApplicationAccess openingType="internal" />} />
                     <Route path="/contact" element={<Contact />} />
                     <Route path="*" element={<NotFound />} />
                 </Route>

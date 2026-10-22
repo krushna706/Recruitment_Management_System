@@ -26,23 +26,39 @@ function formatDate(value, includeTime = false) {
         day: "2-digit",
         month: "short",
         year: "numeric",
+        timeZone: "Asia/Kolkata",
         ...(includeTime
             ? {
-                hour: "2-digit",
-                minute: "2-digit",
-            }
+                  hour: "2-digit",
+                  minute: "2-digit",
+              }
             : {}),
     });
 }
 
-// ================== APPLICATION DETAILS ==================
+// ================== FILE SIZE ==================
+function formatFileSize(value) {
+    const bytes = Number(value);
+
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+        return "Size unavailable";
+    }
+
+    if (bytes < 1024 * 1024) {
+        return `${Math.ceil(bytes / 1024)} KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+// ================== APPLICATION PAGE ==================
 function ApplicationStatus() {
     const { id } = useParams();
 
-    // Reset page state when opening another application.
     return <ApplicationDetails key={id} id={id} />;
 }
 
+// ================== APPLICATION DETAILS ==================
 function ApplicationDetails({ id }) {
     const [application, setApplication] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -50,6 +66,7 @@ function ApplicationDetails({ id }) {
     const [refreshKey, setRefreshKey] = useState(0);
 
     // ================== FETCH APPLICATION ==================
+    // The backend verifies ownership using the logged-in user's account.
     useEffect(() => {
         const controller = new AbortController();
 
@@ -120,7 +137,7 @@ function ApplicationDetails({ id }) {
                     variant="contained"
                     disableElevation
                     className="panel-button panel-button-primary"
-                    onClick={() => setRefreshKey((previous) => previous + 1)}
+                    onClick={() => setRefreshKey((value) => value + 1)}
                 >
                     Try again
                 </Button>
@@ -153,15 +170,43 @@ function ApplicationDetails({ id }) {
         );
     }
 
-    const job = application.jobSnapshot || {};
+    // ================== SAVED APPLICATION INFORMATION ==================
+    const opening = application.jobSnapshot || {};
     const applicant = application.applicant || {};
     const resume = application.resume;
     const applicationId = application.id || application._id;
 
-    const history = [...(application.history || [])].sort(
+    // Opening type is used for navigation only, not as a visible label.
+    const isInternal = application.openingType === "internal";
+
+    const canLinkToClientJob =
+        application.openingType === "client" &&
+        /^[a-fA-F0-9]{24}$/.test(String(application.jobId || ""));
+
+    const openingPath = isInternal
+        ? "/careers"
+        : canLinkToClientJob
+          ? `/jobs/${encodeURIComponent(application.jobId)}`
+          : "/jobs";
+
+    const openingLinkLabel = isInternal
+        ? "Browse Careers"
+        : canLinkToClientJob
+          ? "View job"
+          : "Browse Jobs";
+
+    const history = (
+        Array.isArray(application.history)
+            ? [...application.history]
+            : []
+    ).sort(
         (first, second) =>
             new Date(first.createdAt) - new Date(second.createdAt)
     );
+
+    const skills = Array.isArray(applicant.skills)
+        ? applicant.skills
+        : [];
 
     const latestIndex = history.length - 1;
     const latestEvent = history[latestIndex];
@@ -181,9 +226,29 @@ function ApplicationDetails({ id }) {
                         Your submitted information and recruitment progress.
                     </p>
                 </div>
+
+                <div className="d-flex flex-wrap gap-2">
+                    <Button
+                        component={Link}
+                        to={openingPath}
+                        variant="outlined"
+                        className="panel-button panel-button-outline"
+                    >
+                        {openingLinkLabel}
+                    </Button>
+
+                    <Button
+                        type="button"
+                        variant="outlined"
+                        className="panel-button panel-button-outline"
+                        onClick={() => setRefreshKey((value) => value + 1)}
+                    >
+                        Refresh status
+                    </Button>
+                </div>
             </header>
 
-            {/* ================== JOB OVERVIEW ================== */}
+            {/* ================== OPENING OVERVIEW ================== */}
             <section
                 className="application-overview"
                 aria-labelledby="application-job-heading"
@@ -196,14 +261,16 @@ function ApplicationDetails({ id }) {
 
                         <div>
                             <p className="application-field-label">Applied position</p>
-                            <h2 id="application-job-heading">{job.title}</h2>
 
-                            <p className="application-company">
-                                {job.company ||
-                                    (application.openingType === "internal"
-                                        ? "Internal vacancy"
-                                        : "Company not specified")}
-                            </p>
+                            <h2 id="application-job-heading">
+                                {opening.title || "Opening details"}
+                            </h2>
+
+                            {opening.company && (
+                                <p className="application-company">
+                                    {opening.company}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -227,10 +294,34 @@ function ApplicationDetails({ id }) {
                             <i className="fa-solid fa-location-dot" aria-hidden="true" />
                             Location
                         </dt>
-                        <dd>{job.location || "Not specified"}</dd>
+                        <dd>{opening.location || "Not specified"}</dd>
                     </div>
 
-                    {job.salary && (
+                    <div>
+                        <dt>
+                            <i className="fa-solid fa-building" aria-hidden="true" />
+                            Department
+                        </dt>
+                        <dd>{opening.department || "Not specified"}</dd>
+                    </div>
+
+                    <div>
+                        <dt>
+                            <i className="fa-regular fa-clock" aria-hidden="true" />
+                            Job type
+                        </dt>
+                        <dd>{opening.type || "Not specified"}</dd>
+                    </div>
+
+                    <div>
+                        <dt>
+                            <i className="fa-solid fa-laptop" aria-hidden="true" />
+                            Work mode
+                        </dt>
+                        <dd>{opening.mode || "Not specified"}</dd>
+                    </div>
+
+                    {opening.salary && (
                         <div>
                             <dt>
                                 <i
@@ -239,25 +330,9 @@ function ApplicationDetails({ id }) {
                                 />
                                 Salary
                             </dt>
-                            <dd>{job.salary}</dd>
+                            <dd>{opening.salary}</dd>
                         </div>
                     )}
-
-                    <div>
-                        <dt>
-                            <i className="fa-regular fa-clock" aria-hidden="true" />
-                            Employment type
-                        </dt>
-                        <dd>{job.type || "Not specified"}</dd>
-                    </div>
-
-                    <div>
-                        <dt>
-                            <i className="fa-solid fa-laptop" aria-hidden="true" />
-                            Work mode
-                        </dt>
-                        <dd>{job.mode || "Not specified"}</dd>
-                    </div>
                 </dl>
 
                 <div className="application-reference-row">
@@ -277,19 +352,23 @@ function ApplicationDetails({ id }) {
 
             <div className="application-details-grid">
                 <div className="application-details-main">
-                    {/* ================== RECRUITMENT UPDATES ================== */}
-                    {application.status === "Interview" && application.interview && (
+                    {/* ================== INTERVIEW DETAILS ================== */}
+                    {application.interview && (
                         <section className="application-update">
                             <span className="application-update-icon" aria-hidden="true">
                                 <i className="fa-regular fa-calendar-check" />
                             </span>
 
                             <div>
-                                <h2>Interview details</h2>
+                                <h2>
+                                    {application.status === "Interview"
+                                        ? "Interview details"
+                                        : "Recorded interview details"}
+                                </h2>
 
                                 <dl className="application-update-facts">
                                     <div>
-                                        <dt>Date & time</dt>
+                                        <dt>Date & time (IST)</dt>
                                         <dd>{formatDate(application.interview.at, true)}</dd>
                                     </div>
 
@@ -299,23 +378,31 @@ function ApplicationDetails({ id }) {
                                     </div>
                                 </dl>
 
-                                <p>{application.interview.note}</p>
+                                {application.interview.note && (
+                                    <p>{application.interview.note}</p>
+                                )}
                             </div>
                         </section>
                     )}
 
-                    {application.status === "Selected" && application.selection && (
+                    {/* ================== FINAL STATUS FEEDBACK ================== */}
+                    {application.status === "Selected" && (
                         <Alert severity="success" className="application-feedback">
                             <strong>Selection update</strong>
-                            {application.selection.note}
+                            <p>
+                                {application.selection?.note ||
+                                    "Your application has been selected."}
+                            </p>
                         </Alert>
                     )}
 
                     {application.status === "Rejected" && (
                         <Alert severity="info" className="application-feedback">
                             <strong>Application update</strong>
-                            This application is no longer moving forward. You
-                            can continue exploring other opportunities.
+                            <p>
+                                This application is no longer moving forward.
+                                You can continue exploring other opportunities.
+                            </p>
                         </Alert>
                     )}
 
@@ -361,7 +448,7 @@ function ApplicationDetails({ id }) {
                                     </div>
 
                                     <div>
-                                        <dt>Submitted on</dt>
+                                        <dt>Submitted on (IST)</dt>
                                         <dd>{formatDate(application.createdAt, true)}</dd>
                                     </div>
                                 </dl>
@@ -385,9 +472,9 @@ function ApplicationDetails({ id }) {
                                 <div className="application-skills">
                                     <h4>Relevant skills</h4>
 
-                                    {applicant.skills?.length ? (
+                                    {skills.length ? (
                                         <div className="application-skill-list">
-                                            {applicant.skills.map((skill) => (
+                                            {skills.map((skill) => (
                                                 <Chip key={skill} label={skill} size="small" />
                                             ))}
                                         </div>
@@ -397,7 +484,7 @@ function ApplicationDetails({ id }) {
                                 </div>
                             </section>
 
-                            {/* ================== RESUME INFORMATION ================== */}
+                            {/* ================== ORIGINAL RESUME INFORMATION ================== */}
                             <section className="application-detail-section">
                                 <h3>Submitted resume</h3>
 
@@ -416,9 +503,7 @@ function ApplicationDetails({ id }) {
                                         </p>
 
                                         {resume?.size > 0 && (
-                                            <p>
-                                                {Math.max(1, Math.round(resume.size / 1024))} KB
-                                            </p>
+                                            <p>{formatFileSize(resume.size)}</p>
                                         )}
                                     </div>
                                 </div>
@@ -427,7 +512,7 @@ function ApplicationDetails({ id }) {
                     </section>
                 </div>
 
-                {/* ================== RECORDED STATUS HISTORY ================== */}
+                {/* ================== STATUS HISTORY ================== */}
                 <section
                     className="panel-card application-progress"
                     aria-labelledby="application-progress-title"
@@ -479,7 +564,7 @@ function ApplicationDetails({ id }) {
 
                                         <StepContent>
                                             <time dateTime={event.createdAt}>
-                                                {formatDate(event.createdAt, true)}
+                                                {formatDate(event.createdAt, true)} IST
                                             </time>
 
                                             {event.message && <p>{event.message}</p>}
