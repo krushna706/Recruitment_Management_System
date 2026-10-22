@@ -151,6 +151,26 @@ const userSchema = new Schema(
             default: null,
         },
 
+        
+        // ================== PROFILE IMAGE ==================
+        // Store Cloudinary image URL and public ID.
+        // Default avatar is handled by the frontend.
+        avatar: {
+            url: {
+                type: String,
+                trim: true,
+                default: "",
+            },
+
+            publicId: {
+                type: String,
+                trim: true,
+                default: "",
+                select: false,
+            },
+        },
+
+
         // ================== ACCOUNT ACTIVITY ==================
         // Update only after successful authentication.
         lastLoginAt: {
@@ -183,6 +203,11 @@ const userSchema = new Schema(
                 if (result.resume) {
                     delete result.resume.publicId;
                 }
+                // Never expose Cloudinary image public ID.
+                if (result.avatar) {
+                    delete result.avatar.publicId;
+                }
+
 
                 return result;
             },

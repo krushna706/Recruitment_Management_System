@@ -478,6 +478,80 @@ const applicationSchema = Joi.object({
         "any.required": "Application details are required.",
     });
 
+    
+ // ================== USER PROFILE UPDATE VALIDATION ==================
+ // Validate editable profile fields. Reject role/status changes.
+ const profileUpdateSchema = Joi.object({
+     name: Joi.string()
+         .trim()
+         .min(2)
+         .max(100)
+         .optional(),
+
+     email: emailRule.optional(),
+
+
+     phone: Joi.string()
+        .trim()
+        .pattern(/^[6-9]\d{9}$/)
+        .optional()
+        .messages({
+            "string.base": "Phone number must be a string.",
+            "string.pattern.base": "Enter a valid 10-digit Indian mobile number.",
+        }),
+
+
+     address: Joi.string()
+         .trim()
+         .max(500)
+         .allow("")
+         .optional(),
+
+     qualification: Joi.string()
+         .valid("", ...APPLICATION_QUALIFICATIONS)
+         .optional(),
+
+     experience: Joi.string()
+         .valid("", ...APPLICATION_EXPERIENCE)
+         .optional(),
+
+     skills: Joi.array()
+         .items(Joi.string().trim().min(1).max(60))
+         .max(20)
+         .unique((first, second) =>
+             first.toLowerCase() === second.toLowerCase()
+         )
+         .optional()
+         .messages({
+             "array.max": "You can add a maximum of 20 skills.",
+             "array.unique": "Remove duplicate skills.",
+         }),
+
+     // Required by controller only when email actually changes.
+     currentPassword: Joi.when("email", {
+         is: Joi.exist(),
+         then: passwordRule.optional(),
+         otherwise: Joi.forbidden(),
+     }),
+ })
+     .or(
+         "name",
+         "email",
+         "phone",
+         "address",
+         "qualification",
+         "experience",
+         "skills"
+     )
+     .required()
+     .unknown(false)
+     .messages({
+         "object.base": "Profile details must be a JSON object.",
+         "object.missing": "Provide at least one profile field to update.",
+         "object.unknown": "Profile contains an unsupported field.",
+     });
+
+
 // ================== INTERVIEW UPDATE VALIDATION ==================
 // Frontend sends an ISO timestamp with an explicit timezone.
 const interviewUpdateSchema = Joi.object({
@@ -571,6 +645,7 @@ const applicationStatusSchema = Joi.object({
     });
 
 // ================== EXPORTS ==================
+
 module.exports = {
     signupSchema,
     loginSchema,
@@ -578,4 +653,5 @@ module.exports = {
     vacancySchema,
     applicationSchema,
     applicationStatusSchema,
+    profileUpdateSchema,
 };

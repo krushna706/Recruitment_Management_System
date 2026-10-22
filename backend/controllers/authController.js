@@ -31,6 +31,9 @@ function getUserResponse(user) {
         role: user.role,
         status: user.status,
         createdAt: user.createdAt,
+        avatar: {
+            url: user.avatar?.url || "",
+        },
     };
 }
 
@@ -222,7 +225,7 @@ async function logout(req, res, next) {
 async function getCurrentUser(req, res, next) {
     try {
         const user = await User.findById(req.user._id)
-            .select("name email phone role status createdAt")
+            .select("name email phone role status createdAt avatar.url")
             .lean();
 
         if (!user) {

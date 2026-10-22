@@ -91,7 +91,10 @@ export default function Careers() {
     return (
         <div className="careers-page">
             {/* ================== BANNER ================== */}
-            <section className="about-hero" aria-labelledby="careers-title">
+            <section
+                className="about-hero"
+                aria-labelledby="contact-title"
+            >
                 <img
                     className="about-hero-image"
                     src="/images/about-banner.jpg"
@@ -99,23 +102,34 @@ export default function Careers() {
                     fetchPriority="high"
                 />
 
-                <div className="container-fluid about-hero-inner">
-                    <nav className="about-breadcrumb" aria-label="Breadcrumb">
+                <div className="website-shell about-hero-inner">
+                    <nav
+                        className="about-breadcrumb"
+                        aria-label="Breadcrumb"
+                    >
                         <ol>
-                            <li><Link to="/">Home</Link></li>
+                            <li>
+                                <Link to="/">Home</Link>
+                            </li>
+
                             <li aria-current="page">Careers</li>
                         </ol>
                     </nav>
 
                     <div className="about-hero-content">
-                        <p className="website-section-label">GROW WITH US</p>
+                        <p className="website-section-label">
+                            GROW WITH US
+                        </p>
 
-                        <h1 id="careers-title" className="website-section-title">
+                        <h1
+                            id="contact-title"
+                            className="website-section-title"
+                        >
                             Bring your talent.
                             <span>Build what comes next.</span>
                         </h1>
 
-                        <p className="website-section-description careers-banner-description">
+                         <p className="website-section-description careers-banner-description">
                             Discover opportunities within our team and take
                             your next career step with us.
                         </p>

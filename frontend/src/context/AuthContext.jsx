@@ -1,9 +1,21 @@
+
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import api from "../services/api";
 
 // ================== AUTHENTICATION CONTEXT ==================
 const AuthContext = createContext(null);
+
+// ================== NORMALIZE USER DATA ==================
+// Keep the avatar URL compatible with the existing PanelHeader.
+function normalizeAuthUser(user) {
+    if (!user) return null;
+
+    return {
+        ...user,
+        avatarUrl: user.avatar?.url || "",
+    };
+}
 
 // ================== AUTHENTICATION PROVIDER ==================
 export function AuthProvider({ children }) {
@@ -74,7 +86,7 @@ export function AuthProvider({ children }) {
             });
 
             if (requestId === sessionRequestId.current) {
-                setUser(data.user);
+                setUser(normalizeAuthUser(data.user));
             }
         } catch (error) {
             if (requestId !== sessionRequestId.current) {
@@ -123,7 +135,7 @@ export function AuthProvider({ children }) {
 
         sessionRequestId.current += 1;
 
-        setUser(data.user);
+        setUser(normalizeAuthUser(data.user));
         setAuthError("");
         setLoading(false);
 
@@ -138,11 +150,36 @@ export function AuthProvider({ children }) {
 
         sessionRequestId.current += 1;
 
-        setUser(data.user);
+        setUser(normalizeAuthUser(data.user));
         setAuthError("");
         setLoading(false);
 
         return data;
+    }, []);
+
+    // ================== UPDATE SHARED PROFILE STATE ==================
+    // Call only after the backend confirms a successful profile update.
+    // This immediately refreshes the header name and avatar.
+    const updateUserProfile = useCallback((profile) => {
+        if (!profile?._id) return;
+
+        setUser((currentUser) => {
+            // Never update another authenticated user's local state.
+            if (
+                !currentUser ||
+                String(currentUser._id) !== String(profile._id)
+            ) {
+                return currentUser;
+            }
+
+            return normalizeAuthUser({
+                ...currentUser,
+                name: profile.name ?? currentUser.name,
+                email: profile.email ?? currentUser.email,
+                phone: profile.phone ?? currentUser.phone,
+                avatar: profile.avatar ?? currentUser.avatar,
+            });
+        });
     }, []);
 
     // ================== LOGOUT ==================
@@ -172,6 +209,7 @@ export function AuthProvider({ children }) {
         signup,
         logout,
         refreshUser,
+        updateUserProfile,
     };
 
     return (

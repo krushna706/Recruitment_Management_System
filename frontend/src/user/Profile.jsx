@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
@@ -5,25 +6,16 @@ import {
     Autocomplete,
     Avatar,
     Button,
+    CircularProgress,
     MenuItem,
     TextField,
 } from "@mui/material";
+import { toast } from "react-toastify";
 
-// Temporary frontend preview.
-// Actual profile and resume details will come from the backend.
-const demoProfile = {
-    id: "demo-user",
-    name: "Krushna Chandra Mohanty",
-    email: "candidate@example.com",
-    phone: "9876543210",
-    address: "Bhubaneswar, Odisha",
-    qualification: "Bachelor’s degree",
-    experience: "2 years",
-    skills: ["React.js", "Node.js", "Express.js", "MongoDB"],
-    role: "user",
-    resume: null,
-};
+import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
+// ================== PROFILE OPTIONS ==================
 const qualifications = [
     "Secondary / Class 10",
     "Higher Secondary / Class 12",
@@ -48,102 +40,40 @@ const experienceOptions = [
 
 const skillGroups = {
     "Frontend Development": [
-        "HTML",
-        "CSS",
-        "JavaScript",
-        "TypeScript",
-        "React.js",
-        "Next.js",
-        "Vue.js",
-        "Angular",
-        "Redux",
-        "React Router",
-        "Material UI",
-        "Bootstrap",
-        "Tailwind CSS",
-        "Sass",
-        "Responsive Web Design",
-        "Web Accessibility",
+        "HTML", "CSS", "JavaScript", "TypeScript", "React.js",
+        "Next.js", "Vue.js", "Angular", "Redux", "React Router",
+        "Material UI", "Bootstrap", "Tailwind CSS", "Sass",
+        "Responsive Web Design", "Web Accessibility",
     ],
     "Backend Development": [
-        "Node.js",
-        "Express.js",
-        "REST API Development",
-        "GraphQL",
-        "Socket.IO",
-        "Java",
-        "Spring Boot",
-        "Python",
-        "Django",
-        "FastAPI",
-        "PHP",
-        "Laravel",
-        "C#",
-        "ASP.NET Core",
-        "Go",
+        "Node.js", "Express.js", "REST API Development", "GraphQL",
+        "Socket.IO", "Java", "Spring Boot", "Python", "Django",
+        "FastAPI", "PHP", "Laravel", "C#", "ASP.NET Core", "Go",
     ],
     Databases: [
-        "MongoDB",
-        "Mongoose",
-        "MySQL",
-        "PostgreSQL",
-        "SQLite",
-        "Redis",
-        "Firebase",
-        "SQL",
-        "Database Design",
+        "MongoDB", "Mongoose", "MySQL", "PostgreSQL", "SQLite",
+        "Redis", "Firebase", "SQL", "Database Design",
     ],
     "Cloud & DevOps": [
-        "Git",
-        "GitHub",
-        "GitLab",
-        "Docker",
-        "Kubernetes",
-        "AWS",
-        "Microsoft Azure",
-        "Google Cloud",
-        "Linux",
-        "Nginx",
-        "CI/CD",
-        "VPS Deployment",
+        "Git", "GitHub", "GitLab", "Docker", "Kubernetes", "AWS",
+        "Microsoft Azure", "Google Cloud", "Linux", "Nginx",
+        "CI/CD", "VPS Deployment",
     ],
     "Testing & Tools": [
-        "Postman",
-        "Jest",
-        "Vitest",
-        "React Testing Library",
-        "Cypress",
-        "Playwright",
-        "Selenium",
-        "Manual Testing",
-        "API Testing",
-        "Vite",
-        "Webpack",
-        "npm",
-        "phpMyAdmin",
+        "Postman", "Jest", "Vitest", "React Testing Library",
+        "Cypress", "Playwright", "Selenium", "Manual Testing",
+        "API Testing", "Vite", "Webpack", "npm", "phpMyAdmin",
     ],
     "Design & Product": [
-        "Figma",
-        "UI/UX Design",
-        "Wireframing",
-        "Prototyping",
-        "User Research",
-        "Adobe Photoshop",
-        "Adobe Illustrator",
-        "Product Management",
+        "Figma", "UI/UX Design", "Wireframing", "Prototyping",
+        "User Research", "Adobe Photoshop",
+        "Adobe Illustrator", "Product Management",
     ],
     "Business & Communication": [
-        "Communication",
-        "Problem Solving",
-        "Team Leadership",
-        "Client Handling",
-        "Project Coordination",
-        "Recruitment",
-        "Customer Support",
-        "Digital Marketing",
-        "SEO",
-        "Content Writing",
-        "Microsoft Excel",
+        "Communication", "Problem Solving", "Team Leadership",
+        "Client Handling", "Project Coordination", "Recruitment",
+        "Customer Support", "Digital Marketing", "SEO",
+        "Content Writing", "Microsoft Excel",
     ],
 };
 
@@ -155,9 +85,22 @@ const skillCategory = Object.fromEntries(
     )
 );
 
+const MAX_AVATAR_SIZE = 3 * 1024 * 1024;
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
+const DEFAULT_AVATAR = "/images/default-avatar.svg";
 
-function normalizeSkills(skills) {
+const PROFILE_FIELDS = [
+    "name",
+    "email",
+    "phone",
+    "address",
+    "qualification",
+    "experience",
+    "skills",
+];
+
+// ================== PROFILE HELPERS ==================
+function normalizeSkills(skills = []) {
     return [
         ...new Map(
             skills
@@ -169,7 +112,7 @@ function normalizeSkills(skills) {
     ];
 }
 
-function createProfile(user) {
+function createProfile(user = {}) {
     return {
         name: user.name || "",
         email: user.email || "",
@@ -184,9 +127,7 @@ function createProfile(user) {
 }
 
 function formatFileSize(bytes) {
-    if (!Number.isFinite(bytes) || bytes <= 0) {
-        return "";
-    }
+    if (!Number.isFinite(bytes) || bytes <= 0) return "";
 
     if (bytes >= 1024 * 1024) {
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -195,18 +136,18 @@ function formatFileSize(bytes) {
     return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+function getApiError(error, fallback) {
+    return error.response?.data?.message || fallback;
+}
+
 function validateResume(file) {
-    if (!(file instanceof File)) {
-        return "Please choose a valid file.";
-    }
+    if (!file) return "Please choose a valid resume.";
 
     if (!/\.(pdf|doc|docx)$/i.test(file.name)) {
         return "Choose a PDF, DOC or DOCX file.";
     }
 
-    if (file.size === 0) {
-        return "This file is empty. Please choose another file.";
-    }
+    if (!file.size) return "The resume file is empty.";
 
     if (file.size > MAX_RESUME_SIZE) {
         return "Resume size must not exceed 5 MB.";
@@ -215,53 +156,84 @@ function validateResume(file) {
     return "";
 }
 
-function getResumeAccessUrl(value) {
-    if (typeof value !== "string") {
-        return null;
+function validateAvatar(file) {
+    if (!file) return "Please choose a valid image.";
+
+    if (!/\.(jpg|jpeg|png|webp)$/i.test(file.name)) {
+        return "Choose a JPG, JPEG, PNG or WebP image.";
     }
 
-    const url = value.trim();
+    if (!file.size) return "The image file is empty.";
 
-    // Backend-provided HTTPS link or same-origin authorized endpoint.
-    if (/^https:\/\//i.test(url) || /^\/(?![\\/])/.test(url)) {
-        return url;
+    if (file.size > MAX_AVATAR_SIZE) {
+        return "Profile image size must not exceed 3 MB.";
     }
 
-    return null;
+    return "";
 }
 
-// Temporary browser preview only.
-// This does not upload the file to a server or Cloudinary.
+// ================== TEMPORARY FILE PREVIEW ==================
+// Revoke object URLs when the selected file changes.
 function useFileUrl(file) {
     const [preview, setPreview] = useState(null);
 
     useEffect(() => {
-        if (!(file instanceof Blob)) {
-            return;
-        }
+        if (!file) return undefined;
 
         const url = URL.createObjectURL(file);
+        setPreview({ file, url });
 
-        setPreview({
-            file,
-            url,
-        });
-
-        return () => {
-            URL.revokeObjectURL(url);
-        };
+        return () => URL.revokeObjectURL(url);
     }, [file]);
 
-    if (!file || preview?.file !== file) {
-        return null;
-    }
-
-    return preview?.url ?? null;
+    return preview?.file === file ? preview.url : null;
 }
 
+// ================== AUTHORIZED RESUME URL ==================
+// Resume access stays behind the authenticated backend route.
+function getResumeUrl(resume) {
+    if (!resume) return null;
+
+    const mode =
+        resume.mimeType === "application/pdf"
+            ? "view"
+            : "download";
+
+    const baseURL = String(
+        api.defaults.baseURL || ""
+    ).replace(/\/+$/, "");
+
+    return `${baseURL}/users/me/resume?mode=${mode}`;
+}
+
+// ================== CHANGED PROFILE FIELDS ==================
+// Send only modified fields to the backend.
+function getChangedFields(values, original) {
+    return Object.fromEntries(
+        PROFILE_FIELDS
+            .filter(
+                (field) =>
+                    JSON.stringify(values[field]) !==
+                    JSON.stringify(original[field])
+            )
+            .map((field) => [field, values[field]])
+    );
+}
+
+// ================== PROFILE FORM ==================
 function ProfileForm({ user }) {
+    const { updateUserProfile } = useAuth();
+
     const formRef = useRef(null);
-    const fileInputRef = useRef(null);
+    const avatarInputRef = useRef(null);
+    const resumeInputRef = useRef(null);
+
+    // ================== FORM STATES ==================
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [feedback, setFeedback] = useState(null);
+    const [errors, setErrors] = useState({});
 
     const [savedProfile, setSavedProfile] = useState(() =>
         createProfile(user)
@@ -271,41 +243,91 @@ function ProfileForm({ user }) {
         createProfile(user)
     );
 
-    const [skillInput, setSkillInput] = useState("");
-    const [errors, setErrors] = useState({});
-    const [feedback, setFeedback] = useState("");
+    const [currentResume, setCurrentResume] = useState(null);
 
-    // Existing resume from the profile API.
-    // Expected shape: { name, size, url }
-    const [currentResume, setCurrentResume] = useState(
-        () => user.resume || null
+    const [avatarUrl, setAvatarUrl] = useState(
+        user.avatarUrl || user.avatar?.url || ""
     );
 
+    const [selectedAvatar, setSelectedAvatar] = useState(null);
     const [replacementFile, setReplacementFile] = useState(null);
+    const [skillInput, setSkillInput] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
 
-    const currentLocalUrl = useFileUrl(currentResume?.file);
+    // ================== PREVIEW STATES ==================
+    const avatarPreview = useFileUrl(selectedAvatar);
     const replacementUrl = useFileUrl(replacementFile);
 
-    const currentResumeUrl =
-        currentLocalUrl || getResumeAccessUrl(currentResume?.url);
+    const emailChanged =
+        values.email.trim().toLowerCase() !== savedProfile.email;
 
     const hasChanges =
-        JSON.stringify(values) !== JSON.stringify(savedProfile) ||
-        skillInput.trim() !== "" ||
-        Boolean(replacementFile);
+        Object.keys(
+            getChangedFields(values, savedProfile)
+        ).length > 0 ||
+        Boolean(
+            skillInput.trim() ||
+            replacementFile ||
+            selectedAvatar
+        );
 
     const displayName = savedProfile.name || "Your account";
-    const roleLabel = user.role === "admin" ? "Admin" : "User";
 
+    // ================== LOAD PROFILE FROM MONGODB ==================
+    useEffect(() => {
+        let active = true;
+
+        async function loadProfile() {
+            setLoading(true);
+            setLoadError("");
+
+            try {
+                const { data } = await api.get(
+                    "/users/me/profile"
+                );
+
+                if (!active) return;
+
+                const profile = createProfile(data.profile);
+
+                setSavedProfile(profile);
+                setValues(profile);
+                setCurrentResume(data.profile.resume || null);
+                setAvatarUrl(data.profile.avatar?.url || "");
+
+                updateUserProfile(data.profile);
+            } catch (error) {
+                if (active) {
+                    setLoadError(
+                        getApiError(
+                            error,
+                            "Unable to load your profile. Please retry."
+                        )
+                    );
+                }
+            } finally {
+                if (active) setLoading(false);
+            }
+        }
+
+        loadProfile();
+
+        return () => {
+            active = false;
+        };
+    }, [user._id, updateUserProfile]);
+
+    // ================== CLEAR FIELD FEEDBACK ==================
     const clearFeedback = (field) => {
         setErrors((previous) => ({
             ...previous,
             [field]: "",
         }));
 
-        setFeedback("");
+        setFeedback(null);
     };
 
+    // ================== HANDLE TEXT INPUT ==================
     const handleChange = (event) => {
         const { name, value } = event.target;
 
@@ -317,15 +339,32 @@ function ProfileForm({ user }) {
         clearFeedback(name);
     };
 
+    // ================== SELECT PROFILE IMAGE ==================
+    const handleAvatarChange = (event) => {
+        const file = event.target.files?.[0];
+
+        event.target.value = "";
+
+        if (!file) return;
+
+        const error = validateAvatar(file);
+
+        setErrors((previous) => ({
+            ...previous,
+            avatar: error,
+        }));
+
+        setFeedback(null);
+        setSelectedAvatar(error ? null : file);
+    };
+
+    // ================== SELECT RESUME ==================
     const handleResumeChange = (event) => {
         const file = event.target.files?.[0];
 
-        // Allow selecting the same file again.
         event.target.value = "";
 
-        if (!file) {
-            return;
-        }
+        if (!file) return;
 
         const error = validateResume(file);
 
@@ -334,52 +373,27 @@ function ProfileForm({ user }) {
             resume: error,
         }));
 
-        setFeedback("");
-
-        if (error) {
-            return;
-        }
-
-        // Keep the existing resume until Save Changes.
-        setReplacementFile(file);
+        setFeedback(null);
+        setReplacementFile(error ? null : file);
     };
 
-    const cancelReplacement = () => {
-        setReplacementFile(null);
-        clearFeedback("resume");
-    };
-
+    // ================== DISCARD CHANGES ==================
     const discardChanges = () => {
         setValues({
             ...savedProfile,
             skills: [...savedProfile.skills],
         });
 
+        setSelectedAvatar(null);
         setReplacementFile(null);
         setSkillInput("");
+        setCurrentPassword("");
         setErrors({});
-        setFeedback("");
+        setFeedback(null);
     };
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-
-        const cleanedValues = {
-            ...values,
-            name: values.name.trim(),
-            email: values.email.trim(),
-            phone: values.phone.trim(),
-            address: values.address.trim(),
-            skills: normalizeSkills([
-                ...values.skills,
-                skillInput,
-            ]),
-        };
-
-        setValues(cleanedValues);
-        setSkillInput("");
-        setFeedback("");
-
+    // ================== FRONTEND VALIDATION ==================
+    function validateProfile(cleanedValues) {
         const nextErrors = {};
 
         if (
@@ -397,14 +411,10 @@ function ProfileForm({ user }) {
             nextErrors.email = "Enter a valid email address.";
         }
 
-        const phoneDigits = cleanedValues.phone.replace(/\D/g, "");
-
-        if (
-            !/^\+?[\d\s()-]+$/.test(cleanedValues.phone) ||
-            phoneDigits.length < 10 ||
-            phoneDigits.length > 15
-        ) {
-            nextErrors.phone = "Enter a valid phone number.";
+        // Match the Signup form's 10-digit Indian mobile rule.
+        if (!/^[6-9]\d{9}$/.test(cleanedValues.phone)) {
+            nextErrors.phone =
+                "Enter a valid 10-digit Indian mobile number.";
         }
 
         if (cleanedValues.address.length > 500) {
@@ -414,7 +424,9 @@ function ProfileForm({ user }) {
 
         if (
             cleanedValues.qualification &&
-            !qualifications.includes(cleanedValues.qualification)
+            !qualifications.includes(
+                cleanedValues.qualification
+            )
         ) {
             nextErrors.qualification =
                 "Select a valid qualification.";
@@ -422,7 +434,9 @@ function ProfileForm({ user }) {
 
         if (
             cleanedValues.experience &&
-            !experienceOptions.includes(cleanedValues.experience)
+            !experienceOptions.includes(
+                cleanedValues.experience
+            )
         ) {
             nextErrors.experience =
                 "Select a valid experience option.";
@@ -430,72 +444,196 @@ function ProfileForm({ user }) {
 
         if (
             cleanedValues.skills.length > 20 ||
-            cleanedValues.skills.some((skill) => skill.length > 60)
+            cleanedValues.skills.some(
+                (skill) => skill.length > 60
+            )
         ) {
             nextErrors.skills =
                 "Add up to 20 skills, using no more than 60 characters each.";
         }
 
-        if (replacementFile) {
-            const resumeError = validateResume(replacementFile);
-
-            if (resumeError) {
-                nextErrors.resume = resumeError;
-            }
+        // Sensitive email changes require reauthentication.
+        if (
+            cleanedValues.email !== savedProfile.email &&
+            !currentPassword
+        ) {
+            nextErrors.currentPassword =
+                "Enter your current password to change email.";
         }
 
+        if (selectedAvatar) {
+            nextErrors.avatar = validateAvatar(selectedAvatar);
+        }
+
+        if (replacementFile) {
+            nextErrors.resume = validateResume(
+                replacementFile
+            );
+        }
+
+        return Object.fromEntries(
+            Object.entries(nextErrors).filter(
+                ([, message]) => message
+            )
+        );
+    }
+
+    // ================== SAVE PROFILE + FILES ==================
+    // Persist each request separately.
+    // Failed uploads remain selected for retry.
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        if (saving || loading) return;
+
+        const cleanedValues = {
+            ...values,
+            name: values.name.trim(),
+            email: values.email.trim().toLowerCase(),
+            phone: values.phone.trim(),
+            address: values.address.trim(),
+            skills: normalizeSkills([
+                ...values.skills,
+                skillInput,
+            ]),
+        };
+
+        const nextErrors = validateProfile(cleanedValues);
+
+        setValues(cleanedValues);
+        setSkillInput("");
         setErrors(nextErrors);
+        setFeedback(null);
 
         const firstError = Object.keys(nextErrors)[0];
 
         if (firstError) {
             requestAnimationFrame(() => {
-                const target = formRef.current?.querySelector(
-                    `[data-field="${firstError}"] input, ` +
-                    `[data-field="${firstError}"] textarea, ` +
-                    `[data-field="${firstError}"] [role="combobox"], ` +
-                    `[data-field="${firstError}"] button`
-                );
-
-                target?.focus();
+                formRef.current
+                    ?.querySelector(
+                        `[data-field="${firstError}"] input, ` +
+                        `[data-field="${firstError}"] button, ` +
+                        `[data-field="${firstError}"] [role="combobox"]`
+                    )
+                    ?.focus();
             });
 
             return;
         }
 
-        /*
-            FRONTEND PREVIEW ONLY.
+        setSaving(true);
+        let completedSteps = 0;
 
-            Backend integration:
-            1. Send profile fields and replacementFile using FormData.
-            2. Backend validates and uploads the resume to Cloudinary.
-            3. Backend saves resume metadata in MongoDB.
-            4. Update the UI only after the API succeeds.
-        */
+        try {
+            // ================== UPDATE PROFILE DETAILS ==================
+            const changes = getChangedFields(
+                cleanedValues,
+                savedProfile
+            );
 
-        setSavedProfile({
-            ...cleanedValues,
-            skills: [...cleanedValues.skills],
-        });
+            if (Object.keys(changes).length > 0) {
+                if (changes.email !== undefined) {
+                    changes.currentPassword = currentPassword;
+                }
 
-        if (replacementFile) {
-            setCurrentResume({
-                name: replacementFile.name,
-                size: replacementFile.size,
-                file: replacementFile,
-                url: null,
+                const { data } = await api.patch(
+                    "/users/me/profile",
+                    changes
+                );
+
+                const profile = createProfile(
+                    data.profile
+                );
+
+                setSavedProfile(profile);
+                setValues(profile);
+                setCurrentPassword("");
+
+                updateUserProfile(data.profile);
+
+                completedSteps += 1;
+            }
+
+            // ================== UPLOAD PROFILE RESUME ==================
+            if (replacementFile) {
+                const formData = new FormData();
+
+                formData.append(
+                    "resume",
+                    replacementFile
+                );
+
+                const { data } = await api.post(
+                    "/users/me/resume",
+                    formData,
+                    {
+                        timeout: 60000,
+                    }
+                );
+
+                setCurrentResume(
+                    data.profile.resume || null
+                );
+
+                setReplacementFile(null);
+                updateUserProfile(data.profile);
+
+                completedSteps += 1;
+            }
+
+            // ================== UPLOAD PROFILE IMAGE ==================
+            // Backend saves new image first, then removes old avatar.
+            if (selectedAvatar) {
+                const formData = new FormData();
+
+                formData.append(
+                    "avatar",
+                    selectedAvatar
+                );
+
+                const { data } = await api.post(
+                    "/users/me/avatar",
+                    formData,
+                    {
+                        timeout: 60000,
+                    }
+                );
+
+                setAvatarUrl(
+                    data.profile.avatar?.url || ""
+                );
+
+                setSelectedAvatar(null);
+
+                // Update the shared AuthContext so header changes too.
+                updateUserProfile(data.profile);
+
+                completedSteps += 1;
+            }
+
+            if (completedSteps) {
+                toast.success(
+                    "Profile updated successfully."
+                );
+            }
+        } catch (error) {
+            const message = getApiError(
+                error,
+                "Unable to save your changes. Please try again."
+            );
+
+            setFeedback({
+                type: "error",
+                message: completedSteps
+                    ? `Some changes were saved, but the remaining update failed. ${message}`
+                    : message,
             });
-
-            setReplacementFile(null);
+        } finally {
+            setSaving(false);
         }
-
-        setFeedback(
-            "Changes are saved in this page preview only. No information " +
-            "or file has been uploaded. Refreshing or leaving this page " +
-            "will reset the preview."
-        );
     };
 
+    // ================== SHARED INPUT PROPERTIES ==================
     const fieldProps = (name) => ({
         name,
         value: values[name],
@@ -507,10 +645,49 @@ function ProfileForm({ user }) {
         variant: "outlined",
         className: "panel-field",
         "data-field": name,
+        disabled: saving,
     });
+
+    // ================== LOADING STATE ==================
+    if (loading) {
+        return (
+            <div
+                className="profile-page"
+                role="status"
+                style={{
+                    padding: 32,
+                    textAlign: "center",
+                }}
+            >
+                <CircularProgress size={28} />
+
+                <p>Loading your profile...</p>
+            </div>
+        );
+    }
+
+    // ================== API ERROR STATE ==================
+    if (loadError) {
+        return (
+            <div className="profile-page">
+                <Alert severity="error">
+                    {loadError}
+                </Alert>
+
+                <Button
+                    variant="outlined"
+                    onClick={() => window.location.reload()}
+                    sx={{ mt: 2 }}
+                >
+                    Retry
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <div className="profile-page">
+            {/* ================== PAGE HEADER ================== */}
             <header className="panel-page-heading">
                 <div>
                     <h1 className="panel-page-title">
@@ -534,6 +711,7 @@ function ProfileForm({ user }) {
             </header>
 
             <div className="profile-grid">
+                {/* ================== PROFILE SUMMARY ================== */}
                 <aside className="profile-sidebar">
                     <section
                         className="panel-card profile-summary"
@@ -547,21 +725,108 @@ function ProfileForm({ user }) {
                         <div className="profile-summary-body">
                             <Avatar
                                 src={
-                                    user.avatarUrl ||
-                                    "/images/default-avatar.svg"
+                                    avatarPreview ||
+                                    avatarUrl ||
+                                    DEFAULT_AVATAR
                                 }
                                 alt={displayName}
                                 className="profile-avatar"
                             >
-                                {displayName.charAt(0).toUpperCase()}
+                                {displayName
+                                    .charAt(0)
+                                    .toUpperCase()}
                             </Avatar>
+
+                            {/* ================== PROFILE PHOTO CONTROL ================== */}
+                            <div
+                                data-field="avatar"
+                                style={{
+                                    marginBottom: 12,
+                                }}
+                            >
+                                <input
+                                    ref={avatarInputRef}
+                                    type="file"
+                                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                    hidden
+                                    aria-label="Choose profile image"
+                                    onChange={handleAvatarChange}
+                                />
+
+                                <Button
+                                    type="button"
+                                    size="small"
+                                    className="profile-text-button"
+                                    disabled={saving}
+                                    onClick={() =>
+                                        avatarInputRef.current?.click()
+                                    }
+                                    startIcon={
+                                        <i
+                                            className="fa-solid fa-camera"
+                                            aria-hidden="true"
+                                        />
+                                    }
+                                >
+                                    {avatarUrl
+                                        ? "Change photo"
+                                        : "Upload photo"}
+                                </Button>
+
+                                {selectedAvatar && (
+                                    <div>
+                                        <p
+                                            style={{
+                                                fontSize: 12,
+                                                margin: "4px 0",
+                                            }}
+                                        >
+                                            {selectedAvatar.name}
+                                            {" · "}
+                                            Save Changes to upload
+                                        </p>
+
+                                        <Button
+                                            type="button"
+                                            size="small"
+                                            disabled={saving}
+                                            className="profile-text-button"
+                                            onClick={() => {
+                                                setSelectedAvatar(null);
+                                                clearFeedback("avatar");
+                                            }}
+                                        >
+                                            Cancel photo
+                                        </Button>
+                                    </div>
+                                )}
+
+                                <p
+                                    style={{
+                                        fontSize: 11,
+                                        margin: "4px 0",
+                                        color: "#718096",
+                                    }}
+                                >
+                                    JPG, PNG or WebP · Max 3 MB
+                                </p>
+
+                                {errors.avatar && (
+                                    <p
+                                        className="profile-error"
+                                        role="alert"
+                                    >
+                                        {errors.avatar}
+                                    </p>
+                                )}
+                            </div>
 
                             <h2 id="profile-name">
                                 {displayName}
                             </h2>
 
                             <span className="profile-role">
-                                {roleLabel}
+                                User
                             </span>
 
                             <dl className="profile-summary-details">
@@ -618,19 +883,22 @@ function ProfileForm({ user }) {
 
                             <p>
                                 Highlight relevant skills and maintain
-                                an up-to-date resume. Existing applications
-                                retain their original submitted details.
+                                an up-to-date resume. Existing
+                                applications retain their original
+                                submitted details.
                             </p>
                         </div>
                     </div>
                 </aside>
 
+                {/* ================== PROFILE FORM ================== */}
                 <form
                     ref={formRef}
                     className="profile-form"
                     onSubmit={handleSubmit}
                     noValidate
                 >
+                    {/* ================== PERSONAL INFORMATION ================== */}
                     <section
                         className="panel-card"
                         aria-labelledby="profile-personal-title"
@@ -679,7 +947,8 @@ function ProfileForm({ user }) {
                                     autoComplete="tel"
                                     slotProps={{
                                         htmlInput: {
-                                            maxLength: 25,
+                                            maxLength: 10,
+                                            inputMode: "numeric",
                                         },
                                     }}
                                 />
@@ -697,6 +966,37 @@ function ProfileForm({ user }) {
                                         },
                                     }}
                                 />
+
+                                {/* Require password for email changes. */}
+                                {emailChanged && (
+                                    <TextField
+                                        label="Current password (required to change email)"
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={(event) => {
+                                            setCurrentPassword(
+                                                event.target.value
+                                            );
+
+                                            clearFeedback(
+                                                "currentPassword"
+                                            );
+                                        }}
+                                        error={Boolean(
+                                            errors.currentPassword
+                                        )}
+                                        helperText={
+                                            errors.currentPassword
+                                        }
+                                        required
+                                        fullWidth
+                                        size="small"
+                                        disabled={saving}
+                                        className="panel-field profile-full-width"
+                                        data-field="currentPassword"
+                                        autoComplete="current-password"
+                                    />
+                                )}
 
                                 <TextField
                                     {...fieldProps("address")}
@@ -716,6 +1016,7 @@ function ProfileForm({ user }) {
                         </div>
                     </section>
 
+                    {/* ================== PROFESSIONAL BACKGROUND ================== */}
                     <section
                         className="panel-card"
                         aria-labelledby="profile-professional-title"
@@ -790,10 +1091,12 @@ function ProfileForm({ user }) {
                                     size="small"
                                     options={skillOptions}
                                     groupBy={(option) =>
-                                        skillCategory[option] || "Other"
+                                        skillCategory[option] ||
+                                        "Other"
                                     }
                                     value={values.skills}
                                     inputValue={skillInput}
+                                    disabled={saving}
                                     className="profile-full-width"
                                     data-field="skills"
                                     slotProps={{
@@ -802,14 +1105,16 @@ function ProfileForm({ user }) {
                                                 "profile-skills-menu",
                                         },
                                     }}
-                                    onInputChange={(_, value) => {
-                                        setSkillInput(value);
+                                    onInputChange={(_, input) => {
+                                        setSkillInput(input);
                                         clearFeedback("skills");
                                     }}
                                     onChange={(_, skills) => {
                                         setValues((previous) => ({
                                             ...previous,
-                                            skills: normalizeSkills(skills),
+                                            skills: normalizeSkills(
+                                                skills
+                                            ),
                                         }));
 
                                         clearFeedback("skills");
@@ -819,7 +1124,9 @@ function ProfileForm({ user }) {
                                             {...params}
                                             label="Relevant skills"
                                             className="panel-field"
-                                            error={Boolean(errors.skills)}
+                                            error={Boolean(
+                                                errors.skills
+                                            )}
                                             helperText={
                                                 errors.skills ||
                                                 "Choose up to 20 skills, or type a custom skill and press Enter."
@@ -831,6 +1138,7 @@ function ProfileForm({ user }) {
                         </div>
                     </section>
 
+                    {/* ================== PROFILE RESUME ================== */}
                     <section
                         className="panel-card"
                         data-field="resume"
@@ -863,12 +1171,12 @@ function ProfileForm({ user }) {
                             {currentResume && (
                                 <div className="profile-current-resume">
                                     <div className="profile-resume-topline">
-                                        <span>Current resume</span>
+                                        <span>
+                                            Current resume
+                                        </span>
 
                                         <span className="profile-resume-badge">
-                                            {currentResume.file
-                                                ? "Preview only"
-                                                : "On profile"}
+                                            On profile
                                         </span>
                                     </div>
 
@@ -887,31 +1195,29 @@ function ProfileForm({ user }) {
                                             </h3>
 
                                             <p>
-                                                {[
-                                                    formatFileSize(
-                                                        currentResume.size
-                                                    ),
-                                                    currentResumeUrl
-                                                        ? "Ready to open"
-                                                        : "File link not available",
-                                                ]
-                                                    .filter(Boolean)
-                                                    .join(" · ")}
+                                                {formatFileSize(
+                                                    currentResume.size
+                                                )}
+                                                {" · "}
+                                                Ready to open
                                             </p>
                                         </div>
 
-                                        {currentResumeUrl && (
-                                            <Button
-                                                component="a"
-                                                href={currentResumeUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                variant="outlined"
-                                                className="panel-button panel-button-outline"
-                                            >
-                                                Open resume
-                                            </Button>
-                                        )}
+                                        <Button
+                                            component="a"
+                                            href={getResumeUrl(
+                                                currentResume
+                                            )}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            variant="outlined"
+                                            className="panel-button panel-button-outline"
+                                        >
+                                            {currentResume.mimeType ===
+                                            "application/pdf"
+                                                ? "Open resume"
+                                                : "Download resume"}
+                                        </Button>
                                     </div>
                                 </div>
                             )}
@@ -941,7 +1247,7 @@ function ProfileForm({ user }) {
                                 </div>
 
                                 <input
-                                    ref={fileInputRef}
+                                    ref={resumeInputRef}
                                     type="file"
                                     accept=".pdf,.doc,.docx"
                                     hidden
@@ -951,14 +1257,10 @@ function ProfileForm({ user }) {
                                 <Button
                                     type="button"
                                     variant="outlined"
+                                    disabled={saving}
                                     className="panel-button panel-button-outline"
                                     onClick={() =>
-                                        fileInputRef.current?.click()
-                                    }
-                                    aria-describedby={
-                                        errors.resume
-                                            ? "profile-resume-help profile-resume-error"
-                                            : "profile-resume-help"
+                                        resumeInputRef.current?.click()
                                     }
                                 >
                                     Choose file
@@ -967,7 +1269,6 @@ function ProfileForm({ user }) {
 
                             {errors.resume && (
                                 <p
-                                    id="profile-resume-error"
                                     className="profile-error"
                                     role="alert"
                                 >
@@ -987,13 +1288,16 @@ function ProfileForm({ user }) {
                                                 : "Selected resume"}
                                         </span>
 
-                                        <h3>{replacementFile.name}</h3>
+                                        <h3>
+                                            {replacementFile.name}
+                                        </h3>
 
                                         <p>
                                             {formatFileSize(
                                                 replacementFile.size
-                                            )}{" "}
-                                            · Save Changes to use this file
+                                            )}
+                                            {" · "}
+                                            Save Changes to upload
                                         </p>
                                     </div>
 
@@ -1012,8 +1316,12 @@ function ProfileForm({ user }) {
 
                                         <Button
                                             type="button"
+                                            disabled={saving}
                                             className="profile-text-button"
-                                            onClick={cancelReplacement}
+                                            onClick={() => {
+                                                setReplacementFile(null);
+                                                clearFeedback("resume");
+                                            }}
                                         >
                                             Cancel
                                         </Button>
@@ -1023,16 +1331,18 @@ function ProfileForm({ user }) {
                         </div>
                     </section>
 
+                    {/* ================== FORM FEEDBACK ================== */}
                     {feedback && (
                         <Alert
-                            severity="info"
-                            role="status"
+                            severity={feedback.type}
+                            role="alert"
                             className="profile-feedback"
                         >
-                            {feedback}
+                            {feedback.message}
                         </Alert>
                     )}
 
+                    {/* ================== SAVE ACTIONS ================== */}
                     <div className="profile-save-bar">
                         <p>
                             Review your information before saving changes.
@@ -1042,7 +1352,7 @@ function ProfileForm({ user }) {
                             <Button
                                 type="button"
                                 className="panel-button profile-discard-button"
-                                disabled={!hasChanges}
+                                disabled={!hasChanges || saving}
                                 onClick={discardChanges}
                             >
                                 Discard changes
@@ -1052,16 +1362,25 @@ function ProfileForm({ user }) {
                                 type="submit"
                                 variant="contained"
                                 disableElevation
-                                disabled={!hasChanges}
+                                disabled={!hasChanges || saving}
                                 className="panel-button panel-button-primary"
                                 startIcon={
-                                    <i
-                                        className="fa-regular fa-floppy-disk"
-                                        aria-hidden="true"
-                                    />
+                                    saving ? (
+                                        <CircularProgress
+                                            size={16}
+                                            color="inherit"
+                                        />
+                                    ) : (
+                                        <i
+                                            className="fa-regular fa-floppy-disk"
+                                            aria-hidden="true"
+                                        />
+                                    )
                                 }
                             >
-                                Save Changes
+                                {saving
+                                    ? "Saving..."
+                                    : "Save Changes"}
                             </Button>
                         </div>
                     </div>
@@ -1071,19 +1390,25 @@ function ProfileForm({ user }) {
     );
 }
 
-function Profile({ user }) {
+// ================== EXPORT ==================
+function Profile({ user: propUser }) {
+    const { user: authUser } = useAuth();
     const outletContext = useOutletContext();
 
     const currentUser =
-        user ?? outletContext?.user ?? demoProfile;
+        authUser ?? propUser ?? outletContext?.user;
+
+    if (!currentUser?._id) {
+        return (
+            <Alert severity="error">
+                Please sign in to view your profile.
+            </Alert>
+        );
+    }
 
     return (
         <ProfileForm
-            key={
-                currentUser._id ||
-                currentUser.id ||
-                "profile-preview"
-            }
+            key={currentUser._id}
             user={currentUser}
         />
     );
