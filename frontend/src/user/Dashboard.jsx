@@ -1,11 +1,7 @@
+import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { Button } from "@mui/material";
-import { demoApplications } from "./applicationData";
-
-// Frontend preview only.
-const demoUser = {
-    name: "Krushna Chandra Mohanty",
-};
+import api from "../services/api";
 
 
 const statusConfig = {
@@ -66,11 +62,7 @@ function formatDate(value, includeTime = false) {
         : dateFormatter.format(date);
 }
 
-function getTimestamp(value) {
-    const timestamp = new Date(value).getTime();
-    return Number.isNaN(timestamp) ? 0 : timestamp;
-}
-
+// ================== APPLICATION STATUS ==================
 function getStatus(status) {
     return (
         statusConfig[status] || {
@@ -81,59 +73,121 @@ function getStatus(status) {
     );
 }
 
+// ================== APPLICATION DETAILS URL ==================
 function getApplicationPath(id) {
     return `/manage/my-applications/${encodeURIComponent(id)}`;
 }
 
-function Dashboard({ user, applications = demoApplications }) {
+// ================== INITIAL DASHBOARD DATA ==================
+const initialDashboard = {
+    counts: {
+        total: 0,
+        pending: 0,
+        shortlisted: 0,
+        rejected: 0,
+    },
+    recentApplications: [],
+    recentActivity: [],
+};
+
+// ================== USER DASHBOARD ==================
+function Dashboard({ user }) {
     const outletContext = useOutletContext();
 
-    // Prefer actual user data; demo user is only for the frontend preview.
-    const currentUser = user ?? outletContext?.user ?? demoUser;
+    // Use the authenticated account, never a hardcoded demo user.
+    const currentUser = user ?? outletContext?.user;
+    const firstName = currentUser?.name?.trim().split(/\s+/)[0] || "";
 
-    const firstName =
-        currentUser.name?.trim().split(/\s+/)[0] || "";
+    const [dashboard, setDashboard] = useState(initialDashboard);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [refreshKey, setRefreshKey] = useState(0);
 
-    const applicationList = Array.isArray(applications)
-        ? applications
-        : [];
+    // ================== FETCH DASHBOARD DATA ==================
+    // Counts are calculated by MongoDB and are not tied to list pagination.
+    useEffect(() => {
+        const controller = new AbortController();
 
-    const recentApplications = [...applicationList]
-        .sort(
-            (first, second) =>
-                getTimestamp(second.appliedAt) -
-                getTimestamp(first.appliedAt)
-        )
-        .slice(0, 5);
+        async function fetchDashboard() {
+            setLoading(true);
+            setError("");
 
-    const recentActivity = applicationList
-        .flatMap((application) =>
-            (application.history || []).map((event, index) => ({
-                ...event,
-                key: `${application.id}-${index}`,
-                applicationId: application.id,
-                title: application.title,
-            }))
-        )
-        .filter((event) => !Number.isNaN(new Date(event.at).getTime()))
-        .sort(
-            (first, second) =>
-                getTimestamp(second.at) - getTimestamp(first.at)
-        )
-        .slice(0, 4);
+            try {
+                const { data } = await api.get("/applications/my/dashboard", {
+                    signal: controller.signal,
+                });
 
-    const counts = {
-        total: applicationList.length,
-        pending: applicationList.filter((application) =>
-            ["Submitted", "Under Review"].includes(application.status)
-        ).length,
-        shortlisted: applicationList.filter(
-            (application) => application.status === "Shortlisted"
-        ).length,
-        rejected: applicationList.filter(
-            (application) => application.status === "Rejected"
-        ).length,
-    };
+                if (controller.signal.aborted) return;
+
+                if (
+                    !data?.success ||
+                    !data.counts ||
+                    !Array.isArray(data.recentApplications) ||
+                    !Array.isArray(data.recentActivity)
+                ) {
+                    throw new Error("Invalid dashboard response.");
+                }
+
+                setDashboard({
+                    counts: data.counts,
+                    recentApplications: data.recentApplications,
+                    recentActivity: data.recentActivity,
+                });
+            } catch (requestError) {
+                if (controller.signal.aborted) return;
+
+                const message = requestError.response?.data?.message;
+
+                setError(
+                    typeof message === "string" && message.trim()
+                        ? message
+                        : "Dashboard could not be loaded. Please try again."
+                );
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchDashboard();
+
+        return () => controller.abort();
+    }, [refreshKey]);
+
+    const { counts, recentApplications, recentActivity } = dashboard;
+
+    // ================== LOADING STATE ==================
+    if (loading) {
+        return (
+            <div className="panel-card panel-empty-state" role="status">
+                <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
+                <h1 className="panel-page-title">Loading dashboard...</h1>
+                <p>Please wait while we fetch your application summary.</p>
+            </div>
+        );
+    }
+
+    // ================== API ERROR STATE ==================
+    if (error) {
+        return (
+            <div className="panel-card panel-empty-state">
+                <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                <h1 className="panel-page-title">Unable to load dashboard.</h1>
+                <p role="alert">{error}</p>
+
+                <Button
+                    type="button"
+                    variant="contained"
+                    disableElevation
+                    className="panel-button panel-button-primary"
+                    onClick={() => setRefreshKey((value) => value + 1)}
+                >
+                    Try again
+                </Button>
+            </div>
+        );
+    }
 
     const statistics = [
         {
@@ -319,9 +373,11 @@ function Dashboard({ user, applications = demoApplications }) {
                                         </div>
 
                                         <div className="dashboard-application-copy">
-                                            <p className="dashboard-company">
-                                                {application.company}
-                                            </p>
+                                            {application.company && (
+                                                <p className="dashboard-company">
+                                                    {application.company}
+                                                </p>
+                                            )}
 
                                             <h3>
                                                 <Link
@@ -334,13 +390,15 @@ function Dashboard({ user, applications = demoApplications }) {
                                             </h3>
 
                                             <div className="dashboard-application-meta">
-                                                <span>
-                                                    <i
-                                                        className="fa-solid fa-location-dot"
-                                                        aria-hidden="true"
-                                                    />
-                                                    {application.location}
-                                                </span>
+                                                {application.location && (
+                                                    <span>
+                                                        <i
+                                                            className="fa-solid fa-location-dot"
+                                                            aria-hidden="true"
+                                                        />
+                                                        {application.location}
+                                                    </span>
+                                                )}
 
                                                 <span>
                                                     <i

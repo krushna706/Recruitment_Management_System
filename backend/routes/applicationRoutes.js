@@ -13,6 +13,8 @@ const { applicationSchema, applicationStatusSchema } = require("../validations/s
 const router = express.Router();
 
 // ================== USER APPLICATIONS ==================
+// Keep /my/dashboard before /my/:id so dashboard is not treated as an application ID.
+router.get("/my/dashboard", authMiddleware, roleMiddleware("user"), applicationController.getMyDashboard);
 router.get("/my", authMiddleware, roleMiddleware("user"), applicationController.getMyApplications);
 router.get("/my/:id", authMiddleware, roleMiddleware("user"), applicationController.getMyApplication);
 

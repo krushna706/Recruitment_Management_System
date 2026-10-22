@@ -564,6 +564,114 @@ async function createApplication(req, res, next) {
     }
 }
 
+// ================== USER DASHBOARD SUMMARY ==================
+// GET /api/applications/my/dashboard
+// Calculate all counts from MongoDB, not from paginated application lists.
+async function getMyDashboard(req, res, next) {
+    try {
+        requireAccount(req, "user");
+        validateQueryFields(req.query, []);
+
+        // Use only the verified account ID from authentication middleware.
+        const userId = req.user._id;
+
+        // ================== DATABASE QUERIES ==================
+        // Status counts, latest applications and history are independent.
+        const [groupedCounts, applications, activity] = await Promise.all([
+            Application.aggregate([
+                { $match: { userId } },
+                {
+                    $group: {
+                        _id: "$status",
+                        count: { $sum: 1 },
+                    },
+                },
+            ]),
+
+            Application.find({ userId })
+                .select("_id jobSnapshot.title jobSnapshot.company jobSnapshot.location status createdAt")
+                .sort({ createdAt: -1, _id: -1 })
+                .limit(5)
+                .lean(),
+
+            Application.aggregate([
+                { $match: { userId } },
+                {
+                    $unwind: {
+                        path: "$history",
+                        includeArrayIndex: "entryIndex",
+                    },
+                },
+                { $sort: { "history.createdAt": -1, _id: -1, entryIndex: -1 } },
+                { $limit: 4 },
+                {
+                    $project: {
+                        _id: 0,
+                        applicationId: "$_id",
+                        title: "$jobSnapshot.title",
+                        status: "$history.status",
+                        message: "$history.message",
+                        at: "$history.createdAt",
+                        entryIndex: 1,
+                    },
+                },
+            ]),
+        ]);
+
+        // ================== APPLICATION COUNTS ==================
+        const byStatus = Object.fromEntries(
+            APPLICATION_STATUSES.map((status) => [status, 0])
+        );
+
+        let total = 0;
+
+        for (const item of groupedCounts) {
+            if (Object.prototype.hasOwnProperty.call(byStatus, item._id)) {
+                byStatus[item._id] = item.count;
+                total += item.count;
+            }
+        }
+
+        const counts = {
+            total,
+            pending: byStatus.Submitted + byStatus["Under Review"],
+            shortlisted: byStatus.Shortlisted,
+            rejected: byStatus.Rejected,
+        };
+
+        // ================== SAFE DASHBOARD RESPONSE ==================
+        // Send only fields used by dashboard cards. Never send resume keys.
+        const recentApplications = applications.map((application) => ({
+            id: String(application._id),
+            title: application.jobSnapshot?.title || "Application details",
+            company: application.jobSnapshot?.company || "",
+            location: application.jobSnapshot?.location || "",
+            status: application.status,
+            appliedAt: application.createdAt,
+        }));
+
+        const recentActivity = activity.map((event) => ({
+            key: `${event.applicationId}-${event.entryIndex}`,
+            applicationId: String(event.applicationId),
+            title: event.title || "Application details",
+            status: event.status,
+            message: event.message || "",
+            at: event.at,
+        }));
+
+        res.set("Cache-Control", "private, no-store");
+
+        return res.status(200).json({
+            success: true,
+            counts,
+            recentApplications,
+            recentActivity,
+        });
+    } catch (error) {
+        return next(error);
+    }
+}
+
 // ================== USER APPLICATION LIST ==================
 // GET /api/applications/my
 async function getMyApplications(req, res, next) {
@@ -1019,6 +1127,7 @@ async function getResumeAccess(req, res, next) {
 // ================== EXPORTS ==================
 module.exports = {
     createApplication,
+    getMyDashboard,
     getMyApplications,
     getMyApplication,
     getAdminApplications,
