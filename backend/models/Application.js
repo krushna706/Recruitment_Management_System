@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const { Schema } = mongoose;
 
-// ================== APPLICATION CONFIGURATION ==================
+// ================== APPLICATION OPTIONS ==================
 const APPLICATION_STATUSES = [
     "Submitted",
     "Under Review",
@@ -34,8 +34,16 @@ const EXPERIENCE_OPTIONS = [
     "More than 10 years",
 ];
 
+const INTERVIEW_MODES = ["Online", "In-person", "Phone"];
+
+const RESUME_MIME_TYPES = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
 // ================== APPLICANT DETAILS ==================
-// Store the contact and professional details submitted with the application.
+// Keep the information submitted for this particular application.
 const applicantSchema = new Schema(
     {
         name: {
@@ -45,6 +53,7 @@ const applicantSchema = new Schema(
             minlength: 2,
             maxlength: 100,
         },
+
         email: {
             type: String,
             required: true,
@@ -52,22 +61,26 @@ const applicantSchema = new Schema(
             lowercase: true,
             maxlength: 254,
         },
+
         phone: {
             type: String,
             required: true,
             trim: true,
             maxlength: 25,
         },
+
         qualification: {
             type: String,
             required: true,
             enum: QUALIFICATIONS,
         },
+
         experience: {
             type: String,
             required: true,
             enum: EXPERIENCE_OPTIONS,
         },
+
         skills: {
             type: [
                 {
@@ -77,23 +90,21 @@ const applicantSchema = new Schema(
                     maxlength: 60,
                 },
             ],
+            required: true,
             default: [],
             validate: {
-                validator: function (skills) {
+                validator(skills) {
                     return skills.length >= 1 && skills.length <= 15;
                 },
-                message: "Add between 1 and 15 relevant skills.",
+                message: "Provide between 1 and 15 skills.",
             },
         },
     },
-    {
-        _id: false,
-    }
+    { _id: false }
 );
 
 // ================== JOB SNAPSHOT ==================
-// Preserve basic job details as they were when the user applied.
-// The controller copies these values from the Job document.
+// Preserve the opening details shown when the user applied.
 const jobSnapshotSchema = new Schema(
     {
         title: {
@@ -102,43 +113,57 @@ const jobSnapshotSchema = new Schema(
             trim: true,
             maxlength: 150,
         },
+
         company: {
             type: String,
             trim: true,
             maxlength: 150,
             default: "",
         },
+
         department: {
             type: String,
             trim: true,
             maxlength: 100,
             default: "",
         },
+
         location: {
             type: String,
             trim: true,
             maxlength: 200,
             default: "",
         },
+
         type: {
             type: String,
-            enum: ["", "Full Time", "Part Time", "Contract", "Internship"],
+            enum: [
+                "",
+                "Full Time",
+                "Part Time",
+                "Contract",
+                "Internship",
+                "Freelance",
+            ],
             default: "",
         },
+
         mode: {
             type: String,
-            enum: ["On-site", "Hybrid", "Remote"],
             required: true,
+            enum: ["On-site", "Remote", "Hybrid"],
+        },
+
+        salary: {
+            type: String,
+            trim: true,
+            default: "",
         },
     },
-    {
-        _id: false,
-    }
+    { _id: false }
 );
 
-// ================== RESUME METADATA ==================
-// Store a private storage identifier, not a public download URL.
-// Actual upload validation and authorized downloads run in the backend.
+// ================== PRIVATE RESUME ==================
 const resumeSchema = new Schema(
     {
         storageKey: {
@@ -147,21 +172,20 @@ const resumeSchema = new Schema(
             maxlength: 1024,
             select: false,
         },
+
         name: {
             type: String,
             required: true,
             trim: true,
             maxlength: 255,
         },
+
         mimeType: {
             type: String,
             required: true,
-            enum: [
-                "application/pdf",
-                "application/msword",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            ],
+            enum: RESUME_MIME_TYPES,
         },
+
         size: {
             type: Number,
             required: true,
@@ -169,50 +193,86 @@ const resumeSchema = new Schema(
             max: 5 * 1024 * 1024,
             validate: {
                 validator: Number.isInteger,
-                message: "Resume size must be a whole number of bytes.",
+                message: "Resume size must be a whole number.",
             },
         },
     },
+    { _id: false }
+);
+
+// ================== INTERVIEW DETAILS ==================
+// The status-update endpoint will validate that a new interview is in the future.
+const interviewSchema = new Schema(
     {
-        _id: false,
-    }
+        at: {
+            type: Date,
+            required: true,
+        },
+
+        mode: {
+            type: String,
+            required: true,
+            enum: INTERVIEW_MODES,
+        },
+
+        note: {
+            type: String,
+            trim: true,
+            maxlength: 1000,
+            default: "",
+        },
+    },
+    { _id: false }
+);
+
+// ================== SELECTION DETAILS ==================
+const selectionSchema = new Schema(
+    {
+        note: {
+            type: String,
+            trim: true,
+            maxlength: 1000,
+            default: "",
+        },
+    },
+    { _id: false }
 );
 
 // ================== STATUS HISTORY ==================
-// Record who changed the application status and when.
-const statusHistorySchema = new Schema(
+// Store the account and time responsible for each recorded status update.
+const historySchema = new Schema(
     {
         status: {
             type: String,
             required: true,
             enum: APPLICATION_STATUSES,
         },
+
         message: {
             type: String,
             trim: true,
             maxlength: 2000,
             default: "",
         },
+
         changedBy: {
             type: Schema.Types.ObjectId,
             ref: "User",
             required: true,
         },
+
         createdAt: {
             type: Date,
             required: true,
             default: Date.now,
         },
     },
-    {
-        _id: false,
-    }
+    { _id: false }
 );
 
-// ================== APPLICATION SCHEMA ==================
+// ================== APPLICATION MODEL ==================
 const applicationSchema = new Schema(
     {
-        // Ownership comes from the authenticated session.
         userId: {
             type: Schema.Types.ObjectId,
             ref: "User",
@@ -220,7 +280,6 @@ const applicationSchema = new Schema(
             immutable: true,
         },
 
-        // Reference the actual job instead of trusting frontend job details.
         jobId: {
             type: Schema.Types.ObjectId,
             ref: "Job",
@@ -230,8 +289,8 @@ const applicationSchema = new Schema(
 
         openingType: {
             type: String,
-            enum: ["client", "internal"],
             required: true,
+            enum: ["client", "internal"],
             immutable: true,
         },
 
@@ -253,26 +312,34 @@ const applicationSchema = new Schema(
 
         status: {
             type: String,
-            enum: APPLICATION_STATUSES,
             required: true,
+            enum: APPLICATION_STATUSES,
             default: "Submitted",
         },
 
+        interview: {
+            type: interviewSchema,
+            default: undefined,
+        },
+
+        selection: {
+            type: selectionSchema,
+            default: undefined,
+        },
+
         history: {
-            type: [statusHistorySchema],
+            type: [historySchema],
+            required: true,
             default: [],
             validate: {
-                validator: function (history) {
-                    if (!history.length) {
-                        return false;
-                    }
-
+                validator(history) {
                     return (
+                        history.length > 0 &&
                         history[0].status === "Submitted" &&
                         history[history.length - 1].status === this.status
                     );
                 },
-                message: "Application history must start with Submitted and match the current status.",
+                message: "Application status and history must match.",
             },
         },
     },
@@ -282,23 +349,16 @@ const applicationSchema = new Schema(
     }
 );
 
-// ================== DUPLICATE APPLICATION PROTECTION ==================
-// One account can apply to the same job only once.
-// This rule also applies after rejection or reopening the same job.
+// ================== DATABASE INDEXES ==================
+// One application per user and job, including simultaneous requests.
 applicationSchema.index(
     { userId: 1, jobId: 1 },
-    {
-        unique: true,
-        name: "unique_user_job_application",
-    }
+    { unique: true, name: "unique_user_job_application" }
 );
 
-// ================== LISTING INDEXES ==================
 applicationSchema.index({ userId: 1, createdAt: -1, _id: -1 });
 applicationSchema.index({ jobId: 1, status: 1, createdAt: -1 });
 applicationSchema.index({ status: 1, createdAt: -1, _id: -1 });
 
-// ================== MODEL AND EXPORT ==================
-const Application = mongoose.model("Application", applicationSchema);
-
-module.exports = Application;
+// ================== EXPORT ==================
+module.exports = mongoose.model("Application", applicationSchema);

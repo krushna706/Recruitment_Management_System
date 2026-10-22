@@ -1,87 +1,227 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-    Button,
-    InputAdornment,
-    MenuItem,
-    Pagination,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-} from "@mui/material";
+import { Button, InputAdornment, MenuItem, Pagination, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from "@mui/material";
 
-import {
-    applicationStatuses,
-    demoApplications,
-    formatApplicationDate,
-    statusClasses,
-} from "./applicationData";
+import api from "../services/api";
 
+// ================== APPLICATION OPTIONS ==================
 const PAGE_SIZE = 5;
 
-function MyApplications({ applications = demoApplications }) {
-    const [search, setSearch] = useState("");
-    const [status, setStatus] = useState("");
-    const [page, setPage] = useState(1);
+const APPLICATION_STATUSES = [
+    "Pending",
+    "Submitted",
+    "Under Review",
+    "Shortlisted",
+    "Interview",
+    "Selected",
+    "Rejected",
+];
 
-    const applicationList = Array.isArray(applications)
-        ? applications
-        : [];
+const STATUS_CLASSES = {
+    Submitted: "submitted",
+    "Under Review": "review",
+    Shortlisted: "shortlisted",
+    Interview: "interview",
+    Selected: "selected",
+    Rejected: "rejected",
+};
 
-    const query = search.trim().toLowerCase();
+// ================== DISPLAY HELPERS ==================
+function formatApplicationDate(value) {
+    if (!value) return "—";
 
-    const filteredApplications = applicationList
-        .filter((application) => {
-            const matchesSearch =
-                `${application.title} ${application.company}`
-                    .toLowerCase()
-                    .includes(query);
+    const date = new Date(value);
 
-            const matchesStatus =
-                !status || application.status === status;
+    if (Number.isNaN(date.getTime())) return "—";
 
-            return matchesSearch && matchesStatus;
-        })
-        .sort(
-            (first, second) =>
-                new Date(second.appliedAt) - new Date(first.appliedAt)
-        );
+    return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+}
 
-    const pageCount = Math.ceil(filteredApplications.length / PAGE_SIZE);
-    const currentPage = Math.min(page, Math.max(1, pageCount));
+function getDetailsPath(id) {
+    return `/manage/my-applications/${encodeURIComponent(id)}`;
+}
 
-    const startIndex = (currentPage - 1) * PAGE_SIZE;
-
-    const visibleApplications = filteredApplications.slice(
-        startIndex,
-        startIndex + PAGE_SIZE
-    );
-
-    const hasFilters = search !== "" || status !== "";
-
-    const clearFilters = () => {
-        setSearch("");
-        setStatus("");
-        setPage(1);
-    };
-
-    const getDetailsPath = (id) =>
-        `/manage/my-applications/${encodeURIComponent(id)}`;
-
-    const renderStatus = (application) => (
+function ApplicationStatusBadge({ status }) {
+    return (
         <span
             className={`panel-status panel-status-${
-                statusClasses[application.status] || "submitted"
+                STATUS_CLASSES[status] || "submitted"
             }`}
         >
             <span aria-hidden="true" />
-            {application.status}
+            {status}
         </span>
     );
+}
+
+// ================== SHARED JOB DETAILS ==================
+function ApplicationJob({ application }) {
+    const job = application.jobSnapshot || {};
+    const applicationId = application.id || application._id;
+
+    return (
+        <div className="applications-job">
+            <span className="applications-job-icon" aria-hidden="true">
+                <i className="fa-solid fa-briefcase" />
+            </span>
+
+            <div className="applications-job-copy">
+                <h3>
+                    <Link to={getDetailsPath(applicationId)}>
+                        {job.title || "Job application"}
+                    </Link>
+                </h3>
+
+                {job.company && <p>{job.company}</p>}
+
+                <div className="applications-job-meta">
+                    {job.location && (
+                        <span>
+                            <i
+                                className="fa-solid fa-location-dot"
+                                aria-hidden="true"
+                            />
+                            {job.location}
+                        </span>
+                    )}
+
+                    {job.mode && (
+                        <span className="applications-mode">{job.mode}</span>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ================== MY APPLICATIONS ==================
+function MyApplications() {
+    const [search, setSearch] = useState("");
+    const [filters, setFilters] = useState({
+        search: "",
+        status: "",
+        page: 1,
+    });
+
+    const [applications, setApplications] = useState([]);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: PAGE_SIZE,
+        total: 0,
+        totalPages: 0,
+    });
+
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    // ================== SEARCH DELAY ==================
+    // Wait briefly while typing instead of requesting every keystroke.
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            const nextSearch = search.trim();
+
+            setFilters((previous) => {
+                if (previous.search === nextSearch) return previous;
+
+                return {
+                    ...previous,
+                    search: nextSearch,
+                    page: 1,
+                };
+            });
+        }, 350);
+
+        return () => window.clearTimeout(timer);
+    }, [search]);
+
+    // ================== FETCH APPLICATIONS ==================
+    useEffect(() => {
+        const controller = new AbortController();
+
+        async function fetchApplications() {
+            setLoading(true);
+            setError("");
+            setApplications([]);
+
+            try {
+                const params = {
+                    page: filters.page,
+                    limit: PAGE_SIZE,
+                };
+
+                if (filters.search) params.search = filters.search;
+                if (filters.status) params.status = filters.status;
+
+                const { data } = await api.get("/applications/my", {
+                    params,
+                    signal: controller.signal,
+                });
+
+                if (controller.signal.aborted) return;
+
+                // Return to an available page if the result count changed.
+                const lastPage = Math.max(1, data.pagination.totalPages);
+
+                if (filters.page > lastPage) {
+                    setFilters((previous) => ({
+                        ...previous,
+                        page: lastPage,
+                    }));
+                    return;
+                }
+
+                setApplications(data.applications);
+                setPagination(data.pagination);
+            } catch (requestError) {
+                if (controller.signal.aborted) return;
+
+                const message = requestError.response?.data?.message;
+
+                setError(
+                    typeof message === "string" && message.trim()
+                        ? message
+                        : "Applications could not be loaded. Please try again."
+                );
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchApplications();
+
+        return () => controller.abort();
+    }, [filters, refreshKey]);
+
+    // ================== FILTER HANDLERS ==================
+    function clearFilters() {
+        setSearch("");
+        setFilters({
+            search: "",
+            status: "",
+            page: 1,
+        });
+    }
+
+    function handleStatusChange(event) {
+        const nextStatus = event.target.value;
+
+        setFilters((previous) => ({
+            ...previous,
+            status: nextStatus,
+            page: 1,
+        }));
+    }
+
+    const hasFilters = Boolean(search || filters.status);
+    const appliedFilters = Boolean(filters.search || filters.status);
+    const startIndex = (pagination.page - 1) * pagination.limit;
 
     return (
         <div className="my-applications-page">
@@ -110,6 +250,7 @@ function MyApplications({ applications = demoApplications }) {
                 </Button>
             </header>
 
+            {/* ================== FILTERS ================== */}
             <section
                 className="panel-card applications-toolbar"
                 aria-label="Filter applications"
@@ -119,13 +260,13 @@ function MyApplications({ applications = demoApplications }) {
                     placeholder="Job title or company"
                     size="small"
                     value={search}
-                    onChange={(event) => {
-                        setSearch(event.target.value);
-                        setPage(1);
-                    }}
+                    onChange={(event) => setSearch(event.target.value)}
                     className="panel-field"
                     fullWidth
                     slotProps={{
+                        htmlInput: {
+                            maxLength: 200,
+                        },
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
@@ -143,11 +284,8 @@ function MyApplications({ applications = demoApplications }) {
                     select
                     label="Application status"
                     size="small"
-                    value={status}
-                    onChange={(event) => {
-                        setStatus(event.target.value);
-                        setPage(1);
-                    }}
+                    value={filters.status}
+                    onChange={handleStatusChange}
                     className="panel-field"
                     fullWidth
                     slotProps={{
@@ -161,7 +299,7 @@ function MyApplications({ applications = demoApplications }) {
                 >
                     <MenuItem value="">All statuses</MenuItem>
 
-                    {applicationStatuses.map((item) => (
+                    {APPLICATION_STATUSES.map((item) => (
                         <MenuItem value={item} key={item}>
                             {item}
                         </MenuItem>
@@ -178,9 +316,11 @@ function MyApplications({ applications = demoApplications }) {
                 </Button>
             </section>
 
+            {/* ================== APPLICATION RESULTS ================== */}
             <section
                 className="panel-card applications-results"
                 aria-labelledby="application-list-title"
+                aria-busy={loading}
             >
                 <header className="panel-card-header">
                     <div>
@@ -196,11 +336,19 @@ function MyApplications({ applications = demoApplications }) {
                             role="status"
                             aria-live="polite"
                         >
-                            {filteredApplications.length}{" "}
-                            {filteredApplications.length === 1
-                                ? "application"
-                                : "applications"}{" "}
-                            {hasFilters ? "match your filters." : "in total."}
+                            {loading
+                                ? "Loading your applications..."
+                                : error
+                                    ? "Application list is unavailable."
+                                    : `${pagination.total} ${
+                                        pagination.total === 1
+                                            ? "application"
+                                            : "applications"
+                                    } ${
+                                        appliedFilters
+                                            ? "match your filters."
+                                            : "in total."
+                                    }`}
                         </p>
                     </div>
 
@@ -213,9 +361,38 @@ function MyApplications({ applications = demoApplications }) {
                     </span>
                 </header>
 
-                {visibleApplications.length > 0 ? (
+                {loading ? (
+                    <div className="panel-empty-state" role="status">
+                        <i
+                            className="fa-solid fa-spinner fa-spin"
+                            aria-hidden="true"
+                        />
+                        <h3>Loading applications...</h3>
+                        <p>Please wait while we fetch your applications.</p>
+                    </div>
+                ) : error ? (
+                    <div className="panel-empty-state">
+                        <i
+                            className="fa-solid fa-circle-exclamation"
+                            aria-hidden="true"
+                        />
+
+                        <h3>Unable to load applications.</h3>
+                        <p role="alert">{error}</p>
+
+                        <Button
+                            type="button"
+                            variant="contained"
+                            disableElevation
+                            className="panel-button panel-button-primary"
+                            onClick={() => setRefreshKey((previous) => previous + 1)}
+                        >
+                            Try again
+                        </Button>
+                    </div>
+                ) : applications.length > 0 ? (
                     <>
-                        {/* Desktop and tablet table */}
+                        {/* ================== DESKTOP TABLE ================== */}
                         <TableContainer className="applications-table-container">
                             <Table
                                 className="applications-table"
@@ -223,13 +400,8 @@ function MyApplications({ applications = demoApplications }) {
                             >
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell scope="col">
-                                            Job details
-                                        </TableCell>
-
-                                        <TableCell scope="col">
-                                            Applied on
-                                        </TableCell>
+                                        <TableCell scope="col">Job details</TableCell>
+                                        <TableCell scope="col">Applied on</TableCell>
 
                                         <TableCell scope="col" align="right">
                                             Status & action
@@ -238,187 +410,117 @@ function MyApplications({ applications = demoApplications }) {
                                 </TableHead>
 
                                 <TableBody>
-                                    {visibleApplications.map((application) => (
-                                        <TableRow key={application.id}>
-                                            <TableCell>
-                                                <div className="applications-job">
-                                                    <span
-                                                        className="applications-job-icon"
-                                                        aria-hidden="true"
+                                    {applications.map((application) => {
+                                        const id = application.id || application._id;
+
+                                        return (
+                                            <TableRow key={id}>
+                                                <TableCell>
+                                                    <ApplicationJob application={application} />
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <time
+                                                        className="applications-date"
+                                                        dateTime={application.createdAt}
                                                     >
-                                                        <i className="fa-solid fa-briefcase" />
-                                                    </span>
+                                                        {formatApplicationDate(application.createdAt)}
+                                                    </time>
+                                                </TableCell>
 
-                                                    <div className="applications-job-copy">
-                                                        <h3>
-                                                            <Link
-                                                                to={getDetailsPath(
-                                                                    application.id
-                                                                )}
-                                                            >
-                                                                {application.title}
-                                                            </Link>
-                                                        </h3>
+                                                <TableCell align="right">
+                                                    <div className="applications-row-action">
+                                                        <ApplicationStatusBadge status={application.status} />
 
-                                                        <p>
-                                                            {application.company}
-                                                        </p>
-
-                                                        <div className="applications-job-meta">
-                                                            <span>
-                                                                <i
-                                                                    className="fa-solid fa-location-dot"
-                                                                    aria-hidden="true"
-                                                                />
-                                                                {application.location}
-                                                            </span>
-
-                                                            <span className="applications-mode">
-                                                                {application.mode}
-                                                            </span>
-                                                        </div>
+                                                        <Link
+                                                            to={getDetailsPath(id)}
+                                                            className="panel-text-link"
+                                                            aria-label={`View application for ${application.jobSnapshot?.title || "this job"}`}
+                                                        >
+                                                            View details
+                                                            <i
+                                                                className="fa-solid fa-arrow-right"
+                                                                aria-hidden="true"
+                                                            />
+                                                        </Link>
                                                     </div>
-                                                </div>
-                                            </TableCell>
-
-                                            <TableCell>
-                                                <time
-                                                    className="applications-date"
-                                                    dateTime={application.appliedAt}
-                                                >
-                                                    {formatApplicationDate(
-                                                        application.appliedAt
-                                                    )}
-                                                </time>
-                                            </TableCell>
-
-                                            <TableCell align="right">
-                                                <div className="applications-row-action">
-                                                    {renderStatus(application)}
-
-                                                    <Link
-                                                        to={getDetailsPath(
-                                                            application.id
-                                                        )}
-                                                        className="panel-text-link"
-                                                        aria-label={`View application for ${application.title}`}
-                                                    >
-                                                        View details
-                                                        <i
-                                                            className="fa-solid fa-arrow-right"
-                                                            aria-hidden="true"
-                                                        />
-                                                    </Link>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
                                 </TableBody>
                             </Table>
                         </TableContainer>
 
-                        {/* Mobile cards with explicit field labels */}
+                        {/* ================== MOBILE CARDS ================== */}
                         <ul className="applications-mobile-list">
-                            {visibleApplications.map((application) => (
-                                <li key={application.id}>
-                                    <span className="applications-mobile-label">
-                                        Job details
-                                    </span>
+                            {applications.map((application) => {
+                                const id = application.id || application._id;
 
-                                    <div className="applications-job">
-                                        <span
-                                            className="applications-job-icon"
-                                            aria-hidden="true"
-                                        >
-                                            <i className="fa-solid fa-briefcase" />
+                                return (
+                                    <li key={id}>
+                                        <span className="applications-mobile-label">
+                                            Job details
                                         </span>
 
-                                        <div className="applications-job-copy">
-                                            <h3>
-                                                <Link
-                                                    to={getDetailsPath(
-                                                        application.id
-                                                    )}
+                                        <ApplicationJob application={application} />
+
+                                        <div className="applications-mobile-facts">
+                                            <div>
+                                                <span className="applications-mobile-label">
+                                                    Applied on
+                                                </span>
+
+                                                <time
+                                                    className="applications-date"
+                                                    dateTime={application.createdAt}
                                                 >
-                                                    {application.title}
-                                                </Link>
-                                            </h3>
+                                                    {formatApplicationDate(application.createdAt)}
+                                                </time>
+                                            </div>
 
-                                            <p>{application.company}</p>
-
-                                            <div className="applications-job-meta">
-                                                <span>
-                                                    <i
-                                                        className="fa-solid fa-location-dot"
-                                                        aria-hidden="true"
-                                                    />
-                                                    {application.location}
+                                            <div>
+                                                <span className="applications-mobile-label">
+                                                    Current status
                                                 </span>
 
-                                                <span className="applications-mode">
-                                                    {application.mode}
-                                                </span>
+                                                <ApplicationStatusBadge status={application.status} />
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="applications-mobile-facts">
-                                        <div>
-                                            <span className="applications-mobile-label">
-                                                Applied on
-                                            </span>
-
-                                            <time
-                                                className="applications-date"
-                                                dateTime={application.appliedAt}
-                                            >
-                                                {formatApplicationDate(
-                                                    application.appliedAt
-                                                )}
-                                            </time>
-                                        </div>
-
-                                        <div>
-                                            <span className="applications-mobile-label">
-                                                Current status
-                                            </span>
-
-                                            {renderStatus(application)}
-                                        </div>
-                                    </div>
-
-                                    <Link
-                                        to={getDetailsPath(application.id)}
-                                        className="panel-text-link applications-mobile-details"
-                                        aria-label={`View application for ${application.title}`}
-                                    >
-                                        View details
-                                        <i
-                                            className="fa-solid fa-arrow-right"
-                                            aria-hidden="true"
-                                        />
-                                    </Link>
-                                </li>
-                            ))}
+                                        <Link
+                                            to={getDetailsPath(id)}
+                                            className="panel-text-link applications-mobile-details"
+                                            aria-label={`View application for ${application.jobSnapshot?.title || "this job"}`}
+                                        >
+                                            View details
+                                            <i
+                                                className="fa-solid fa-arrow-right"
+                                                aria-hidden="true"
+                                            />
+                                        </Link>
+                                    </li>
+                                );
+                            })}
                         </ul>
 
+                        {/* ================== PAGINATION ================== */}
                         <footer className="applications-pagination">
                             <p>
                                 Showing {startIndex + 1}–
-                                {Math.min(
-                                    startIndex + PAGE_SIZE,
-                                    filteredApplications.length
-                                )}{" "}
-                                of {filteredApplications.length}
+                                {startIndex + applications.length} of {pagination.total}
                             </p>
 
-                            {pageCount > 1 && (
+                            {pagination.totalPages > 1 && (
                                 <Pagination
-                                    count={pageCount}
-                                    page={currentPage}
-                                    onChange={(_, nextPage) =>
-                                        setPage(nextPage)
-                                    }
+                                    count={pagination.totalPages}
+                                    page={pagination.page}
+                                    onChange={(_, nextPage) => {
+                                        setFilters((previous) => ({
+                                            ...previous,
+                                            page: nextPage,
+                                        }));
+                                    }}
                                     shape="rounded"
                                     color="primary"
                                     siblingCount={0}
@@ -435,19 +537,20 @@ function MyApplications({ applications = demoApplications }) {
                         />
 
                         <h3>
-                            {applicationList.length
+                            {appliedFilters
                                 ? "No matching applications."
                                 : "No applications yet."}
                         </h3>
 
                         <p>
-                            {applicationList.length
+                            {appliedFilters
                                 ? "Try another search or clear your filters."
                                 : "Explore available roles and take your next step."}
                         </p>
 
-                        {applicationList.length ? (
+                        {appliedFilters ? (
                             <Button
+                                type="button"
                                 onClick={clearFilters}
                                 className="panel-button panel-button-primary"
                                 variant="contained"

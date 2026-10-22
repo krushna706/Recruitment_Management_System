@@ -348,8 +348,6 @@ const APPLICATION_EXPERIENCE = [
 ];
 
 // ================== APPLICATION PHONE RULE ==================
-// Match the existing application form: 10–15 digits,
-// with an optional leading +, spaces, parentheses or hyphens.
 function validateApplicationPhone(value, helpers) {
     const digits = value.replace(/\D/g, "");
 
@@ -365,10 +363,8 @@ function validateApplicationPhone(value, helpers) {
 }
 
 // ================== APPLICATION VALIDATION ==================
-// Validate applicant fields only.
-// The controller derives userId, jobId, openingType and jobSnapshot.
-// Resume is validated separately from req.file by upload middleware.
-// Multipart skills JSON must be parsed into an array before validation.
+// Ownership and job details are set by the controller.
+// Upload middleware validates the resume separately.
 const applicationSchema = Joi.object({
     name: Joi.string()
         .trim()
@@ -461,6 +457,98 @@ const applicationSchema = Joi.object({
         "any.required": "Application details are required.",
     });
 
+// ================== INTERVIEW UPDATE VALIDATION ==================
+// Frontend sends an ISO timestamp with an explicit timezone.
+const interviewUpdateSchema = Joi.object({
+    at: Joi.string()
+        .isoDate()
+        .pattern(/(?:Z|[+-]\d{2}:\d{2})$/i)
+        .custom((value, helpers) => {
+            const timestamp = Date.parse(value);
+
+            if (!Number.isFinite(timestamp) || timestamp <= Date.now()) {
+                return helpers.error("interview.future");
+            }
+
+            return value;
+        }, "future interview date")
+        .required()
+        .messages({
+            "string.base": "Interview date and time must be text.",
+            "string.empty": "Interview date and time are required.",
+            "string.isoDate": "Enter a valid interview date and time.",
+            "string.pattern.base": "Interview date and time must include a timezone.",
+            "interview.future": "Select a future interview date and time.",
+            "any.required": "Interview date and time are required.",
+        }),
+
+    mode: Joi.string()
+        .valid("Online", "In-person", "Phone")
+        .required()
+        .messages({
+            "string.base": "Interview mode must be text.",
+            "string.empty": "Select an interview mode.",
+            "any.only": "Select Online, In-person or Phone.",
+            "any.required": "Interview mode is required.",
+        }),
+})
+    .unknown(false)
+    .messages({
+        "object.base": "Interview details must be an object.",
+        "object.unknown": "Interview details contain an unsupported field.",
+    });
+
+// ================== ADMIN APPLICATION STATUS VALIDATION ==================
+// The controller must also verify the current database status and transition.
+const applicationStatusSchema = Joi.object({
+    expectedStatus: Joi.string()
+        .valid("Submitted", "Under Review", "Shortlisted", "Interview")
+        .required()
+        .messages({
+            "string.base": "Current application status must be text.",
+            "string.empty": "Current application status is required.",
+            "any.only": "This application cannot be updated from that status.",
+            "any.required": "Current application status is required.",
+        }),
+
+    status: Joi.string()
+        .valid("Under Review", "Shortlisted", "Interview", "Selected", "Rejected")
+        .required()
+        .messages({
+            "string.base": "Next application status must be text.",
+            "string.empty": "Select the next application status.",
+            "any.only": "Select a valid next application status.",
+            "any.required": "Next application status is required.",
+        }),
+
+    message: Joi.string()
+        .trim()
+        .max(1000)
+        .allow("")
+        .default("")
+        .messages({
+            "string.base": "Update message must be text.",
+            "string.max": "Keep the update message within 1,000 characters.",
+        }),
+
+    interview: Joi.when("status", {
+        is: "Interview",
+        then: interviewUpdateSchema.required().messages({
+            "any.required": "Interview date, time and mode are required.",
+        }),
+        otherwise: Joi.forbidden().messages({
+            "any.unknown": "Interview details are allowed only for the Interview status.",
+        }),
+    }),
+})
+    .required()
+    .unknown(false)
+    .messages({
+        "object.base": "Status update must be a JSON object.",
+        "object.unknown": "Status update contains an unsupported field.",
+        "any.required": "Status update is required.",
+    });
+
 // ================== EXPORTS ==================
 module.exports = {
     signupSchema,
@@ -468,4 +556,5 @@ module.exports = {
     clientJobSchema,
     vacancySchema,
     applicationSchema,
+    applicationStatusSchema,
 };

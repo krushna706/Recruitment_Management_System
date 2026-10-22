@@ -6,18 +6,293 @@ const Job = require("../models/Job");
 const cloudinary = require("../config/cloudinary");
 const ExpressError = require("../utils/ExpressError");
 
-// ================== JOB ID VALIDATION ==================
-function validateJobId(jobId) {
-    if (
-        typeof jobId !== "string" ||
-        !/^[a-fA-F0-9]{24}$/.test(jobId)
-    ) {
-        throw new ExpressError(400, "Invalid job ID.");
+// ================== APPLICATION CONFIGURATION ==================
+const RESUME_LINK_SECONDS = 60;
+
+const APPLICATION_STATUSES = [
+    "Submitted",
+    "Under Review",
+    "Shortlisted",
+    "Interview",
+    "Selected",
+    "Rejected",
+];
+
+// Final statuses cannot be changed again.
+const STATUS_TRANSITIONS = {
+    Submitted: ["Under Review", "Rejected"],
+    "Under Review": ["Shortlisted", "Rejected"],
+    Shortlisted: ["Interview", "Rejected"],
+    Interview: ["Selected", "Rejected"],
+    Selected: [],
+    Rejected: [],
+};
+
+// Select only the information needed by application pages.
+const APPLICATION_FIELDS = [
+    "jobId",
+    "openingType",
+    "jobSnapshot",
+    "applicant",
+    "resume.name",
+    "resume.mimeType",
+    "resume.size",
+    "status",
+    "interview",
+    "selection",
+    "history.status",
+    "history.message",
+    "history.createdAt",
+    "createdAt",
+    "updatedAt",
+].join(" ");
+
+// ================== ACCOUNT ACCESS ==================
+function requireAccount(req, role) {
+    if (!req.user) {
+        throw new ExpressError(401, "Please login to continue.");
+    }
+
+    if (req.user.role !== role) {
+        throw new ExpressError(
+            403,
+            "Your account does not have permission to use this feature."
+        );
     }
 }
 
+// ================== ID VALIDATION ==================
+function validateObjectId(value, label) {
+    if (
+        typeof value !== "string" ||
+        !/^[a-fA-F0-9]{24}$/.test(value)
+    ) {
+        throw new ExpressError(400, `Invalid ${label} ID.`);
+    }
+}
+
+// ================== QUERY VALIDATION ==================
+function validateQueryFields(query, allowedFields) {
+    if (
+        Object.keys(query).some(
+            (field) => !allowedFields.includes(field)
+        )
+    ) {
+        throw new ExpressError(400, "Unsupported application filter.");
+    }
+}
+
+function getQueryText(value, label, maximum = 200) {
+    if (value === undefined) return "";
+
+    if (typeof value !== "string" || value.length > maximum) {
+        throw new ExpressError(400, `Invalid ${label}.`);
+    }
+
+    return value.trim();
+}
+
+// ================== PAGINATION VALIDATION ==================
+function getPositiveInteger(value, fallback, maximum, label) {
+    if (value === undefined) return fallback;
+
+    if (
+        typeof value !== "string" ||
+        !/^[1-9]\d*$/.test(value)
+    ) {
+        throw new ExpressError(400, `Invalid ${label}.`);
+    }
+
+    const number = Number(value);
+
+    if (!Number.isSafeInteger(number) || number > maximum) {
+        throw new ExpressError(400, `Invalid ${label}.`);
+    }
+
+    return number;
+}
+
+function getPagination(query) {
+    return {
+        page: getPositiveInteger(query.page, 1, 100000, "page"),
+        limit: getPositiveInteger(query.limit, 10, 50, "limit"),
+    };
+}
+
+// ================== STATUS FILTER ==================
+function applyStatusFilter(filter, value) {
+    const status = getQueryText(value, "application status", 30);
+
+    if (!status) return;
+
+    if (status === "Pending") {
+        filter.status = {
+            $in: ["Submitted", "Under Review"],
+        };
+
+        return;
+    }
+
+    if (!APPLICATION_STATUSES.includes(status)) {
+        throw new ExpressError(400, "Invalid application status.");
+    }
+
+    filter.status = status;
+}
+
+// ================== OPENING TYPE FILTER ==================
+function applyOpeningTypeFilter(filter, value) {
+    const openingType = getQueryText(value, "opening type", 20);
+
+    if (!openingType) return;
+
+    if (!["client", "internal"].includes(openingType)) {
+        throw new ExpressError(400, "Invalid opening type.");
+    }
+
+    filter.openingType = openingType;
+}
+
+// ================== APPLICATION SEARCH ==================
+function applySearchFilter(filter, value, isAdmin = false) {
+    const search = getQueryText(value, "application search");
+
+    if (!search) return;
+
+    // Escape special characters so search remains a literal text search.
+    const escapedSearch = search.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+    );
+
+    const expression = new RegExp(escapedSearch, "i");
+
+    filter.$or = [
+        { "jobSnapshot.title": expression },
+        { "jobSnapshot.company": expression },
+    ];
+
+    if (isAdmin) {
+        filter.$or.push(
+            { "applicant.name": expression },
+            { "applicant.email": expression }
+        );
+
+        if (/^[a-fA-F0-9]{24}$/.test(search)) {
+            filter.$or.push({
+                _id: new mongoose.Types.ObjectId(search),
+            });
+        }
+    }
+}
+
+// ================== SAFE APPLICATION RESPONSE ==================
+// Explicit fields prevent storage keys and internal metadata from leaking.
+function getApplicationResponse(application) {
+    return {
+        _id: application._id,
+        id: String(application._id),
+        jobId: application.jobId,
+        openingType: application.openingType,
+        jobSnapshot: application.jobSnapshot,
+        applicant: application.applicant,
+
+        resume: application.resume
+            ? {
+                  name: application.resume.name,
+                  mimeType: application.resume.mimeType,
+                  size: application.resume.size,
+              }
+            : null,
+
+        status: application.status,
+
+        interview: application.interview
+            ? {
+                  at: application.interview.at,
+                  mode: application.interview.mode,
+                  note: application.interview.note,
+              }
+            : undefined,
+
+        selection: application.selection
+            ? {
+                  note: application.selection.note,
+              }
+            : undefined,
+
+        history: (application.history || []).map((entry) => ({
+            status: entry.status,
+            message: entry.message,
+            createdAt: entry.createdAt,
+        })),
+
+        createdAt: application.createdAt,
+        updatedAt: application.updatedAt,
+    };
+}
+
+// ================== APPLICATION LIST QUERY ==================
+async function getApplicationList(filter, page, limit) {
+    const [applications, total] = await Promise.all([
+        Application.find(filter)
+            .select(APPLICATION_FIELDS)
+            .sort({ createdAt: -1, _id: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .lean(),
+
+        Application.countDocuments(filter),
+    ]);
+
+    return {
+        applications: applications.map(getApplicationResponse),
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
+}
+
+// ================== ADMIN SUMMARY COUNTS ==================
+// Summary cards show overall counts, independent of table filters.
+async function getApplicationCounts() {
+    const groupedCounts = await Application.aggregate([
+        {
+            $group: {
+                _id: "$status",
+                count: { $sum: 1 },
+            },
+        },
+    ]);
+
+    const byStatus = Object.fromEntries(
+        APPLICATION_STATUSES.map((status) => [status, 0])
+    );
+
+    let total = 0;
+
+    for (const item of groupedCounts) {
+        total += item.count;
+
+        if (Object.prototype.hasOwnProperty.call(byStatus, item._id)) {
+            byStatus[item._id] = item.count;
+        }
+    }
+
+    return {
+        total,
+        pending: byStatus.Submitted + byStatus["Under Review"],
+        selected: byStatus.Selected,
+        rejected: byStatus.Rejected,
+        byStatus,
+    };
+}
+
 // ================== PRIVATE RESUME UPLOAD ==================
-// Upload the original document without image transformations.
+// Store each application's original document privately in Cloudinary.
 function uploadResumeToCloudinary(file, storageKey) {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
@@ -50,17 +325,14 @@ function uploadResumeToCloudinary(file, storageKey) {
 }
 
 // ================== FAILED SUBMISSION CLEANUP ==================
-// Never remove a resume if the database shows a saved application.
-// If the database cannot confirm the result, retain the file.
+// Retain the resume if the database cannot confirm the submission result.
 async function cleanupUnusedResume(applicationId, storageKey) {
     try {
         const savedApplication = await Application.exists({
             _id: applicationId,
         });
 
-        if (savedApplication) {
-            return;
-        }
+        if (savedApplication) return;
 
         await cloudinary.uploader.destroy(storageKey, {
             resource_type: "raw",
@@ -74,8 +346,8 @@ async function cleanupUnusedResume(applicationId, storageKey) {
 }
 
 // ================== CREATE APPLICATION ==================
-// Authentication, user role, upload and Joi validation run in the router.
-// The job ID comes from the route; account ownership comes from req.user.
+// POST /api/applications/jobs/:jobId
+// Authentication, upload and Joi validation run in the router.
 async function createApplication(req, res, next) {
     const applicationId = new mongoose.Types.ObjectId();
 
@@ -83,20 +355,11 @@ async function createApplication(req, res, next) {
     let applicationSaved = false;
 
     try {
-        if (!req.user) {
-            throw new ExpressError(401, "Please login to apply.");
-        }
-
-        if (req.user.role !== "user") {
-            throw new ExpressError(
-                403,
-                "Only user accounts can submit applications."
-            );
-        }
+        requireAccount(req, "user");
 
         const { jobId } = req.params;
 
-        validateJobId(jobId);
+        validateObjectId(jobId, "job");
 
         if (!req.file?.buffer?.length) {
             throw new ExpressError(400, "Please upload your resume.");
@@ -116,7 +379,6 @@ async function createApplication(req, res, next) {
             );
         }
 
-        // Avoid uploading another resume for an existing application.
         const existingApplication = await Application.exists({
             userId: req.user._id,
             jobId,
@@ -130,11 +392,8 @@ async function createApplication(req, res, next) {
         }
 
         // ================== UPLOAD VERIFIED RESUME ==================
-        const extension = path.extname(
-            req.file.originalname
-        ).toLowerCase();
+        const extension = path.extname(req.file.originalname).toLowerCase();
 
-        // Each application gets its own file; previous resumes stay unchanged.
         const storageKey = `recruitment/resumes/${applicationId}${extension}`;
 
         try {
@@ -142,26 +401,24 @@ async function createApplication(req, res, next) {
                 req.file,
                 storageKey
             );
-        }catch (error) {
-    // Show the upload failure reason during development.
-    if (process.env.NODE_ENV !== "production") {
-        console.error("Cloudinary upload failed:", {
-            name: error.name,
-            message: error.message,
-            http_code: error.http_code,
-            code: error.code,
-        });
-    }
+        } catch (error) {
+            if (process.env.NODE_ENV !== "production") {
+                console.error("Cloudinary upload failed:", {
+                    name: error.name,
+                    message: error.message,
+                    http_code: error.http_code,
+                    code: error.code,
+                });
+            }
 
-    throw new ExpressError(
-        502,
-        "Resume upload could not be confirmed. Please try again later."
-    );
-}
+            throw new ExpressError(
+                502,
+                "Resume upload could not be confirmed. Please try again later."
+            );
+        }
 
         // ================== SAVE APPLICATION TRANSACTION ==================
-        // Recheck and write to the job in the same transaction as application
-        // creation, so a concurrent close cannot bypass the open-job check.
+        // Recheck the job inside the transaction during concurrent closing.
         const application = await mongoose.connection.transaction(
             async (session) => {
                 const job = await Job.findOneAndUpdate(
@@ -204,6 +461,7 @@ async function createApplication(req, res, next) {
                                 location: job.location,
                                 type: job.type,
                                 mode: job.mode,
+                                salary: job.salary || "",
                             },
 
                             applicant: {
@@ -261,7 +519,7 @@ async function createApplication(req, res, next) {
             },
         });
     } catch (error) {
-        // An uncertain commit may still have succeeded. Keep its resume.
+        // An uncertain commit may have succeeded; retain its resume.
         const uncertainCommit =
             error.hasErrorLabel?.("UnknownTransactionCommitResult");
 
@@ -272,7 +530,6 @@ async function createApplication(req, res, next) {
             );
         }
 
-        // The unique database index also handles simultaneous submissions.
         if (error.code === 11000) {
             return next(
                 new ExpressError(
@@ -293,14 +550,472 @@ async function createApplication(req, res, next) {
 
         return next(error);
     } finally {
-        // Release this request's reference to the uploaded file buffer.
         if (req.file) {
             delete req.file.buffer;
         }
     }
 }
 
+// ================== USER APPLICATION LIST ==================
+// GET /api/applications/my
+async function getMyApplications(req, res, next) {
+    try {
+        requireAccount(req, "user");
+
+        validateQueryFields(req.query, [
+            "page",
+            "limit",
+            "status",
+            "search",
+        ]);
+
+        const { page, limit } = getPagination(req.query);
+
+        const filter = {
+            userId: req.user._id,
+        };
+
+        applyStatusFilter(filter, req.query.status);
+        applySearchFilter(filter, req.query.search);
+
+        const result = await getApplicationList(filter, page, limit);
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            ...result,
+        });
+    } catch (error) {
+        return next(error);
+    }
+}
+
+// ================== USER APPLICATION DETAILS ==================
+// GET /api/applications/my/:id
+async function getMyApplication(req, res, next) {
+    try {
+        requireAccount(req, "user");
+        validateObjectId(req.params.id, "application");
+
+        const application = await Application.findOne({
+            _id: req.params.id,
+            userId: req.user._id,
+        })
+            .select(APPLICATION_FIELDS)
+            .lean();
+
+        if (!application) {
+            throw new ExpressError(404, "Application not found.");
+        }
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            application: getApplicationResponse(application),
+        });
+    } catch (error) {
+        return next(error);
+    }
+}
+
+// ================== ADMIN APPLICATION LIST ==================
+// GET /api/applications/admin
+async function getAdminApplications(req, res, next) {
+    try {
+        requireAccount(req, "admin");
+
+        validateQueryFields(req.query, [
+            "page",
+            "limit",
+            "status",
+            "search",
+            "openingType",
+            "jobId",
+        ]);
+
+        const { page, limit } = getPagination(req.query);
+        const filter = {};
+
+        applyStatusFilter(filter, req.query.status);
+        applyOpeningTypeFilter(filter, req.query.openingType);
+        applySearchFilter(filter, req.query.search, true);
+
+        if (req.query.jobId !== undefined) {
+            validateObjectId(req.query.jobId, "job");
+            filter.jobId = req.query.jobId;
+        }
+
+        const [result, counts] = await Promise.all([
+            getApplicationList(filter, page, limit),
+            getApplicationCounts(),
+        ]);
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            ...result,
+            counts,
+        });
+    } catch (error) {
+        return next(error);
+    }
+}
+
+// ================== ADMIN JOB FILTER OPTIONS ==================
+// GET /api/applications/admin/options
+// Read all applied openings, not just jobs on the current table page.
+async function getAdminApplicationOptions(req, res, next) {
+    try {
+        requireAccount(req, "admin");
+
+        validateQueryFields(req.query, ["openingType"]);
+
+        const filter = {};
+
+        applyOpeningTypeFilter(filter, req.query.openingType);
+
+        const openings = await Application.aggregate([
+            {
+                $match: filter,
+            },
+            {
+                $sort: {
+                    createdAt: -1,
+                    _id: -1,
+                },
+            },
+            {
+                $group: {
+                    _id: {
+                        jobId: "$jobId",
+                        openingType: "$openingType",
+                    },
+                    title: { $first: "$jobSnapshot.title" },
+                    company: { $first: "$jobSnapshot.company" },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    jobId: "$_id.jobId",
+                    openingType: "$_id.openingType",
+                    title: 1,
+                    company: 1,
+                },
+            },
+            {
+                $sort: {
+                    title: 1,
+                    company: 1,
+                    jobId: 1,
+                },
+            },
+        ]);
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            openings,
+        });
+    } catch (error) {
+        return next(error);
+    }
+}
+
+// ================== ADMIN APPLICATION DETAILS ==================
+// GET /api/applications/admin/:id
+async function getAdminApplication(req, res, next) {
+    try {
+        requireAccount(req, "admin");
+        validateObjectId(req.params.id, "application");
+
+        const application = await Application.findById(req.params.id)
+            .select(APPLICATION_FIELDS)
+            .lean();
+
+        if (!application) {
+            throw new ExpressError(404, "Application not found.");
+        }
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            application: getApplicationResponse(application),
+        });
+    } catch (error) {
+        return next(error);
+    }
+}
+
+// ================== ADMIN STATUS UPDATE ==================
+// PATCH /api/applications/admin/:id/status
+// Joi validation must run before this controller.
+async function updateApplicationStatus(req, res, next) {
+    try {
+        requireAccount(req, "admin");
+        validateObjectId(req.params.id, "application");
+
+        const { expectedStatus, status, message = "", interview } = req.body;
+
+        // Load the full document for model validation and version checking.
+        // The storage key is never included in the response.
+        const application = await Application.findById(req.params.id)
+            .select("+resume.storageKey");
+
+        if (!application) {
+            throw new ExpressError(404, "Application not found.");
+        }
+
+        if (application.status !== expectedStatus) {
+            throw new ExpressError(
+                409,
+                "Application status changed. Refresh the details and try again."
+            );
+        }
+
+        const allowedStatuses = STATUS_TRANSITIONS[application.status] || [];
+
+        if (!allowedStatuses.includes(status)) {
+            throw new ExpressError(
+                409,
+                "This status change is not allowed."
+            );
+        }
+
+        // ================== INTERVIEW DETAILS ==================
+        if (status === "Interview") {
+            const interviewDate = new Date(interview?.at);
+
+            if (
+                !Number.isFinite(interviewDate.getTime()) ||
+                interviewDate.getTime() <= Date.now()
+            ) {
+                throw new ExpressError(
+                    400,
+                    "Please select a future interview date and time."
+                );
+            }
+
+            if (!["Online", "In-person", "Phone"].includes(interview?.mode)) {
+                throw new ExpressError(400, "Please select a valid interview mode.");
+            }
+
+            application.interview = {
+                at: interviewDate,
+                mode: interview.mode,
+                note: message,
+            };
+        }
+
+        // ================== SELECTION DETAILS ==================
+        if (status === "Selected") {
+            application.selection = {
+                note: message,
+            };
+        }
+
+        // Keep existing interview information as part of the application.
+        application.status = status;
+
+        application.history.push({
+            status,
+            message,
+            changedBy: req.user._id,
+            createdAt: new Date(),
+        });
+
+        // Model optimisticConcurrency prevents simultaneous overwrites.
+        await application.save();
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            message: "Application status updated successfully.",
+            application: getApplicationResponse(application),
+        });
+    } catch (error) {
+        if (error.name === "VersionError") {
+            return next(
+                new ExpressError(
+                    409,
+                    "Application changed while you were updating it. Refresh and try again."
+                )
+            );
+        }
+
+        if (error.name === "ValidationError") {
+            return next(
+                new ExpressError(
+                    400,
+                    "Application update contains invalid or incomplete details."
+                )
+            );
+        }
+
+        return next(error);
+    }
+}
+
+// ================== ADMIN RESUME ACCESS ==================
+// GET /api/applications/:id/resume?mode=view
+// GET /api/applications/:id/resume?mode=download
+// View returns a PDF inline; download returns the original file as an attachment.
+async function getResumeAccess(req, res, next) {
+    try {
+        requireAccount(req, "admin");
+        validateObjectId(req.params.id, "application");
+
+        validateQueryFields(req.query, ["mode"]);
+
+        const mode = req.query.mode ?? "download";
+
+        if (
+            typeof mode !== "string" ||
+            !["view", "download"].includes(mode)
+        ) {
+            throw new ExpressError(
+                400,
+                "Resume mode must be view or download."
+            );
+        }
+
+        const application = await Application.findById(req.params.id)
+            .select("resume.name resume.mimeType resume.size +resume.storageKey")
+            .lean();
+
+        if (!application) {
+            throw new ExpressError(404, "Application not found.");
+        }
+
+        const resume = application.resume;
+
+        if (!resume?.storageKey) {
+            throw new ExpressError(404, "Resume not found.");
+        }
+
+        if (mode === "view" && resume.mimeType !== "application/pdf") {
+            throw new ExpressError(
+                400,
+                "Preview is available only for PDF resumes. Please download this file."
+            );
+        }
+
+        // ================== PRIVATE CLOUDINARY LINK ==================
+        // Use the signed link internally; do not send it to the frontend.
+        const expiresAt =
+            Math.floor(Date.now() / 1000) + RESUME_LINK_SECONDS;
+
+        const url = cloudinary.utils.private_download_url(
+            resume.storageKey,
+            undefined,
+            {
+                resource_type: "raw",
+                type: "private",
+                attachment: false,
+                expires_at: expiresAt,
+                secure: true,
+            }
+        );
+
+        // ================== FETCH RESUME ==================
+        // Resume uploads are limited to 5 MB.
+        const maximumSize = 5 * 1024 * 1024;
+        let fileBuffer;
+
+        try {
+            const response = await fetch(url, {
+                signal: AbortSignal.timeout(60000),
+            });
+
+            if (!response.ok || !response.body) {
+                await response.body?.cancel();
+                throw new Error("Resume storage returned an unsuccessful response.");
+            }
+
+            const contentLength = Number(
+                response.headers.get("content-length")
+            );
+
+            if (contentLength > maximumSize) {
+                await response.body.cancel();
+                throw new Error("Resume exceeds the permitted size.");
+            }
+
+            const reader = response.body.getReader();
+            const chunks = [];
+            let receivedSize = 0;
+
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) break;
+
+                    receivedSize += value.byteLength;
+
+                    if (receivedSize > maximumSize) {
+                        await reader.cancel();
+                        throw new Error("Resume exceeds the permitted size.");
+                    }
+
+                    chunks.push(Buffer.from(value));
+                }
+            } finally {
+                reader.releaseLock();
+            }
+
+            if (!receivedSize || receivedSize !== resume.size) {
+                throw new Error("The complete resume could not be retrieved.");
+            }
+
+            fileBuffer = Buffer.concat(chunks, receivedSize);
+        } catch {
+            throw new ExpressError(
+                502,
+                "Resume could not be retrieved. Please try again later."
+            );
+        }
+
+        // ================== ORIGINAL FILE NAME ==================
+        // Express safely formats the filename in Content-Disposition.
+        res.attachment(resume.name);
+
+        if (mode === "view") {
+            res.set(
+                "Content-Disposition",
+                res.get("Content-Disposition").replace(
+                    /^attachment/i,
+                    "inline"
+                )
+            );
+        }
+
+        res.set("Content-Type", resume.mimeType);
+        res.set("Content-Length", String(fileBuffer.length));
+        res.set("Cache-Control", "private, no-store");
+        res.set("X-Content-Type-Options", "nosniff");
+        res.set("Referrer-Policy", "no-referrer");
+
+        return res.status(200).send(fileBuffer);
+    } catch (error) {
+        return next(error);
+    }
+}
+
 // ================== EXPORTS ==================
 module.exports = {
     createApplication,
+    getMyApplications,
+    getMyApplication,
+    getAdminApplications,
+    getAdminApplicationOptions,
+    getAdminApplication,
+    updateApplicationStatus,
+    getResumeAccess,
 };
