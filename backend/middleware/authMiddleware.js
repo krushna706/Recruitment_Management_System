@@ -69,7 +69,7 @@ async function authMiddleware(req, res, next) {
 
         // Use current database values for account permissions.
         const user = await User.findById(decoded.sub)
-            .select("_id role status +tokenVersion")
+            .select("_id role status +tokenVersion +mustChangePassword")
             .lean();
 
         // Deleted accounts cannot continue using existing tokens.
@@ -101,6 +101,35 @@ async function authMiddleware(req, res, next) {
                 )
             );
         }
+
+        
+        // ================== INITIAL ADMIN PASSWORD ENFORCEMENT ==================
+        // Block protected APIs until the initial password is changed.
+        if (user.role === "admin" && user.mustChangePassword) {
+            const requestPath = req.originalUrl.split("?")[0];
+
+            // Allow only session checks, logout and password change.
+            const allowedRequest =
+                (req.method === "GET" &&
+                    (
+                        requestPath === "/api/auth/me" ||
+                        requestPath === "/api/admin/me/profile"
+                    )) ||
+                (req.method === "POST" &&
+                    requestPath === "/api/auth/logout") ||
+                (req.method === "PATCH" &&
+                    requestPath === "/api/admin/me/password");
+
+            if (!allowedRequest) {
+                return next(
+                    new ExpressError(
+                        403,
+                        "Please change your initial password before continuing."
+                    )
+                );
+            }
+        }
+
 
         // Pass trusted account details to later middleware/controllers.
         req.user = {

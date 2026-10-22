@@ -33,6 +33,8 @@ function getUserResponse(user) {
         createdAt: user.createdAt,
         avatar: {
             url: user.avatar?.url || "",
+        mustChangePassword:
+            user.role === "admin" && Boolean(user.mustChangePassword),
         },
     };
 }
@@ -169,7 +171,7 @@ async function login(req, res, next) {
                 returnDocument: "after",
                 runValidators: true,
             }
-        ).select("+tokenVersion");
+        ).select("+tokenVersion +mustChangePassword");
 
         if (!currentUser) {
             return next(
@@ -225,7 +227,7 @@ async function logout(req, res, next) {
 async function getCurrentUser(req, res, next) {
     try {
         const user = await User.findById(req.user._id)
-            .select("name email phone role status createdAt avatar.url")
+            .select("name email phone role status createdAt avatar.url +mustChangePassword")
             .lean();
 
         if (!user) {

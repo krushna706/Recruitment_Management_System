@@ -85,6 +85,21 @@ function PanelAccess() {
         return <AccessDenied />;
     }
 
+    // ================== INITIAL ADMIN PASSWORD ENFORCEMENT ==================
+    // Redirect new admins to Profile until the initial password is changed.
+    if (
+        user.role === "admin" &&
+        user.mustChangePassword &&
+        location.pathname !== "/manage/profile"
+    ) {
+        return (
+            <Navigate
+                to="/manage/profile"
+                replace
+            />
+        );
+    }
+
     return <Outlet />;
 }
 
