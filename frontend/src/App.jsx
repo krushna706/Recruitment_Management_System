@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet, Link, useLocation, useParams } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
+import { useEffect } from "react";
 
 import { useAuth } from "./context/AuthContext";
 
@@ -160,6 +161,24 @@ function PanelPage({ user, page }) {
     return <PageComponent user={user} />;
 }
 
+
+// ================== SCROLL TO TOP ==================
+// Reset window scroll whenever the page route changes.
+function ScrollToTop() {
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "instant",
+        });
+    }, [pathname]);
+
+    return null;
+}
+
+
 // ================== APPLICATION ROUTES ==================
 function App() {
     const { user, logout } = useAuth();
@@ -174,6 +193,10 @@ function App() {
 
     return (
         <BrowserRouter>
+
+             {/* ================== GLOBAL SCROLL RESET ================== */}
+              <ScrollToTop />
+
             <ToastContainer position="top-right" autoClose={3000} />
 
             <Routes>
