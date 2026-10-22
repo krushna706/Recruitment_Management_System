@@ -705,6 +705,44 @@ const applicationStatusSchema = Joi.object({
          "object.unknown": "Contact form contains an unsupported field.",
      });
 
+     
+ // ================== USER ACCOUNT STATUS VALIDATION ==================
+ // Validate admin requests to activate or deactivate a user.
+ // The controller also verifies the current MongoDB status.
+ const userStatusSchema = Joi.object({
+     expectedStatus: Joi.string()
+         .valid("Active", "Inactive")
+         .required()
+         .messages({
+             "any.only": "Invalid current account status.",
+             "any.required": "Current account status is required.",
+         }),
+
+     status: Joi.string()
+         .valid("Active", "Inactive")
+         .required()
+         .messages({
+             "any.only": "Select Active or Inactive.",
+             "any.required": "New account status is required.",
+         }),
+ })
+     .custom((value, helpers) => {
+         if (value.expectedStatus === value.status) {
+             return helpers.message(
+                 "New account status must be different from the current status."
+             );
+         }
+
+         return value;
+     })
+     .required()
+     .unknown(false)
+     .messages({
+         "object.base": "Status update must be a JSON object.",
+         "object.unknown": "Unsupported account status field.",
+     });
+
+
 
 // ================== EXPORTS ==================
 
@@ -717,4 +755,5 @@ module.exports = {
     applicationStatusSchema,
     profileUpdateSchema,
     contactEnquirySchema,
+    userStatusSchema,
 };

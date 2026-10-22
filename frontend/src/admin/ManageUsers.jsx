@@ -1,9 +1,11 @@
-import { getResumeUrl, toTextList } from "../utils/dataFormat";
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import {
     Alert,
+    Avatar,
     Button,
     Chip,
+    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -20,19 +22,19 @@ import {
 } from "@mui/material";
 import { toast } from "react-toastify";
 
-const STORAGE_KEY = "rms-demo-users-v1";
+import api from "../services/api";
+import { toTextList } from "../utils/dataFormat";
 
-// Same demo application store used by Applications.jsx.
-const APPLICATIONS_KEY = "rms-demo-applications-v1";
+// ================== CONFIGURATION ==================
+const DEFAULT_AVATAR = "/images/default-avatar.svg";
+const HISTORY_PAGE_SIZE = 5;
 
-const APPLICATION_STATUSES = [
-    "Submitted",
-    "Under Review",
-    "Shortlisted",
-    "Interview",
-    "Selected",
-    "Rejected",
-];
+const INITIAL_COUNTS = {
+    total: 0,
+    active: 0,
+    inactive: 0,
+    applicants: 0,
+};
 
 const APPLICATION_COLORS = {
     Submitted: "info",
@@ -43,188 +45,7 @@ const APPLICATION_COLORS = {
     Rejected: "error",
 };
 
-const DEMO_USERS = [
-    {
-        id: "user-1001",
-        name: "Aarav Sharma",
-        email: "aarav@example.com",
-        phone: "9000000001",
-        address: "Bengaluru, Karnataka",
-        qualification: "B.Tech — Computer Science",
-        experience: "2 years",
-        skills: "React, Node.js, Express, MongoDB",
-        resumeUrl: "",
-        role: "user",
-        status: "Active",
-        joinedAt: "2026-10-14T10:00:00+05:30",
-        updatedAt: "",
-    },
-    {
-        id: "user-1002",
-        name: "Priya Das",
-        email: "priya@example.com",
-        phone: "9000000002",
-        address: "Bhubaneswar, Odisha",
-        qualification: "B.Sc — Computer Science",
-        experience: "1 year",
-        skills: "React, JavaScript, CSS",
-        resumeUrl: "",
-        role: "user",
-        status: "Active",
-        joinedAt: "2026-10-13T12:30:00+05:30",
-        updatedAt: "",
-    },
-    {
-        id: "user-1003",
-        name: "Rohan Patel",
-        email: "rohan@example.com",
-        phone: "9000000003",
-        address: "Pune, Maharashtra",
-        qualification: "Bachelor of Design",
-        experience: "2 years",
-        skills: "Figma, Prototyping, User Research",
-        resumeUrl: "",
-        role: "user",
-        status: "Active",
-        joinedAt: "2026-10-12T09:15:00+05:30",
-        updatedAt: "",
-    },
-    {
-        id: "user-1004",
-        name: "Ananya Mishra",
-        email: "ananya@example.com",
-        phone: "9000000004",
-        address: "Hyderabad, Telangana",
-        qualification: "BCA",
-        experience: "Fresher",
-        skills: "JavaScript, HTML, CSS",
-        resumeUrl: "",
-        role: "user",
-        status: "Inactive",
-        joinedAt: "2026-10-11T11:00:00+05:30",
-        updatedAt: "",
-    },
-];
-
-// Initial history matching the demo records in Applications.jsx.
-// Once that page saves data, its storage becomes the source.
-const DEMO_APPLICATIONS = [
-    {
-        id: "application-1001",
-        userId: "user-1001",
-        email: "aarav@example.com",
-        title: "MERN Stack Developer",
-        company: "Sample Digital",
-        openingType: "client",
-        appliedAt: "2026-10-18T10:30:00+05:30",
-        status: "Submitted",
-    },
-    {
-        id: "application-1002",
-        userId: "user-1002",
-        email: "priya@example.com",
-        title: "Frontend Developer",
-        company: "",
-        openingType: "internal",
-        appliedAt: "2026-10-17T09:15:00+05:30",
-        status: "Under Review",
-    },
-    {
-        id: "application-1003",
-        userId: "user-1003",
-        email: "rohan@example.com",
-        title: "UI/UX Designer",
-        company: "Sample Design Studio",
-        openingType: "client",
-        appliedAt: "2026-10-15T12:00:00+05:30",
-        status: "Shortlisted",
-    },
-];
-
-function loadUsers() {
-    try {
-        const stored = window.localStorage.getItem(STORAGE_KEY);
-
-        if (!stored) {
-            return { users: DEMO_USERS, error: "" };
-        }
-
-        const parsed = JSON.parse(stored);
-
-        const valid =
-            Array.isArray(parsed) &&
-            parsed.every(
-                (user) =>
-                    user &&
-                    ["id", "name", "email", "joinedAt"].every(
-                        (key) => typeof user[key] === "string",
-                    ) &&
-                    user.role === "user" &&
-                    ["Active", "Inactive"].includes(user.status),
-            );
-
-        if (!valid) throw new Error("Invalid user data");
-
-        return { users: parsed, error: "" };
-    } catch {
-        return {
-            users: [],
-            error:
-                "Saved users could not be loaded. Existing data has not " +
-                "been overwritten. Check browser storage and reload.",
-        };
-    }
-}
-
-function loadApplications() {
-    try {
-        const stored = window.localStorage.getItem(APPLICATIONS_KEY);
-
-        if (!stored) {
-            return { applications: DEMO_APPLICATIONS, error: "" };
-        }
-
-        const parsed = JSON.parse(stored);
-
-        const valid =
-            Array.isArray(parsed) &&
-            parsed.every(
-                (application) =>
-                    application &&
-                    ["id", "title", "appliedAt"].every(
-                        (key) => typeof application[key] === "string",
-                    ) &&
-                    (typeof application.userId === "string" ||
-                        typeof application.email === "string") &&
-                    APPLICATION_STATUSES.includes(application.status) &&
-                    ["client", "internal"].includes(application.openingType),
-            );
-
-        if (!valid) throw new Error("Invalid application data");
-
-        return { applications: parsed, error: "" };
-    } catch {
-        return {
-            applications: [],
-            error: "Application history could not be loaded. User account details are still available.",
-        };
-    }
-}
-
-function belongsToUser(application, user) {
-    if (application.userId) {
-        return application.userId === user.id;
-    }
-
-    // Compatibility with the earlier frontend demo.
-    // Production records must be linked through userId.
-    return (
-        typeof application.email === "string" &&
-        application.email.trim().toLowerCase() ===
-            user.email.trim().toLowerCase()
-    );
-}
-
+// ================== DATE FORMATTING ==================
 function formatDate(value, includeTime = false) {
     const date = new Date(value);
 
@@ -237,22 +58,47 @@ function formatDate(value, includeTime = false) {
         month: "short",
         year: "numeric",
         timeZone: "Asia/Kolkata",
-        ...(includeTime ? { hour: "numeric", minute: "2-digit" } : {}),
+        ...(includeTime
+            ? {
+                  hour: "numeric",
+                  minute: "2-digit",
+              }
+            : {}),
     }).format(date);
 }
 
-function getInitials(name) {
+// ================== API ERROR MESSAGE ==================
+function getErrorMessage(error, fallback) {
+    return error.response?.data?.message || fallback;
+}
+
+
+ // ================== ADMIN RESUME URL ==================
+ // Access private resumes through the authenticated backend API.
+ function getAdminResumeUrl(userId, mode = "download") {
+     const baseURL = String(api.defaults.baseURL || "")
+         .replace(/\/+$/, "");
+
+     return `${baseURL}/admin/users/${encodeURIComponent(userId)}/resume?mode=${mode}`;
+ }
+
+// ================== CANDIDATE AVATAR ==================
+// Show the Cloudinary image when available.
+// Otherwise display the existing default avatar.
+function CandidateAvatar({ user, large = false }) {
+    const imageUrl = user?.avatar?.url || DEFAULT_AVATAR;
+
     return (
-        name
-            .trim()
-            .split(/\s+/)
-            .slice(0, 2)
-            .map((part) => part.charAt(0))
-            .join("")
-            .toUpperCase() || "?"
+        <Avatar
+            key={imageUrl}
+            src={imageUrl}
+            alt={user?.name || "Candidate"}
+            className={large ? "mu-avatar" : "mj-company-avatar"}
+        />
     );
 }
 
+// ================== ACCOUNT STATUS ==================
 function UserStatus({ status }) {
     return (
         <Chip
@@ -264,6 +110,7 @@ function UserStatus({ status }) {
     );
 }
 
+// ================== PROFILE DETAILS ==================
 function Detail({ label, value }) {
     return (
         <div className="mu-detail">
@@ -273,184 +120,461 @@ function Detail({ label, value }) {
     );
 }
 
+// ================== MANAGE USERS PAGE ==================
 function ManageUsers() {
-    const [initialData] = useState(loadUsers);
-    const [users, setUsers] = useState(initialData.users);
-    const [applicationData, setApplicationData] = useState(loadApplications);
+    // ================== MONGODB USERS ==================
+    const [users, setUsers] = useState([]);
+    const [counts, setCounts] = useState(INITIAL_COUNTS);
+    const [total, setTotal] = useState(0);
 
+    const [loading, setLoading] = useState(true);
+    const [listError, setListError] = useState("");
+    const [listRevision, setListRevision] = useState(0);
+
+    // ================== SEARCH AND FILTERS ==================
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
+
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
 
+    // ================== USER DETAILS ==================
     const [selectedId, setSelectedId] = useState(null);
+    const [selectedUser, setSelectedUser] = useState(null);
+
+    const [userApplications, setUserApplications] = useState([]);
+    const [applicationTotal, setApplicationTotal] = useState(0);
+    const [historyPage, setHistoryPage] = useState(0);
+
+    const [detailsLoading, setDetailsLoading] = useState(false);
+    const [detailsError, setDetailsError] = useState("");
+    const [detailsRevision, setDetailsRevision] = useState(0);
+
+    // ================== STATUS UPDATE ==================
     const [statusAction, setStatusAction] = useState(null);
+    const [statusSaving, setStatusSaving] = useState(false);
 
-    const selectedUser = users.find((user) => user.id === selectedId);
-    const actionUser = users.find((user) => user.id === statusAction?.userId);
+    // ================== DEBOUNCED SEARCH ==================
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            setDebouncedSearch(search.trim());
+        }, 350);
 
-    const applications = applicationData.applications;
+        return () => window.clearTimeout(timer);
+    }, [search]);
 
-    const activeCount = users.filter((user) => user.status === "Active").length;
+    // ================== FETCH REGISTERED USERS ==================
+    // MongoDB handles search, filtering and pagination.
+    useEffect(() => {
+        const controller = new AbortController();
+        let active = true;
 
-    const applicantsCount = users.filter((user) =>
-        applications.some((application) => belongsToUser(application, user)),
-    ).length;
+        async function fetchUsers() {
+            setLoading(true);
+            setListError("");
 
+            try {
+                const params = {
+                    page: page + 1,
+                    limit: rowsPerPage,
+                    status: statusFilter,
+                };
+
+                if (debouncedSearch) {
+                    params.search = debouncedSearch;
+                }
+
+                // ================== MANAGE USERS API ==================
+                const { data } = await api.get(
+                    "/admin/users",
+                    {
+                        params,
+                        signal: controller.signal,
+                    }
+                );
+
+                if (!active) return;
+
+                if (
+                    !data?.success ||
+                    !Array.isArray(data.users) ||
+                    !data.pagination ||
+                    !data.counts
+                ) {
+                    throw new Error("Invalid users API response.");
+                }
+
+                const nextTotal = Number(data.pagination.total);
+
+                if (
+                    !Number.isSafeInteger(nextTotal) ||
+                    nextTotal < 0
+                ) {
+                    throw new Error("Invalid pagination response.");
+                }
+
+                // ================== PAGE CORRECTION ==================
+                const lastPage = Math.max(
+                    0,
+                    Math.ceil(nextTotal / rowsPerPage) - 1
+                );
+
+                if (page > lastPage) {
+                    setPage(lastPage);
+                    return;
+                }
+
+                setUsers(data.users);
+                setTotal(nextTotal);
+
+                setCounts({
+                    total: Number(data.counts.total) || 0,
+                    active: Number(data.counts.active) || 0,
+                    inactive: Number(data.counts.inactive) || 0,
+                    applicants: Number(data.counts.applicants) || 0,
+                });
+            } catch (error) {
+                if (!active) return;
+
+                setUsers([]);
+                setTotal(0);
+                setCounts(INITIAL_COUNTS);
+
+                setListError(
+                    getErrorMessage(
+                        error,
+                        "Unable to load registered users. Please try again."
+                    )
+                );
+            } finally {
+                if (active) setLoading(false);
+            }
+        }
+
+        fetchUsers();
+
+        return () => {
+            active = false;
+            controller.abort();
+        };
+    }, [
+        debouncedSearch,
+        statusFilter,
+        page,
+        rowsPerPage,
+        listRevision,
+    ]);
+
+    // ================== FETCH USER DETAILS ==================
+    // Load the selected candidate and their application history.
+    useEffect(() => {
+        if (!selectedId) return;
+
+        const controller = new AbortController();
+        let active = true;
+
+        async function fetchUserDetails() {
+            setDetailsLoading(true);
+            setDetailsError("");
+
+            try {
+                const { data } = await api.get(
+                    `/admin/users/${encodeURIComponent(selectedId)}`,
+                    {
+                        params: {
+                            page: historyPage + 1,
+                            limit: HISTORY_PAGE_SIZE,
+                        },
+                        signal: controller.signal,
+                    }
+                );
+
+                if (!active) return;
+
+                if (
+                    !data?.success ||
+                    !data.user ||
+                    !Array.isArray(data.applications)
+                ) {
+                    throw new Error("Invalid user details response.");
+                }
+
+                const historyTotal = Number(
+                    data.pagination?.total
+                ) || 0;
+
+                const lastPage = Math.max(
+                    0,
+                    Math.ceil(
+                        historyTotal / HISTORY_PAGE_SIZE
+                    ) - 1
+                );
+
+                if (historyPage > lastPage) {
+                    setHistoryPage(lastPage);
+                    return;
+                }
+
+                setSelectedUser(data.user);
+                setUserApplications(data.applications);
+                setApplicationTotal(historyTotal);
+            } catch (error) {
+                if (!active) return;
+
+                setDetailsError(
+                    getErrorMessage(
+                        error,
+                        "Unable to load candidate details."
+                    )
+                );
+            } finally {
+                if (active) setDetailsLoading(false);
+            }
+        }
+
+        fetchUserDetails();
+
+        return () => {
+            active = false;
+            controller.abort();
+        };
+    }, [selectedId, historyPage, detailsRevision]);
+
+    // ================== DASHBOARD METRICS ==================
+    // These counts represent all users, not only the current page.
     const metrics = [
         {
             label: "Registered users",
-            value: users.length,
+            value: counts.total,
             detail: "Candidate accounts",
             icon: "fa-solid fa-users",
             tone: "blue",
         },
         {
             label: "Active users",
-            value: activeCount,
+            value: counts.active,
             detail: "Accounts enabled",
             icon: "fa-solid fa-user-check",
             tone: "green",
         },
         {
             label: "Inactive users",
-            value: users.length - activeCount,
+            value: counts.inactive,
             detail: "Accounts deactivated",
             icon: "fa-solid fa-user-slash",
             tone: "red",
         },
         {
             label: "Applicants",
-            value: applicationData.error ? "—" : applicantsCount,
+            value: counts.applicants,
             detail: "Users with applications",
             icon: "fa-regular fa-file-lines",
             tone: "amber",
         },
     ];
 
-    const query = search.trim().toLowerCase();
-
-    const filteredUsers = users
-        .filter((user) => {
-            const matchesSearch = [
-                user.name,
-                user.email,
-                user.phone,
-                user.address,
-                user.id,
-            ].some((value) =>
-                String(value || "")
-                    .toLowerCase()
-                    .includes(query),
-            );
-
-            return (
-                matchesSearch &&
-                (statusFilter === "All" || user.status === statusFilter)
-            );
-        })
-        .sort((first, second) => second.joinedAt.localeCompare(first.joinedAt));
-
-    const visibleUsers = filteredUsers.slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage,
-    );
-
-    const userApplications = selectedUser
-        ? applications
-              .filter((application) => belongsToUser(application, selectedUser))
-              .sort((first, second) =>
-                  second.appliedAt.localeCompare(first.appliedAt),
-              )
-        : [];
-
-    const resumeUrl = getResumeUrl(
-        selectedUser?.resume?.url || selectedUser?.resumeUrl,
-    );
-
-    function openProfile(user) {
-        setApplicationData(loadApplications());
-        setSelectedId(user.id);
-    }
-
-    function requestStatusChange(user) {
-        setStatusAction({
-            userId: user.id,
-            expectedStatus: user.status,
-            nextStatus: user.status === "Active" ? "Inactive" : "Active",
-        });
-    }
-
-    function saveStatusChange() {
-        if (!statusAction || !actionUser || initialData.error) return;
-
-        if (actionUser.status !== statusAction.expectedStatus) {
-            toast.error("The account status changed. Please try again.");
-            setStatusAction(null);
-            return;
-        }
-
-        const nextUsers = users.map((user) =>
-            user.id === actionUser.id
-                ? {
-                      ...user,
-                      status: statusAction.nextStatus,
-                      updatedAt: new Date().toISOString(),
-                  }
-                : user,
-        );
-
-        try {
-            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUsers));
-        } catch {
-            toast.error(
-                "Could not save the account status. Check browser storage.",
-            );
-            return;
-        }
-
-        setUsers(nextUsers);
-        setPage(0);
-        setStatusAction(null);
-
-        toast.success(
-            statusAction.nextStatus === "Active"
-                ? "User activated successfully."
-                : "User deactivated successfully.",
-        );
-    }
-
+    // ================== RESET FILTERS ==================
     function resetFilters() {
         setSearch("");
+        setDebouncedSearch("");
         setStatusFilter("All");
         setPage(0);
     }
 
+    // ================== REFRESH USERS ==================
+    function refreshUsers() {
+        setListRevision((previous) => previous + 1);
+    }
+
+    // ================== OPEN USER PROFILE ==================
+    function openProfile(user) {
+        setSelectedUser(null);
+        setUserApplications([]);
+        setApplicationTotal(0);
+        setHistoryPage(0);
+        setDetailsError("");
+        setSelectedId(user.id);
+    }
+
+    // ================== CLOSE USER PROFILE ==================
+    function closeProfile() {
+        if (statusSaving) return;
+
+        setSelectedId(null);
+        setSelectedUser(null);
+        setUserApplications([]);
+        setHistoryPage(0);
+        setDetailsError("");
+    }
+
+    // ================== REQUEST STATUS CHANGE ==================
+    function requestStatusChange(user) {
+        if (statusSaving || !user) return;
+
+        setStatusAction({
+            userId: user.id,
+            name: user.name,
+            expectedStatus: user.status,
+            nextStatus:
+                user.status === "Active"
+                    ? "Inactive"
+                    : "Active",
+        });
+    }
+
+    // ================== ACTIVATE / DEACTIVATE USER ==================
+    // Persist changes only through the protected MongoDB API.
+    async function saveStatusChange() {
+        if (!statusAction || statusSaving) return;
+
+        setStatusSaving(true);
+
+        try {
+            const { data } = await api.patch(
+                `/admin/users/${encodeURIComponent(statusAction.userId)}/status`,
+                {
+                    expectedStatus: statusAction.expectedStatus,
+                    status: statusAction.nextStatus,
+                }
+            );
+
+            if (!data?.success || !data.user) {
+                throw new Error(
+                    "The server did not confirm the account update."
+                );
+            }
+
+            // ================== UPDATE VISIBLE ACCOUNT ==================
+            setUsers((previous) =>
+                previous.map((user) =>
+                    user.id === statusAction.userId
+                        ? {
+                              ...user,
+                              status: data.user.status,
+                              updatedAt: data.user.updatedAt,
+                          }
+                        : user
+                )
+            );
+
+            if (selectedId === statusAction.userId) {
+                setSelectedUser((previous) =>
+                    previous
+                        ? {
+                              ...previous,
+                              status: data.user.status,
+                              updatedAt: data.user.updatedAt,
+                          }
+                        : previous
+                );
+
+                setDetailsRevision(
+                    (previous) => previous + 1
+                );
+            }
+
+            setStatusAction(null);
+
+            // Refresh database counts and filtered records.
+            setListRevision(
+                (previous) => previous + 1
+            );
+
+            toast.success(
+                data.message ||
+                "Account status updated successfully."
+            );
+        } catch (error) {
+            const message = getErrorMessage(
+                error,
+                "Unable to update account status."
+            );
+
+            toast.error(message);
+
+            // On conflicting status changes, reload current records.
+            if (
+                error.response?.status === 409 ||
+                error.response?.status === 404
+            ) {
+                setStatusAction(null);
+                setListRevision(
+                    (previous) => previous + 1
+                );
+
+                if (selectedId) {
+                    setDetailsRevision(
+                        (previous) => previous + 1
+                    );
+                }
+            }
+        } finally {
+            setStatusSaving(false);
+        }
+    }
+
+    // ================== EMPTY STATE ==================
+    const hasFilters = Boolean(
+        debouncedSearch || statusFilter !== "All"
+    );
+
+    const emptyTitle = listError
+        ? "Unable to load users"
+        : hasFilters
+          ? "No matching users"
+          : "No registered users";
+
+    const emptyDescription = listError
+        ? "Refresh the page to try again."
+        : hasFilters
+          ? "Try another search or account status."
+          : "New candidate accounts will appear here.";
+
     return (
         <div className="manage-jobs manage-users">
+            {/* ================== PAGE HEADER ================== */}
             <header className="mj-heading">
                 <div>
-                    <span className="mj-eyebrow">USER MANAGEMENT</span>
+                    <span className="mj-eyebrow">
+                        USER MANAGEMENT
+                    </span>
+
                     <h1>Manage Users</h1>
-                    <p>Review candidate profiles and manage account access.</p>
+
+                    <p>
+                        Review candidate profiles and manage account access.
+                    </p>
                 </div>
 
-                <span className="mj-result-count">Candidate accounts</span>
+                <Button
+                    type="button"
+                    variant="outlined"
+                    onClick={refreshUsers}
+                    disabled={loading}
+                    startIcon={
+                        <i
+                            className="fa-solid fa-arrows-rotate"
+                            aria-hidden="true"
+                        />
+                    }
+                >
+                    Refresh
+                </Button>
             </header>
 
-            {initialData.error && (
+            {/* ================== API ERROR ================== */}
+            {listError && (
                 <Alert severity="error" className="mj-alert">
-                    {initialData.error}
+                    {listError}
                 </Alert>
             )}
 
-            {applicationData.error && (
-                <Alert severity="warning" className="mj-alert">
-                    {applicationData.error}
-                </Alert>
-            )}
-
-            <section className="mj-metrics" aria-label="User overview">
+            {/* ================== USER STATISTICS ================== */}
+            <section
+                className="mj-metrics"
+                aria-label="User overview"
+            >
                 {metrics.map((metric) => (
                     <article
                         key={metric.label}
@@ -461,7 +585,10 @@ function ManageUsers() {
                                 {metric.label}
                             </span>
 
-                            <span className="mj-metric-icon" aria-hidden="true">
+                            <span
+                                className="mj-metric-icon"
+                                aria-hidden="true"
+                            >
                                 <i className={metric.icon} />
                             </span>
                         </div>
@@ -472,27 +599,40 @@ function ManageUsers() {
                 ))}
             </section>
 
-            <section className="mj-card" aria-labelledby="mu-list-title">
+            {/* ================== REGISTERED USERS ================== */}
+            <section
+                className="mj-card"
+                aria-labelledby="mu-list-title"
+            >
                 <header className="mj-card-header">
                     <div className="mj-card-heading">
-                        <span className="mj-header-icon" aria-hidden="true">
+                        <span
+                            className="mj-header-icon"
+                            aria-hidden="true"
+                        >
                             <i className="fa-solid fa-users" />
                         </span>
 
                         <div>
-                            <h2 id="mu-list-title">Registered candidates</h2>
+                            <h2 id="mu-list-title">
+                                Registered candidates
+                            </h2>
+
                             <p>
-                                View profiles, application history and account
-                                status.
+                                View profiles, application history and
+                                account status.
                             </p>
                         </div>
                     </div>
 
                     <span className="mj-result-count">
-                        {filteredUsers.length} of {users.length} users
+                        {loading
+                            ? "Loading users..."
+                            : `${total} of ${counts.total} users`}
                     </span>
                 </header>
 
+                {/* ================== SEARCH AND FILTERS ================== */}
                 <div className="mu-filters">
                     <TextField
                         label="Search users"
@@ -504,6 +644,11 @@ function ManageUsers() {
                         }}
                         size="small"
                         fullWidth
+                        slotProps={{
+                            htmlInput: {
+                                maxLength: 100,
+                            },
+                        }}
                     />
 
                     <TextField
@@ -517,9 +662,17 @@ function ManageUsers() {
                         size="small"
                         fullWidth
                     >
-                        <MenuItem value="All">All users</MenuItem>
-                        <MenuItem value="Active">Active</MenuItem>
-                        <MenuItem value="Inactive">Inactive</MenuItem>
+                        <MenuItem value="All">
+                            All users
+                        </MenuItem>
+
+                        <MenuItem value="Active">
+                            Active
+                        </MenuItem>
+
+                        <MenuItem value="Inactive">
+                            Inactive
+                        </MenuItem>
                     </TextField>
 
                     <Button
@@ -531,6 +684,7 @@ function ManageUsers() {
                     </Button>
                 </div>
 
+                {/* ================== USERS TABLE ================== */}
                 <TableContainer>
                     <Table
                         className="mj-table mu-table"
@@ -543,30 +697,42 @@ function ManageUsers() {
                                 <TableCell>Applications</TableCell>
                                 <TableCell>Joined on</TableCell>
                                 <TableCell>Status</TableCell>
-                                <TableCell align="right">Actions</TableCell>
+                                <TableCell align="right">
+                                    Actions
+                                </TableCell>
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
-                            {visibleUsers.map((user) => {
-                                const applicationCount = applications.filter(
-                                    (application) =>
-                                        belongsToUser(application, user),
-                                ).length;
+                            {/* ================== LOADING STATE ================== */}
+                            {loading && (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={6}
+                                        align="center"
+                                        sx={{ py: 6 }}
+                                    >
+                                        <CircularProgress size={26} />
+                                        <p>Loading registered users...</p>
+                                    </TableCell>
+                                </TableRow>
+                            )}
 
-                                return (
+                            {/* ================== MONGODB USER RECORDS ================== */}
+                            {!loading &&
+                                users.map((user) => (
                                     <TableRow key={user.id} hover>
                                         <TableCell>
                                             <div className="mj-job-cell">
-                                                <span
-                                                    className="mj-company-avatar"
-                                                    aria-hidden="true"
-                                                >
-                                                    {getInitials(user.name)}
-                                                </span>
+                                                <CandidateAvatar
+                                                    user={user}
+                                                />
 
                                                 <div>
-                                                    <strong>{user.name}</strong>
+                                                    <strong>
+                                                        {user.name}
+                                                    </strong>
+
                                                     <p>
                                                         {user.address ||
                                                             "Location not provided"}
@@ -579,6 +745,7 @@ function ManageUsers() {
                                             <span className="mj-cell-primary">
                                                 {user.email}
                                             </span>
+
                                             <span className="mj-cell-secondary">
                                                 {user.phone ||
                                                     "Phone not provided"}
@@ -587,20 +754,24 @@ function ManageUsers() {
 
                                         <TableCell>
                                             <span className="mu-count">
-                                                {applicationData.error
-                                                    ? "—"
-                                                    : applicationCount}
+                                                {user.applicationCount ?? 0}
                                             </span>
                                         </TableCell>
 
                                         <TableCell>
-                                            <time dateTime={user.joinedAt}>
-                                                {formatDate(user.joinedAt)}
+                                            <time
+                                                dateTime={user.joinedAt || ""}
+                                            >
+                                                {formatDate(
+                                                    user.joinedAt
+                                                )}
                                             </time>
                                         </TableCell>
 
                                         <TableCell>
-                                            <UserStatus status={user.status} />
+                                            <UserStatus
+                                                status={user.status}
+                                            />
                                         </TableCell>
 
                                         <TableCell align="right">
@@ -627,21 +798,15 @@ function ManageUsers() {
                                                     type="button"
                                                     variant="outlined"
                                                     size="small"
+                                                    disabled={statusSaving}
                                                     color={
                                                         user.status === "Active"
                                                             ? "error"
                                                             : "success"
                                                     }
                                                     onClick={() =>
-                                                        requestStatusChange(
-                                                            user,
-                                                        )
+                                                        requestStatusChange(user)
                                                     }
-                                                    aria-label={`${
-                                                        user.status === "Active"
-                                                            ? "Deactivate"
-                                                            : "Activate"
-                                                    } ${user.name}`}
                                                 >
                                                     {user.status === "Active"
                                                         ? "Deactivate"
@@ -650,10 +815,10 @@ function ManageUsers() {
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                );
-                            })}
+                                ))}
 
-                            {!visibleUsers.length && (
+                            {/* ================== EMPTY STATE ================== */}
+                            {!loading && users.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={6}>
                                         <div className="mj-empty">
@@ -661,17 +826,8 @@ function ManageUsers() {
                                                 <i className="fa-solid fa-users" />
                                             </span>
 
-                                            <h3>
-                                                {users.length
-                                                    ? "No matching users"
-                                                    : "No registered users"}
-                                            </h3>
-
-                                            <p>
-                                                {users.length
-                                                    ? "Try another search or account status."
-                                                    : "New candidate accounts will appear here."}
-                                            </p>
+                                            <h3>{emptyTitle}</h3>
+                                            <p>{emptyDescription}</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -680,11 +836,14 @@ function ManageUsers() {
                     </Table>
                 </TableContainer>
 
+                {/* ================== SERVER PAGINATION ================== */}
                 <TablePagination
                     component="div"
-                    count={filteredUsers.length}
+                    count={total}
                     page={page}
-                    onPageChange={(_, nextPage) => setPage(nextPage)}
+                    onPageChange={(_, nextPage) =>
+                        setPage(nextPage)
+                    }
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={(event) => {
                         setRowsPerPage(Number(event.target.value));
@@ -694,267 +853,378 @@ function ManageUsers() {
                 />
             </section>
 
-            {/* USER PROFILE */}
-
+            {/* ================== USER PROFILE DIALOG ================== */}
             <Dialog
-                open={Boolean(selectedUser)}
-                onClose={() => setSelectedId(null)}
+                open={Boolean(selectedId)}
+                onClose={closeProfile}
                 maxWidth="md"
                 fullWidth
                 className="mu-dialog"
                 aria-labelledby="mu-profile-title"
             >
-                {selectedUser && (
-                    <>
-                        <DialogTitle id="mu-profile-title">
-                            Candidate profile
-                        </DialogTitle>
+                <DialogTitle id="mu-profile-title">
+                    Candidate profile
+                </DialogTitle>
 
-                        <DialogContent dividers>
-                            <div className="mu-profile-banner">
-                                <span className="mu-avatar" aria-hidden="true">
-                                    {getInitials(selectedUser.name)}
-                                </span>
+                <DialogContent dividers>
+                    {/* ================== DETAILS LOADING ================== */}
+                    {detailsLoading && (
+                        <div
+                            style={{
+                                padding: 32,
+                                textAlign: "center",
+                            }}
+                        >
+                            <CircularProgress size={26} />
+                            <p>Loading candidate profile...</p>
+                        </div>
+                    )}
 
-                                <div className="mu-profile-copy">
-                                    <h2>{selectedUser.name}</h2>
-                                    <p>{selectedUser.email}</p>
-                                    <span>{selectedUser.id}</span>
-                                </div>
+                    {/* ================== DETAILS ERROR ================== */}
+                    {!detailsLoading && detailsError && (
+                        <Alert
+                            severity="error"
+                            action={
+                                <Button
+                                    type="button"
+                                    color="inherit"
+                                    size="small"
+                                    onClick={() =>
+                                        setDetailsRevision(
+                                            (previous) => previous + 1
+                                        )
+                                    }
+                                >
+                                    Retry
+                                </Button>
+                            }
+                        >
+                            {detailsError}
+                        </Alert>
+                    )}
 
-                                <UserStatus status={selectedUser.status} />
-                            </div>
-
-                            <section className="mu-section">
-                                <h3>Personal & contact information</h3>
-
-                                <dl className="mu-detail-grid">
-                                    <Detail
-                                        label="Full name"
-                                        value={selectedUser.name}
+                    {/* ================== CANDIDATE PROFILE ================== */}
+                    {!detailsLoading &&
+                        !detailsError &&
+                        selectedUser && (
+                            <>
+                                {/* ================== PROFILE BANNER ================== */}
+                                <div className="mu-profile-banner">
+                                    <CandidateAvatar
+                                        user={selectedUser}
+                                        large
                                     />
-                                    <Detail
-                                        label="Email"
-                                        value={selectedUser.email}
-                                    />
-                                    <Detail
-                                        label="Phone"
-                                        value={selectedUser.phone}
-                                    />
-                                    <Detail
-                                        label="Address"
-                                        value={selectedUser.address}
-                                    />
-                                    <Detail
-                                        label="Registered on"
-                                        value={formatDate(
-                                            selectedUser.joinedAt,
-                                            true,
-                                        )}
-                                    />
-                                    <Detail
-                                        label="Account status"
-                                        value={selectedUser.status}
-                                    />
-                                </dl>
-                            </section>
 
-                            <section className="mu-section">
-                                <h3>Professional profile</h3>
-
-                                <dl className="mu-detail-grid">
-                                    <Detail
-                                        label="Qualification"
-                                        value={selectedUser.qualification}
-                                    />
-                                    <Detail
-                                        label="Experience"
-                                        value={selectedUser.experience}
-                                    />
-                                    <Detail
-                                        label="Skills"
-                                        value={toTextList(
-                                            selectedUser.skills,
-                                        ).join(", ")}
-                                    />
-                                </dl>
-
-                                {resumeUrl ? (
-                                    <Button
-                                        component="a"
-                                        href={resumeUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        variant="outlined"
-                                        startIcon={
-                                            <i
-                                                className="fa-regular fa-file-pdf"
-                                                aria-hidden="true"
-                                            />
-                                        }
-                                    >
-                                        Open profile resume
-                                    </Button>
-                                ) : (
-                                    <p className="mu-muted">
-                                        No profile resume is available.
-                                    </p>
-                                )}
-                            </section>
-
-                            <section className="mu-section">
-                                <div className="mu-section-heading">
-                                    <h3>Application history</h3>
-
-                                    {!applicationData.error && (
-                                        <span className="mu-count">
-                                            {userApplications.length}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {applicationData.error ? (
-                                    <Alert severity="warning">
-                                        {applicationData.error}
-                                    </Alert>
-                                ) : userApplications.length ? (
-                                    <TableContainer className="mu-history-container">
-                                        <Table
-                                            size="small"
-                                            className="mu-history-table"
-                                            aria-label={`${selectedUser.name}'s applications`}
-                                        >
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>
-                                                        Position
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        Applied on
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        Status
-                                                    </TableCell>
-                                                </TableRow>
-                                            </TableHead>
-
-                                            <TableBody>
-                                                {userApplications.map(
-                                                    (application) => (
-                                                        <TableRow
-                                                            key={application.id}
-                                                        >
-                                                            <TableCell>
-                                                                <strong>
-                                                                    {
-                                                                        application.title
-                                                                    }
-                                                                </strong>
-
-                                                                <span className="mu-history-company">
-                                                                    {application.openingType ===
-                                                                    "internal"
-                                                                        ? "Internal vacancy"
-                                                                        : application.company ||
-                                                                          "Client job"}
-                                                                </span>
-                                                            </TableCell>
-
-                                                            <TableCell>
-                                                                {formatDate(
-                                                                    application.appliedAt,
-                                                                )}
-                                                            </TableCell>
-
-                                                            <TableCell>
-                                                                <Chip
-                                                                    label={
-                                                                        application.status
-                                                                    }
-                                                                    color={
-                                                                        APPLICATION_COLORS[
-                                                                            application
-                                                                                .status
-                                                                        ]
-                                                                    }
-                                                                    variant="outlined"
-                                                                    size="small"
-                                                                />
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ),
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                ) : (
-                                    <div className="mu-empty-history">
-                                        <i
-                                            className="fa-regular fa-file-lines"
-                                            aria-hidden="true"
-                                        />
-                                        <p>
-                                            This candidate has not submitted any
-                                            applications.
-                                        </p>
+                                    <div className="mu-profile-copy">
+                                        <h2>{selectedUser.name}</h2>
+                                        <p>{selectedUser.email}</p>
+                                        <span>{selectedUser.id}</span>
                                     </div>
-                                )}
-                            </section>
 
-                            <section className="mu-section">
-                                <h3>Account access</h3>
+                                    <UserStatus
+                                        status={selectedUser.status}
+                                    />
+                                </div>
 
+                                {/* ================== PERSONAL DETAILS ================== */}
+                                <section className="mu-section">
+                                    <h3>
+                                        Personal & contact information
+                                    </h3>
+
+                                    <dl className="mu-detail-grid">
+                                        <Detail
+                                            label="Full name"
+                                            value={selectedUser.name}
+                                        />
+
+                                        <Detail
+                                            label="Email"
+                                            value={selectedUser.email}
+                                        />
+
+                                        <Detail
+                                            label="Phone"
+                                            value={selectedUser.phone}
+                                        />
+
+                                        <Detail
+                                            label="Address"
+                                            value={selectedUser.address}
+                                        />
+
+                                        <Detail
+                                            label="Registered on"
+                                            value={formatDate(
+                                                selectedUser.joinedAt,
+                                                true
+                                            )}
+                                        />
+
+                                        <Detail
+                                            label="Account status"
+                                            value={selectedUser.status}
+                                        />
+                                    </dl>
+                                </section>
+
+                                {/* ================== PROFESSIONAL DETAILS ================== */}
+                                <section className="mu-section">
+                                    <h3>Professional profile</h3>
+
+                                    <dl className="mu-detail-grid">
+                                        <Detail
+                                            label="Qualification"
+                                            value={selectedUser.qualification}
+                                        />
+
+                                        <Detail
+                                            label="Experience"
+                                            value={selectedUser.experience}
+                                        />
+
+                                        <Detail
+                                            label="Skills"
+                                            value={toTextList(
+                                                selectedUser.skills
+                                            ).join(", ")}
+                                        />
+
+                                        <Detail
+                                            label="Last login"
+                                            value={formatDate(
+                                                selectedUser.lastLoginAt,
+                                                true
+                                            )}
+                                        />
+                                    </dl>
+
+
+                            {/* ================== PROFILE RESUME ================== */}
+                            {selectedUser.resume ? (
                                 <div className="mu-access-card">
                                     <div>
-                                        <strong>
-                                            {selectedUser.status === "Active"
-                                                ? "Account is active"
-                                                : "Account is inactive"}
-                                        </strong>
+                                        <strong>{selectedUser.resume.name}</strong>
 
                                         <p>
-                                            Changing account access preserves
-                                            the profile and existing
-                                            applications.
+                                            Candidate profile resume · Secure access
                                         </p>
                                     </div>
 
-                                    <Button
-                                        variant="outlined"
-                                        color={
-                                            selectedUser.status === "Active"
-                                                ? "error"
-                                                : "success"
-                                        }
-                                        onClick={() =>
-                                            requestStatusChange(selectedUser)
-                                        }
-                                    >
-                                        {selectedUser.status === "Active"
-                                            ? "Deactivate user"
-                                            : "Activate user"}
-                                    </Button>
-                                </div>
-                            </section>
-                        </DialogContent>
+                                    <div className="mu-actions">
+                                        {/* ================== VIEW PDF RESUME ================== */}
+                                        {selectedUser.resume.mimeType ===
+                                            "application/pdf" && (
+                                            <Button
+                                                component="a"
+                                                href={getAdminResumeUrl(
+                                                    selectedUser.id,
+                                                    "view"
+                                                )}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                variant="outlined"
+                                                size="small"
+                                                startIcon={
+                                                    <i className="fa-regular fa-eye" />
+                                                }
+                                            >
+                                                View Resume
+                                            </Button>
+                                        )}
 
-                        <DialogActions>
-                            <Button
-                                variant="outlined"
-                                onClick={() => setSelectedId(null)}
-                            >
-                                Close
-                            </Button>
-                        </DialogActions>
-                    </>
-                )}
+                                        {/* ================== DOWNLOAD RESUME ================== */}
+                                        <Button
+                                            component="a"
+                                            href={getAdminResumeUrl(
+                                                selectedUser.id,
+                                                "download"
+                                            )}
+                                            variant="outlined"
+                                            size="small"
+                                            startIcon={
+                                                <i className="fa-solid fa-download" />
+                                            }
+                                        >
+                                            Download
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="mu-muted">
+                                    No profile resume is available.
+                                </p>
+                            )}
+
+                                </section>
+
+                                {/* ================== APPLICATION HISTORY ================== */}
+                                <section className="mu-section">
+                                    <div className="mu-section-heading">
+                                        <h3>Application history</h3>
+
+                                        <span className="mu-count">
+                                            {applicationTotal}
+                                        </span>
+                                    </div>
+
+                                    {userApplications.length ? (
+                                        <TableContainer className="mu-history-container">
+                                            <Table
+                                                size="small"
+                                                className="mu-history-table"
+                                                aria-label={`${selectedUser.name}'s applications`}
+                                            >
+                                                <TableHead>
+                                                    <TableRow>
+                                                        <TableCell>
+                                                            Position
+                                                        </TableCell>
+
+                                                        <TableCell>
+                                                            Applied on
+                                                        </TableCell>
+
+                                                        <TableCell>
+                                                            Status
+                                                        </TableCell>
+                                                    </TableRow>
+                                                </TableHead>
+
+                                                <TableBody>
+                                                    {userApplications.map(
+                                                        (application) => (
+                                                            <TableRow
+                                                                key={application.id}
+                                                            >
+                                                                <TableCell>
+                                                                    <strong>
+                                                                        {application.title}
+                                                                    </strong>
+
+                                                                    <span className="mu-history-company">
+                                                                        {application.openingType === "internal"
+                                                                            ? "Internal vacancy"
+                                                                            : application.company || "Client job"}
+                                                                    </span>
+                                                                </TableCell>
+
+                                                                <TableCell>
+                                                                    {formatDate(
+                                                                        application.appliedAt
+                                                                    )}
+                                                                </TableCell>
+
+                                                                <TableCell>
+                                                                    <Chip
+                                                                        label={application.status}
+                                                                        color={
+                                                                            APPLICATION_COLORS[
+                                                                                application.status
+                                                                            ] || "default"
+                                                                        }
+                                                                        size="small"
+                                                                        variant="outlined"
+                                                                    />
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    ) : (
+                                        <div className="mu-empty-history">
+                                            <i
+                                                className="fa-regular fa-file-lines"
+                                                aria-hidden="true"
+                                            />
+
+                                            <p>
+                                                This candidate has not submitted
+                                                any applications.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* ================== HISTORY PAGINATION ================== */}
+                                    {applicationTotal > HISTORY_PAGE_SIZE && (
+                                        <TablePagination
+                                            component="div"
+                                            count={applicationTotal}
+                                            page={historyPage}
+                                            rowsPerPage={HISTORY_PAGE_SIZE}
+                                            rowsPerPageOptions={[
+                                                HISTORY_PAGE_SIZE,
+                                            ]}
+                                            onPageChange={(_, nextPage) =>
+                                                setHistoryPage(nextPage)
+                                            }
+                                        />
+                                    )}
+                                </section>
+
+                                {/* ================== ACCOUNT ACCESS ================== */}
+                                <section className="mu-section">
+                                    <h3>Account access</h3>
+
+                                    <div className="mu-access-card">
+                                        <div>
+                                            <strong>
+                                                {selectedUser.status === "Active"
+                                                    ? "Account is active"
+                                                    : "Account is inactive"}
+                                            </strong>
+
+                                            <p>
+                                                Changing account access
+                                                preserves the profile and
+                                                existing applications.
+                                            </p>
+                                        </div>
+
+                                        <Button
+                                            type="button"
+                                            variant="outlined"
+                                            disabled={statusSaving}
+                                            color={
+                                                selectedUser.status === "Active"
+                                                    ? "error"
+                                                    : "success"
+                                            }
+                                            onClick={() =>
+                                                requestStatusChange(selectedUser)
+                                            }
+                                        >
+                                            {selectedUser.status === "Active"
+                                                ? "Deactivate user"
+                                                : "Activate user"}
+                                        </Button>
+                                    </div>
+                                </section>
+                            </>
+                        )}
+                </DialogContent>
+
+                <DialogActions>
+                    <Button
+                        variant="outlined"
+                        onClick={closeProfile}
+                        disabled={statusSaving}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
             </Dialog>
 
-            {/* ACCOUNT STATUS CONFIRMATION */}
-
+            {/* ================== ACCOUNT STATUS CONFIRMATION ================== */}
             <Dialog
-                open={Boolean(actionUser)}
-                onClose={() => setStatusAction(null)}
+                open={Boolean(statusAction)}
+                onClose={() => {
+                    if (!statusSaving) {
+                        setStatusAction(null);
+                    }
+                }}
                 maxWidth="xs"
                 fullWidth
                 className="mu-dialog"
@@ -968,10 +1238,13 @@ function ManageUsers() {
                 </DialogTitle>
 
                 <DialogContent>
-                    <p id="mu-status-description" className="mu-confirm-text">
+                    <p
+                        id="mu-status-description"
+                        className="mu-confirm-text"
+                    >
                         {statusAction?.nextStatus === "Inactive"
-                            ? `Mark ${actionUser?.name}'s account as inactive?`
-                            : `Restore ${actionUser?.name}'s account to active status?`}
+                            ? `Mark ${statusAction.name}'s account as inactive?`
+                            : `Restore ${statusAction?.name}'s account to active status?`}
                     </p>
 
                     <p className="mu-muted">
@@ -980,23 +1253,39 @@ function ManageUsers() {
                 </DialogContent>
 
                 <DialogActions>
-                    <Button onClick={() => setStatusAction(null)}>
+                    <Button
+                        type="button"
+                        disabled={statusSaving}
+                        onClick={() => setStatusAction(null)}
+                    >
                         Cancel
                     </Button>
 
                     <Button
+                        type="button"
                         variant="contained"
                         disableElevation
+                        disabled={statusSaving}
                         color={
                             statusAction?.nextStatus === "Inactive"
                                 ? "error"
                                 : "success"
                         }
                         onClick={saveStatusChange}
+                        startIcon={
+                            statusSaving ? (
+                                <CircularProgress
+                                    size={16}
+                                    color="inherit"
+                                />
+                            ) : null
+                        }
                     >
-                        {statusAction?.nextStatus === "Inactive"
-                            ? "Deactivate"
-                            : "Activate"}
+                        {statusSaving
+                            ? "Saving..."
+                            : statusAction?.nextStatus === "Inactive"
+                              ? "Deactivate"
+                              : "Activate"}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -1004,4 +1293,5 @@ function ManageUsers() {
     );
 }
 
+// ================== EXPORT ==================
 export default ManageUsers;
