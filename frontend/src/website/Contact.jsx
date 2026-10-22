@@ -1,8 +1,12 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button, TextField } from "@mui/material";
+import { Button, CircularProgress, TextField } from "@mui/material";
 import { toast } from "react-toastify";
 
+import api from "../services/api";
+
+// ================== COMPANY CONTACT DETAILS ==================
 const companyContact = {
     phone: "7064341545",
     email: "krushna@gmail.com",
@@ -13,6 +17,7 @@ const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURICompo
     companyContact.address
 )}`;
 
+// ================== INITIAL FORM VALUES ==================
 const initialValues = {
     name: "",
     email: "",
@@ -21,48 +26,88 @@ const initialValues = {
     message: "",
 };
 
+// ================== FORM VALIDATION ==================
+// Match the backend Contact Joi schema.
 function validateForm(values) {
     const errors = {};
 
-    if (!values.name.trim()) {
+    const name = values.name.trim();
+    const email = values.email.trim();
+    const phone = values.phone.trim();
+    const subject = values.subject.trim();
+    const message = values.message.trim();
+
+    // ================== NAME VALIDATION ==================
+    if (!name) {
         errors.name = "Please enter your full name.";
+    } else if (name.length < 2 || name.length > 100) {
+        errors.name = "Name must contain 2–100 characters.";
     }
 
-    if (!values.email.trim()) {
+    // ================== EMAIL VALIDATION ==================
+    if (!email) {
         errors.email = "Please enter your email address.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
+    } else if (
+        email.length > 254 ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
         errors.email = "Please enter a valid email address.";
     }
 
-    const phone = values.phone.trim();
-    const digits = phone.replace(/\D/g, "");
 
+    // ================== PHONE VALIDATION ==================
+    // Only valid 10-digit Indian mobile numbers.
     if (!phone) {
         errors.phone = "Please enter your phone number.";
-    } else if (
-        !/^\+?[\d\s()-]+$/.test(phone) ||
-        digits.length < 10 ||
-        digits.length > 15
-    ) {
-        errors.phone = "Please enter a valid phone number.";
+    } else if (!/^[6-9]\d{9}$/.test(phone)) {
+        errors.phone = "Enter a valid 10-digit Indian mobile number.";
     }
 
-    if (!values.subject.trim()) {
+
+    // ================== SUBJECT VALIDATION ==================
+    if (!subject) {
         errors.subject = "Please enter a subject.";
+    } else if (subject.length > 150) {
+        errors.subject = "Subject cannot exceed 150 characters.";
     }
 
-    if (!values.message.trim()) {
+    // ================== MESSAGE VALIDATION ==================
+    if (!message) {
         errors.message = "Please enter your message.";
+    } else if (message.length > 3000) {
+        errors.message = "Message cannot exceed 3000 characters.";
     }
 
     return errors;
 }
 
+// ================== API ERROR MESSAGE ==================
+function getApiError(error) {
+    const status = error.response?.status;
+
+    if (status === 429) {
+        return "Too many enquiries. Please try again later.";
+    }
+
+    if (status >= 500) {
+        return "Our service is temporarily unavailable. Please try again later.";
+    }
+
+    return (
+        error.response?.data?.message ||
+        "Unable to submit your enquiry. Please try again."
+    );
+}
+
+// ================== CONTACT PAGE ==================
 export default function Contact() {
     const [values, setValues] = useState(initialValues);
     const [errors, setErrors] = useState({});
-    const [previewChecked, setPreviewChecked] = useState(false);
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [feedback, setFeedback] = useState(null);
+
+    // ================== HANDLE INPUT CHANGE ==================
     const handleChange = (event) => {
         const { name, value } = event.target;
 
@@ -76,15 +121,28 @@ export default function Contact() {
             [name]: "",
         }));
 
-        setPreviewChecked(false);
+        setFeedback(null);
     };
 
-    const handleSubmit = (event) => {
+    // ================== SUBMIT CONTACT ENQUIRY ==================
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
-        const nextErrors = validateForm(values);
+        if (isSubmitting) return;
+
+        // Remove extra whitespace before validation and submission.
+        const payload = {
+            name: values.name.trim(),
+            email: values.email.trim().toLowerCase(),
+            phone: values.phone.trim(),
+            subject: values.subject.trim(),
+            message: values.message.trim(),
+        };
+
+        const nextErrors = validateForm(payload);
+
         setErrors(nextErrors);
-        setPreviewChecked(false);
+        setFeedback(null);
 
         const firstInvalidField = Object.keys(nextErrors)[0];
 
@@ -96,16 +154,47 @@ export default function Contact() {
             return;
         }
 
-        // Frontend preview only.
-        // Connect the contact API here during backend development.
-        // Clear the form only after a successful API response.
-        setPreviewChecked(true);
+        setIsSubmitting(true);
 
-        toast.info(
-            "Form checked. Your enquiry has not been sent because submission is not connected yet."
-        );
+        try {
+            // ================== SAVE ENQUIRY IN MONGODB ==================
+            // Backend validates fields and generates enquiry ID.
+            const { data } = await api.post(
+                "/contact",
+                payload
+            );
+
+            if (!data?.success || !data?.enquiryId) {
+                throw new Error(
+                    "The server did not confirm enquiry submission."
+                );
+            }
+
+            // ================== SUCCESS RESPONSE ==================
+            // Clear the form only after the server confirms submission.
+            setValues({ ...initialValues });
+            setErrors({});
+
+            setFeedback({
+                type: "success",
+                message: "Your enquiry has been submitted successfully.",
+                enquiryId: data.enquiryId,
+            });
+
+            toast.success("Enquiry submitted successfully.");
+        } catch (error) {
+            // ================== ERROR RESPONSE ==================
+            // Preserve all form values so the user can retry.
+            setFeedback({
+                type: "error",
+                message: getApiError(error),
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
+    // ================== SHARED INPUT PROPERTIES ==================
     const getFieldProps = (name) => ({
         id: `contact-${name}`,
         name,
@@ -117,11 +206,12 @@ export default function Contact() {
         variant: "outlined",
         fullWidth: true,
         required: true,
+        disabled: isSubmitting,
     });
 
     return (
         <div className="contact-page">
-            {/* BANNER — REUSES THE ABOUT PAGE DESIGN */}
+            {/* ================== CONTACT BANNER ================== */}
             <section
                 className="about-hero"
                 aria-labelledby="contact-title"
@@ -168,13 +258,14 @@ export default function Contact() {
                 </div>
             </section>
 
-            {/* CONTACT INFORMATION AND FORM */}
+            {/* ================== CONTACT INFORMATION AND FORM ================== */}
             <section
                 className="website-section contact-main-section"
                 aria-labelledby="contact-form-title"
             >
                 <div className="website-shell">
                     <div className="contact-grid">
+                        {/* ================== CONTACT INFORMATION ================== */}
                         <aside
                             className="contact-information"
                             aria-labelledby="contact-information-title"
@@ -209,7 +300,9 @@ export default function Contact() {
                                     <div>
                                         <h3>Call us</h3>
 
-                                        <a href={`tel:+91${companyContact.phone}`}>
+                                        <a
+                                            href={`tel:+91${companyContact.phone}`}
+                                        >
                                             +91 {companyContact.phone}
                                         </a>
                                     </div>
@@ -226,7 +319,9 @@ export default function Contact() {
                                     <div>
                                         <h3>Email us</h3>
 
-                                        <a href={`mailto:${companyContact.email}`}>
+                                        <a
+                                            href={`mailto:${companyContact.email}`}
+                                        >
                                             {companyContact.email}
                                         </a>
                                     </div>
@@ -254,10 +349,12 @@ export default function Contact() {
                                             rel="noopener noreferrer"
                                         >
                                             View on Google Maps
+
                                             <i
                                                 className="fa-solid fa-arrow-up-right-from-square"
                                                 aria-hidden="true"
                                             />
+
                                             <span className="contact-sr-only">
                                                 {" "}(opens in a new tab)
                                             </span>
@@ -266,6 +363,7 @@ export default function Contact() {
                                 </li>
                             </ul>
 
+                            {/* ================== CAREERS LINK ================== */}
                             <div className="contact-careers">
                                 <span
                                     className="contact-icon"
@@ -298,6 +396,7 @@ export default function Contact() {
                             </div>
                         </aside>
 
+                        {/* ================== CONTACT FORM CARD ================== */}
                         <div className="contact-form-card">
                             <div className="contact-form-heading">
                                 <span
@@ -324,10 +423,12 @@ export default function Contact() {
                                 </p>
                             </div>
 
+                            {/* ================== ENQUIRY FORM ================== */}
                             <form
                                 className="contact-form"
                                 onSubmit={handleSubmit}
                                 noValidate
+                                aria-busy={isSubmitting}
                             >
                                 <div className="contact-form-row">
                                     <TextField
@@ -362,7 +463,8 @@ export default function Contact() {
                                         autoComplete="tel"
                                         slotProps={{
                                             htmlInput: {
-                                                maxLength: 25,
+                                                maxLength: 10,
+                                                inputMode: "numeric",
                                             },
                                         }}
                                     />
@@ -378,6 +480,7 @@ export default function Contact() {
                                     />
                                 </div>
 
+                                {/* ================== MESSAGE INPUT ================== */}
                                 <div>
                                     <TextField
                                         {...getFieldProps("message")}
@@ -403,28 +506,71 @@ export default function Contact() {
                                     </div>
                                 </div>
 
-                                <p
-                                    className="contact-preview-note"
-                                    role="status"
-                                >
-                                    {previewChecked
-                                        ? "Your form is ready. No enquiry has been sent or saved in this preview."
-                                        : "Preview mode: this form checks your details but does not send an enquiry yet."}
-                                </p>
+                                {/* ================== SUBMISSION FEEDBACK ================== */}
+                                {feedback && (
+                                    <div
+                                        className="contact-preview-note"
+                                        role={
+                                            feedback.type === "error"
+                                                ? "alert"
+                                                : "status"
+                                        }
+                                        style={
+                                            feedback.type === "error"
+                                                ? {
+                                                      background: "#fff5f5",
+                                                      borderColor: "#fecaca",
+                                                      color: "#b91c1c",
+                                                  }
+                                                : {
+                                                      background: "#f0fdf4",
+                                                      borderColor: "#bbf7d0",
+                                                      color: "#166534",
+                                                  }
+                                        }
+                                    >
+                                        <p style={{ margin: 0 }}>
+                                            {feedback.message}
+                                        </p>
 
+                                        {feedback.enquiryId && (
+                                            <p
+                                                style={{
+                                                    margin: "6px 0 0",
+                                                    fontWeight: 600,
+                                                    overflowWrap: "anywhere",
+                                                }}
+                                            >
+                                                Enquiry ID: {feedback.enquiryId}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* ================== SUBMIT BUTTON ================== */}
                                 <Button
                                     type="submit"
                                     variant="contained"
                                     disableElevation
+                                    disabled={isSubmitting}
                                     className="website-button website-button-primary contact-submit"
                                     endIcon={
-                                        <i
-                                            className="fa-solid fa-arrow-right"
-                                            aria-hidden="true"
-                                        />
+                                        isSubmitting ? (
+                                            <CircularProgress
+                                                size={18}
+                                                color="inherit"
+                                            />
+                                        ) : (
+                                            <i
+                                                className="fa-solid fa-arrow-right"
+                                                aria-hidden="true"
+                                            />
+                                        )
                                     }
                                 >
-                                    Check enquiry
+                                    {isSubmitting
+                                        ? "Submitting..."
+                                        : "Submit Enquiry"}
                                 </Button>
                             </form>
                         </div>

@@ -7,6 +7,7 @@ const authRoutes = require("./routes/authRoutes");
 const jobRoutes = require("./routes/jobRoutes");
 const applicationRoutes = require("./routes/applicationRoutes");
 const userRoutes = require("./routes/userRoutes");
+const contactRoutes = require("./routes/contactRoutes");
 
 const ExpressError = require("./utils/ExpressError");
 const errorMiddleware = require("./middleware/errorMiddleware");
@@ -112,6 +113,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/contact", contactRoutes);
 
 // ================== ROUTE NOT FOUND ==================
 app.use((req, res, next) => {
