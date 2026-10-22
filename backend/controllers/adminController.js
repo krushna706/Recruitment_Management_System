@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const { randomUUID } = require("node:crypto");
 const User = require("../models/User");
 const Application = require("../models/Application");
+const Job = require("../models/Job");
 const cloudinary = require("../config/cloudinary");
 const ExpressError = require("../utils/ExpressError");
 
@@ -1582,6 +1583,299 @@ async function uploadMyAdminAvatar(req, res, next) {
     }
 }
 
+// ================== ADMIN DASHBOARD ==================
+// GET /api/admin/dashboard
+async function getAdminDashboard(req, res, next) {
+    try {
+        // ================== ADMIN ACCESS ==================
+        requireAdmin(req);
+        validateQuery(req.query, []);
+
+        // ================== FETCH DASHBOARD DATA ==================
+        const [
+            jobGroups,
+            applicationGroups,
+            registeredUsers,
+            latestApplications,
+            statusHistory,
+            latestPublishedJobs,
+        ] = await Promise.all([
+            // ================== JOB STATISTICS ==================
+            Job.aggregate([
+                {
+                    $group: {
+                        _id: "$openingType",
+                        total: { $sum: 1 },
+                        published: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ["$status", "Published"] },
+                                    1,
+                                    0,
+                                ],
+                            },
+                        },
+                    },
+                },
+            ]),
+
+            // ================== APPLICATION STATISTICS ==================
+            Application.aggregate([
+                {
+                    $group: {
+                        _id: "$status",
+                        count: { $sum: 1 },
+                    },
+                },
+            ]),
+
+            // ================== REGISTERED CANDIDATES ==================
+            User.countDocuments({ role: "user" }),
+
+            // ================== RECENT APPLICATIONS ==================
+            Application.find()
+                .select(
+                    "applicant.name jobSnapshot.title " +
+                    "jobSnapshot.company openingType status createdAt"
+                )
+                .sort({ createdAt: -1, _id: -1 })
+                .limit(5)
+                .lean(),
+
+            // ================== APPLICATION STATUS HISTORY ==================
+            Application.aggregate([
+                { $unwind: "$history" },
+                {
+                    $sort: {
+                        "history.createdAt": -1,
+                        _id: -1,
+                    },
+                },
+                { $limit: 6 },
+                {
+                    $project: {
+                        candidate: "$applicant.name",
+                        jobTitle: "$jobSnapshot.title",
+                        status: "$history.status",
+                        at: "$history.createdAt",
+                    },
+                },
+            ]),
+
+            // ================== RECENT PUBLISHED JOBS ==================
+            Job.find({
+                publishedAt: { $type: "date" },
+            })
+                .select("title openingType publishedAt")
+                .sort({ publishedAt: -1, _id: -1 })
+                .limit(6)
+                .lean(),
+        ]);
+
+        // ================== JOB COUNTS ==================
+        const clientJobs = {
+            total: 0,
+            published: 0,
+        };
+
+        const internalVacancies = {
+            total: 0,
+            published: 0,
+        };
+
+        for (const group of jobGroups) {
+            if (group._id === "client") {
+                clientJobs.total = group.total;
+                clientJobs.published = group.published;
+            }
+
+            if (group._id === "internal") {
+                internalVacancies.total = group.total;
+                internalVacancies.published = group.published;
+            }
+        }
+
+        // ================== APPLICATION STATUS COUNTS ==================
+        const statusCounts = {
+            Submitted: 0,
+            "Under Review": 0,
+            Shortlisted: 0,
+            Interview: 0,
+            Selected: 0,
+            Rejected: 0,
+        };
+
+        let totalApplications = 0;
+
+        for (const group of applicationGroups) {
+            totalApplications += group.count;
+
+            if (Object.hasOwn(statusCounts, group._id)) {
+                statusCounts[group._id] = group.count;
+            }
+        }
+
+        // Pending = Submitted + Under Review.
+        const pending =
+            statusCounts.Submitted +
+            statusCounts["Under Review"];
+
+        // ================== RECENT APPLICATIONS ==================
+        const recentApplications = latestApplications.map(
+            (application) => ({
+                id: String(application._id),
+
+                candidate:
+                    application.applicant?.name ||
+                    "Unknown candidate",
+
+                title:
+                    application.jobSnapshot?.title ||
+                    "Job unavailable",
+
+                company:
+                    application.jobSnapshot?.company ||
+                    (application.openingType === "internal"
+                        ? "Internal Vacancy"
+                        : ""),
+
+                openingType: application.openingType,
+                status: application.status,
+                appliedAt: application.createdAt,
+            })
+        );
+
+        // ================== ACTIVITY DISPLAY CONFIG ==================
+        const activityConfig = {
+            Submitted: {
+                title: "New application received",
+                icon: "fa-regular fa-file-lines",
+                tone: "blue",
+            },
+
+            "Under Review": {
+                title: "Application moved to review",
+                icon: "fa-regular fa-clock",
+                tone: "amber",
+            },
+
+            Shortlisted: {
+                title: "Candidate shortlisted",
+                icon: "fa-solid fa-user-check",
+                tone: "green",
+            },
+
+            Interview: {
+                title: "Interview scheduled",
+                icon: "fa-solid fa-calendar-check",
+                tone: "purple",
+            },
+
+            Selected: {
+                title: "Candidate selected",
+                icon: "fa-solid fa-circle-check",
+                tone: "green",
+            },
+
+            Rejected: {
+                title: "Application rejected",
+                icon: "fa-regular fa-circle-xmark",
+                tone: "red",
+            },
+        };
+
+        // ================== APPLICATION ACTIVITIES ==================
+        const applicationActivities = statusHistory.map(
+            (entry) => {
+                const config = activityConfig[entry.status] || {
+                    title: "Application updated",
+                    icon: "fa-regular fa-file-lines",
+                    tone: "blue",
+                };
+
+                return {
+                    id:
+                        `application-${entry._id}-` +
+                        `${entry.status}-${new Date(entry.at).getTime()}`,
+
+                    title: config.title,
+
+                    description:
+                        `${entry.candidate || "Candidate"} · ` +
+                        `${entry.jobTitle || "Job"}`,
+
+                    at: entry.at,
+                    icon: config.icon,
+                    tone: config.tone,
+                    path: "/manage/manage-applications",
+                };
+            }
+        );
+
+        // ================== JOB PUBLICATION ACTIVITIES ==================
+        const jobActivities = latestPublishedJobs.map(
+            (job) => ({
+                id: `job-${job._id}`,
+
+                title:
+                    job.openingType === "internal"
+                        ? "Vacancy published"
+                        : "Client job published",
+
+                description: `${job.title} published for applications.`,
+
+                at: job.publishedAt,
+                icon: "fa-solid fa-briefcase",
+                tone: "purple",
+
+                path:
+                    job.openingType === "internal"
+                        ? "/manage/manage-vacancies"
+                        : "/manage/manage-jobs",
+            })
+        );
+
+        // ================== RECENT ACTIVITIES ==================
+        const recentActivities = [
+            ...applicationActivities,
+            ...jobActivities,
+        ]
+            .sort(
+                (a, b) =>
+                    new Date(b.at).getTime() -
+                    new Date(a.at).getTime()
+            )
+            .slice(0, 4);
+
+        // ================== DASHBOARD RESPONSE ==================
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+
+            stats: {
+                clientJobs,
+                internalVacancies,
+
+                applications: {
+                    total: totalApplications,
+                    pending,
+                    shortlisted: statusCounts.Shortlisted,
+                    selected: statusCounts.Selected,
+                    rejected: statusCounts.Rejected,
+                },
+
+                registeredUsers,
+            },
+
+            statusCounts,
+            recentApplications,
+            recentActivities,
+        });
+    } catch (error) {
+        return next(error);
+    }
+}
 
 
 
@@ -1600,4 +1894,5 @@ module.exports = {
     updateMyAdminProfile,
     changeMyAdminPassword,
     uploadMyAdminAvatar,
+    getAdminDashboard,
 };

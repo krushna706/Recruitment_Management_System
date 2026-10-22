@@ -1,134 +1,10 @@
-import { demoJobs } from "../data/jobData";
+import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
-import { Button } from "@mui/material";
+import { Alert, Button, CircularProgress } from "@mui/material";
 
-// Temporary frontend data.
-// Backend integration ke time API data use hoga.
+import api from "../services/api";
 
-const demoVacancies = [
-    { id: "job-1", status: "Published" },
-    { id: "job-2", status: "Published" },
-    { id: "job-3", status: "Published" },
-    { id: "job-4", status: "Published" },
-    { id: "job-5", status: "Draft" },
-    { id: "job-6", status: "Closed" },
-];
-
-const demoUsers = [
-    { id: "user-1", role: "user" },
-    { id: "user-2", role: "user" },
-    { id: "user-3", role: "user" },
-    { id: "user-4", role: "user" },
-    { id: "user-5", role: "user" },
-    { id: "user-6", role: "user" },
-];
-
-const demoApplications = [
-    {
-        id: "application-1001",
-        candidate: "Aarav Sharma",
-        title: "MERN Stack Developer",
-        company: "Sample Digital",
-        appliedAt: "2026-10-18T10:30:00+05:30",
-        status: "Submitted",
-    },
-    {
-        id: "application-1002",
-        candidate: "Priya Das",
-        title: "Frontend Developer",
-        company: "Demo Technologies",
-        appliedAt: "2026-10-18T09:15:00+05:30",
-        status: "Under Review",
-    },
-    {
-        id: "application-1003",
-        candidate: "Rohan Patel",
-        title: "UI/UX Designer",
-        company: "Sample Design Studio",
-        appliedAt: "2026-10-17T15:40:00+05:30",
-        status: "Shortlisted",
-    },
-    {
-        id: "application-1004",
-        candidate: "Ananya Mishra",
-        title: "QA Engineer",
-        company: "Demo Technologies",
-        appliedAt: "2026-10-17T11:20:00+05:30",
-        status: "Interview",
-    },
-    {
-        id: "application-1005",
-        candidate: "Vikram Singh",
-        title: "Backend Developer",
-        company: "Demo Technologies",
-        appliedAt: "2026-10-16T14:00:00+05:30",
-        status: "Selected",
-    },
-    {
-        id: "application-1006",
-        candidate: "Sneha Rao",
-        title: "React Developer Intern",
-        company: "Demo Technologies",
-        appliedAt: "2026-10-16T10:45:00+05:30",
-        status: "Rejected",
-    },
-    {
-        id: "application-1007",
-        candidate: "Priya Das",
-        title: "MERN Stack Developer",
-        company: "Sample Digital",
-        appliedAt: "2026-10-15T12:30:00+05:30",
-        status: "Under Review",
-    },
-    {
-        id: "application-1008",
-        candidate: "Rohan Patel",
-        title: "Frontend Developer",
-        company: "Demo Technologies",
-        appliedAt: "2026-10-14T16:00:00+05:30",
-        status: "Shortlisted",
-    },
-];
-
-const demoActivities = [
-    {
-        id: "activity-1",
-        title: "New application received",
-        description: "Aarav Sharma applied for MERN Stack Developer.",
-        at: "2026-10-18T10:30:00+05:30",
-        icon: "fa-regular fa-file-lines",
-        tone: "blue",
-        path: "/manage/manage-applications",
-    },
-    {
-        id: "activity-2",
-        title: "Application moved to review",
-        description: "Priya Das · Frontend Developer",
-        at: "2026-10-18T10:00:00+05:30",
-        icon: "fa-regular fa-clock",
-        tone: "amber",
-        path: "/manage/manage-applications",
-    },
-    {
-        id: "activity-3",
-        title: "Candidate shortlisted",
-        description: "Rohan Patel · UI/UX Designer",
-        at: "2026-10-17T17:00:00+05:30",
-        icon: "fa-solid fa-user-check",
-        tone: "green",
-        path: "/manage/manage-applications",
-    },
-    {
-        id: "activity-4",
-        title: "Vacancy published",
-        description: "React Developer Intern is now open for applications.",
-        at: "2026-10-17T09:00:00+05:30",
-        icon: "fa-solid fa-briefcase",
-        tone: "purple",
-        path: "/manage/manage-vacancies",
-    },
-];
-
+// ================== APPLICATION STATUS DISPLAY ==================
 const statusClasses = {
     Submitted: "submitted",
     "Under Review": "review",
@@ -187,83 +63,150 @@ function getInitials(name = "") {
     );
 }
 
-function Dashboard({
-    user,
-    jobs = demoJobs,
-    vacancies = demoVacancies,
-    applications = demoApplications,
-    users = demoUsers,
-    activities = demoActivities,
-}) {
+// ================== ADMIN DASHBOARD ==================
+function Dashboard({ user }) {
     const outletContext = useOutletContext();
     const currentUser = user ?? outletContext?.user;
     const firstName = currentUser?.name?.trim().split(/\s+/)[0];
 
-    const jobList = Array.isArray(jobs) ? jobs : [];
-    const vacancyList = Array.isArray(vacancies) ? vacancies : [];
-    const applicationList = Array.isArray(applications) ? applications : [];
-    const userList = Array.isArray(users) ? users : [];
-    const activityList = Array.isArray(activities) ? activities : [];
+    // ================== API STATES ==================
+    const [dashboard, setDashboard] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [refreshKey, setRefreshKey] = useState(0);
 
-    // Count all application statuses in one pass.
-    const statusCounts = applicationList.reduce((counts, application) => {
-        const status = application.status || "Unknown";
+    // ================== FETCH DASHBOARD DATA ==================
+    useEffect(() => {
+        const controller = new AbortController();
+        let active = true;
 
-        counts[status] = (counts[status] || 0) + 1;
+        async function loadDashboard() {
+            setLoading(true);
+            setError("");
 
-        return counts;
-    }, Object.create(null));
+            try {
+                const { data } = await api.get("/admin/dashboard", {
+                    signal: controller.signal,
+                });
 
-    // Defined inside Dashboard before cards and chart calculations.
-    const countStatus = (statuses) =>
-        statuses.reduce(
-            (total, status) => total + (statusCounts[status] || 0),
-            0,
+                if (!active) return;
+
+                // Display real MongoDB data only when the response is valid.
+                if (
+                    data?.success !== true ||
+                    !data.stats?.clientJobs ||
+                    !data.stats?.internalVacancies ||
+                    !data.stats?.applications ||
+                    !data.statusCounts ||
+                    !Array.isArray(data.recentApplications) ||
+                    !Array.isArray(data.recentActivities)
+                ) {
+                    throw new Error("Invalid dashboard API response.");
+                }
+
+                setDashboard(data);
+            } catch (requestError) {
+                if (!active) return;
+
+                setDashboard(null);
+                setError(
+                    requestError.response?.data?.message ||
+                        requestError.message ||
+                        "Unable to load dashboard data."
+                );
+            } finally {
+                if (active) setLoading(false);
+            }
+        }
+
+        loadDashboard();
+
+        return () => {
+            active = false;
+            controller.abort();
+        };
+    }, [refreshKey]);
+
+    // ================== LOADING / ERROR STATES ==================
+    if (loading) {
+        return (
+            <div className="admin-dashboard">
+                <header className="panel-page-heading">
+                    <div>
+                        <h1 className="panel-page-title">Dashboard</h1>
+                        <p className="panel-page-description">
+                            Your recruitment overview, all in one place.
+                        </p>
+                    </div>
+                </header>
+                <div className="panel-card" role="status" style={{ padding: 40, textAlign: "center" }}>
+                    <CircularProgress size={28} />
+                    <p>Loading recruitment dashboard...</p>
+                </div>
+            </div>
         );
+    }
 
-    const pendingCount = countStatus(["Submitted", "Under Review"]);
+    if (error || !dashboard) {
+        return (
+            <div className="admin-dashboard">
+                <header className="panel-page-heading">
+                    <div>
+                        <h1 className="panel-page-title">Dashboard</h1>
+                        <p className="panel-page-description">
+                            Your recruitment overview, all in one place.
+                        </p>
+                    </div>
+                </header>
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {error || "Dashboard data is unavailable."}
+                </Alert>
+                <Button
+                    variant="outlined"
+                    onClick={() => setRefreshKey((previous) => previous + 1)}
+                >
+                    Try again
+                </Button>
+            </div>
+        );
+    }
 
-    const publishedCount = vacancyList.filter(
-        (vacancy) => vacancy.status === "Published",
-    ).length;
+    // ================== MONGODB STATISTICS ==================
+    const { stats, statusCounts } = dashboard;
+    const applicationTotal = Number(stats.applications.total) || 0;
+    const pendingCount = Number(stats.applications.pending) || 0;
 
-    const totalUsers = userList.filter(
-        (account) => account.role === "user",
-    ).length;
+    const countStatus = (status) => Number(statusCounts[status]) || 0;
 
-    const recentApplications = [...applicationList]
-        .sort(
-            (first, second) =>
-                getTimestamp(second.appliedAt) - getTimestamp(first.appliedAt),
-        )
+    const recentApplications = [...dashboard.recentApplications]
+        .sort((a, b) => getTimestamp(b.appliedAt) - getTimestamp(a.appliedAt))
         .slice(0, 5);
 
-    const recentActivities = [...activityList]
-        .sort(
-            (first, second) => getTimestamp(second.at) - getTimestamp(first.at),
-        )
+    const recentActivities = [...dashboard.recentActivities]
+        .sort((a, b) => getTimestamp(b.at) - getTimestamp(a.at))
         .slice(0, 4);
 
+    // ================== OVERVIEW CARDS ==================
     const overviewCards = [
         {
             label: "Client Jobs",
-            value: jobList.length,
-            description: `${jobList.filter((job) => job.status === "Published").length} currently published`,
+            value: Number(stats.clientJobs.total) || 0,
+            description: `${Number(stats.clientJobs.published) || 0} currently published`,
             icon: "fa-solid fa-briefcase",
             tone: "blue",
             path: "/manage/manage-jobs",
         },
         {
             label: "Internal Vacancies",
-            value: vacancyList.length,
-            description: `${publishedCount} currently published`,
+            value: Number(stats.internalVacancies.total) || 0,
+            description: `${Number(stats.internalVacancies.published) || 0} currently published`,
             icon: "fa-solid fa-briefcase",
             tone: "blue",
             path: "/manage/manage-vacancies",
         },
         {
             label: "Total Applications",
-            value: applicationList.length,
+            value: applicationTotal,
             description: "Across client jobs and internal vacancies",
             icon: "fa-regular fa-file-lines",
             tone: "purple",
@@ -271,7 +214,7 @@ function Dashboard({
         },
         {
             label: "Registered Users",
-            value: totalUsers,
+            value: Number(stats.registeredUsers) || 0,
             description: "Candidate accounts",
             icon: "fa-solid fa-users",
             tone: "teal",
@@ -279,6 +222,7 @@ function Dashboard({
         },
     ];
 
+    // ================== APPLICATION STATUS CARDS ==================
     const statusCards = [
         {
             label: "Pending",
@@ -289,53 +233,52 @@ function Dashboard({
         },
         {
             label: "Shortlisted",
-            value: countStatus(["Shortlisted"]),
+            value: Number(stats.applications.shortlisted) || 0,
             description: "Currently shortlisted",
             icon: "fa-solid fa-user-check",
             tone: "blue",
         },
         {
             label: "Selected",
-            value: countStatus(["Selected"]),
+            value: Number(stats.applications.selected) || 0,
             description: "Marked as selected",
             icon: "fa-solid fa-circle-check",
             tone: "green",
         },
         {
             label: "Rejected",
-            value: countStatus(["Rejected"]),
+            value: Number(stats.applications.rejected) || 0,
             description: "Not moving forward",
             icon: "fa-regular fa-circle-xmark",
             tone: "red",
         },
     ];
 
+    // ================== APPLICATION STATUS CHART ==================
     const statusChart = chartStatuses.map((status) => {
-        const count = countStatus([status.label]);
+        const count = countStatus(status.label);
 
         return {
             ...status,
             count,
-            percentage: applicationList.length
-                ? (count / applicationList.length) * 100
-                : 0,
+            percentage: applicationTotal ? (count / applicationTotal) * 100 : 0,
         };
     });
 
-    // Keep unexpected statuses represented in the chart total.
+    // Preserve unexpected statuses in the total, rather than hiding them.
     const knownStatusCount = statusChart.reduce(
         (total, status) => total + status.count,
-        0,
+        0
     );
 
-    const otherStatusCount = applicationList.length - knownStatusCount;
+    const otherStatusCount = Math.max(0, applicationTotal - knownStatusCount);
 
     if (otherStatusCount > 0) {
         statusChart.push({
             label: "Other / Unknown",
             className: "other",
             count: otherStatusCount,
-            percentage: (otherStatusCount / applicationList.length) * 100,
+            percentage: (otherStatusCount / applicationTotal) * 100,
         });
     }
 
@@ -350,20 +293,31 @@ function Dashboard({
                     </p>
                 </div>
 
-                <Button
-                    component={Link}
-                    to="/manage/manage-jobs"
-                    variant="outlined"
-                    className="panel-button panel-button-outline"
-                    startIcon={
-                        <i
-                            className="fa-solid fa-briefcase"
-                            aria-hidden="true"
-                        />
-                    }
-                >
-                    Manage Jobs
-                </Button>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    <Button
+                        type="button"
+                        variant="outlined"
+                        className="panel-button panel-button-outline"
+                        onClick={() => setRefreshKey((previous) => previous + 1)}
+                        startIcon={
+                            <i className="fa-solid fa-arrows-rotate" aria-hidden="true" />
+                        }
+                    >
+                        Refresh
+                    </Button>
+
+                    <Button
+                        component={Link}
+                        to="/manage/manage-jobs"
+                        variant="outlined"
+                        className="panel-button panel-button-outline"
+                        startIcon={
+                            <i className="fa-solid fa-briefcase" aria-hidden="true" />
+                        }
+                    >
+                        Manage Jobs
+                    </Button>
+                </div>
             </header>
 
             <section
@@ -488,12 +442,12 @@ function Dashboard({
                     </div>
 
                     <span className="admin-chart-total">
-                        <strong>{applicationList.length}</strong>
+                        <strong>{applicationTotal}</strong>
                         total applications
                     </span>
                 </header>
 
-                {applicationList.length > 0 ? (
+                {applicationTotal > 0 ? (
                     <div className="admin-chart-body">
                         <div
                             className="admin-chart-column-labels"

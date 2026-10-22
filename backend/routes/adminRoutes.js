@@ -45,6 +45,16 @@ const adminAvatarLimiter = rateLimit({
 // All routes require a valid JWT and an active admin account.
 router.use(authMiddleware, roleMiddleware("admin"));
 
+
+// ================== ADMIN DASHBOARD ==================
+// GET /api/admin/dashboard
+// Accessible only to authenticated, active admins.
+router.get(
+    "/dashboard",
+    adminController.getAdminDashboard
+);
+
+
 // ================== MANAGE USERS ==================
 
 // GET /api/admin/users
