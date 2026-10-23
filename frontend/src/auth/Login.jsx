@@ -382,14 +382,13 @@ function Login() {
                                     </Link>
                                 </p>
 
-                                {import.meta.env.DEV && (
-                                    <Link
-                                        to="/manage/forgot-password"
-                                        className="auth-forgot-link"
-                                    >
-                                        Forgot password?
-                                    </Link>
-                                )}
+                                {/* Available for both User and Admin accounts. */}
+                                <Link
+                                    to="/manage/forgot-password"
+                                    className="auth-forgot-link"
+                                >
+                                    Forgot password?
+                                </Link>
                             </div>
                         </div>
                     </section>

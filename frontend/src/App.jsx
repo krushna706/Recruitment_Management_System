@@ -203,11 +203,9 @@ function App() {
                 {/* Authentication */}
                 <Route path="/manage" element={<Login />} />
                 <Route path="/manage/signup" element={<Signup />} />
-
-                {/* Recovery remains a development preview only */}
-                {import.meta.env.DEV && (
-                    <Route path="/manage/forgot-password" element={<ForgotPassword />} />
-                )}
+                
+                {/* Public password recovery for User and Admin. */}
+                <Route path="/manage/forgot-password" element={<ForgotPassword />} />
 
                 {/* Public website */}
                 <Route element={<WebsiteLayout />}>

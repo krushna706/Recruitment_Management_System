@@ -40,6 +40,67 @@ const resumeSchema = new Schema(
     }
 );
 
+
+// ================== PASSWORD RESET SCHEMA ==================
+// Store only secure OTP and reset-verification metadata.
+// Never store the actual 6-digit OTP.
+const passwordResetSchema = new Schema(
+    {
+        // ================== EMAIL OTP ==================
+        otpHash: {
+            type: String,
+            default: null,
+            match: /^[a-f0-9]{64}$/,
+        },
+
+        otpExpiresAt: {
+            type: Date,
+            default: null,
+        },
+
+        failedAttempts: {
+            type: Number,
+            default: 0,
+            min: 0,
+            max: 5,
+        },
+
+        // ================== RESEND AND REQUEST LIMITS ==================
+        resendAvailableAt: {
+            type: Date,
+            default: null,
+        },
+
+        requestWindowStartedAt: {
+            type: Date,
+            default: null,
+        },
+
+        requestsInWindow: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+
+        // ================== VERIFIED RESET SESSION ==================
+        // Set only after successful OTP verification.
+        verificationTokenHash: {
+            type: String,
+            default: null,
+            match: /^[a-f0-9]{64}$/,
+        },
+
+        verificationExpiresAt: {
+            type: Date,
+            default: null,
+        },
+    },
+    {
+        _id: false,
+    }
+);
+
+
 // ================== USER SCHEMA ==================
 const userSchema = new Schema(
     {
@@ -105,6 +166,15 @@ const userSchema = new Schema(
         passwordChangedAt: {
             type: Date,
             default: null,
+        },
+
+        // ================== FORGOT PASSWORD ==================
+        // Shared recovery system for User and Admin.
+        // Hidden from normal database queries.
+        passwordReset: {
+            type: passwordResetSchema,
+            default: undefined,
+            select: false,
         },
 
         // Require newly provisioned admins to change their initial password.
@@ -205,6 +275,7 @@ const userSchema = new Schema(
             transform: function (doc, result) {
                 delete result.passwordHash;
                 delete result.tokenVersion;
+                delete result.passwordReset;
                 delete result.mustChangePassword;
                 delete result.__v;
 

@@ -90,6 +90,77 @@ const loginSchema = Joi.object({
         "any.required": "Request body is required.",
     });
 
+    
+// ================== FORGOT PASSWORD IDENTIFIER ==================
+// Accept registered Email ID or 10-digit Indian mobile number.
+const forgotPasswordIdentifierRule = Joi.alternatives()
+    .try(
+        emailRule,
+        Joi.string()
+            .trim()
+            .pattern(/^[6-9]\d{9}$/)
+            .required()
+    )
+    .required()
+    .messages({
+        "alternatives.match":
+            "Enter a valid email address or 10-digit Indian mobile number.",
+        "any.required":
+            "Email address or phone number is required.",
+    });
+
+// ================== REQUEST / RESEND PASSWORD OTP ==================
+// Same schema for requesting and resending an OTP.
+const forgotPasswordRequestSchema = Joi.object({
+    identifier: forgotPasswordIdentifierRule,
+})
+    .required()
+    .unknown(false);
+
+// ================== VERIFY PASSWORD RESET OTP ==================
+const forgotPasswordVerifySchema = Joi.object({
+    identifier: forgotPasswordIdentifierRule,
+
+    otp: Joi.string()
+        .pattern(/^\d{6}$/)
+        .required()
+        .strict()
+        .messages({
+            "string.empty": "Enter the OTP.",
+            "string.pattern.base":
+                "OTP must contain exactly 6 digits.",
+            "any.required": "OTP is required.",
+        }),
+})
+    .required()
+    .unknown(false);
+
+// ================== RESET PASSWORD ==================
+// resetToken is issued only after successful OTP verification.
+const forgotPasswordResetSchema = Joi.object({
+    resetToken: Joi.string()
+        .pattern(/^[a-f0-9]{64}$/)
+        .required()
+        .messages({
+            "string.empty":
+                "Password reset authorization is required.",
+            "string.pattern.base":
+                "Invalid password reset authorization.",
+            "any.required":
+                "Password reset authorization is required.",
+        }),
+
+    newPassword: passwordRule
+        .min(6)
+        .messages({
+            "string.min":
+                "Password must contain at least 6 characters.",
+        }),
+})
+    .required()
+    .unknown(false);
+
+
 // ================== COMMON OPENING RULES ==================
 const openingStatusRule = Joi.string()
     .valid("Draft", "Published", "Closed")
@@ -864,6 +935,9 @@ const applicationStatusSchema = Joi.object({
 module.exports = {
     signupSchema,
     loginSchema,
+    forgotPasswordRequestSchema,
+    forgotPasswordVerifySchema,
+    forgotPasswordResetSchema,
     clientJobSchema,
     vacancySchema,
     applicationSchema,
