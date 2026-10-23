@@ -709,7 +709,7 @@ async function updateAdmin(req, res, next) {
         const existing = await User.findOne({
             _id: adminId,
             role: "admin",
-        }).select("email __v");
+        }).select("email phone __v");
 
         if (!existing) {
             throw new ExpressError(404, "Admin account not found.");
@@ -726,7 +726,10 @@ async function updateAdmin(req, res, next) {
             },
             {
                 $set: changes,
-                ...(emailChanged ? { $unset: { passwordReset: "" } } : {}),
+                ...(emailChanged ||
+                (changes.phone !== undefined && changes.phone !== existing.phone)
+                    ? { $unset: { passwordReset: "" } }
+                    : {}),
                 $inc: {
                     __v: 1,
                     ...(emailChanged ? { tokenVersion: 1 } : {}),
@@ -972,7 +975,7 @@ async function updateMyAdminProfile(req, res, next) {
             _id: req.user._id,
             role: "admin",
             status: "Active",
-        }).select("__v");
+        }).select("phone __v");
 
         if (!current) {
             throw new ExpressError(403, "Admin profile is unavailable.");
@@ -988,6 +991,9 @@ async function updateMyAdminProfile(req, res, next) {
             },
             {
                 $set: changes,
+                ...(changes.phone !== undefined && changes.phone !== current.phone
+                    ? { $unset: { passwordReset: "" } }
+                    : {}),
                 $inc: { __v: 1 },
             },
             {

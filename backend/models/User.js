@@ -119,11 +119,13 @@ const userSchema = new Schema(
             unique: true,
         },
 
+        // One recovery phone per account across both users and admins.
         phone: {
             type: String,
+            required: true,
             trim: true,
-            maxlength: 20,
-            default: "",
+            match: /^[6-9]\d{9}$/,
+            unique: true,
         },
 
         // ================== AUTHENTICATION ==================

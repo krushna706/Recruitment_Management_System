@@ -23,6 +23,16 @@ function errorMiddleware(error, req, res, next) {
         message = error.message;
     }
 
+    // The unique index also rejects duplicates from simultaneous requests.
+    // Shared handling covers signup, admin creation and every account edit.
+    if (
+        error.code === 11000 &&
+        (error.keyPattern?.phone || Object.hasOwn(error.keyValue || {}, "phone"))
+    ) {
+        statusCode = 409;
+        message = "This phone number is already registered. Please use a different number.";
+    }
+
     // Handle malformed JSON sent in the request body.
     if (error.type === "entity.parse.failed" && error.status === 400) {
         statusCode = 400;

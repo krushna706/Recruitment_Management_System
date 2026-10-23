@@ -36,6 +36,7 @@ function PanelLayout({ user = null, onLogout }) {
         try {
             setIsLoggingOut(true);
             await onLogout();
+            toast.success("Logged out successfully");
             navigate("/", { replace: true });
         } catch {
             toast.error("Unable to log out. Please try again.");

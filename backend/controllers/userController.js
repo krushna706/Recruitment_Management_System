@@ -147,7 +147,8 @@ async function updateMyProfile(req, res, next) {
             },
             {
                 $set: changes,
-                ...(changes.email !== undefined && changes.email !== user.email
+                ...((changes.email !== undefined && changes.email !== user.email) ||
+                (changes.phone !== undefined && changes.phone !== user.phone)
                     ? { $unset: { passwordReset: "" } }
                     : {}),
                 $inc: { __v: 1 },
