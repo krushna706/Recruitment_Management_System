@@ -107,18 +107,24 @@ app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser());
 
 // ================== TEMPORARY PROXY CHECK ==================
-app.use("/api/health", (req, res, next) => {
-    if (req.query.proxyCheck === "1") {
-        console.log("Proxy check:", {
-            trustProxy: app.get("trust proxy"),
-            detectedIp: req.ip,
-            socketIp: req.socket.remoteAddress,
-            forwardedFor: req.get("x-forwarded-for"),
-        });
-    }
+// Uncomment this block to verify client IP and proxy hops after deployment.
+// Open /api/health?proxyCheck=1 and inspect the server logs.
+// Current Render setup was tested with TRUST_PROXY_HOPS=3.
+// Verify again for future hosting setups; do not assume the same hop count.
+// Keep this diagnostic block commented out after verification.
 
-    next();
-});
+// app.use("/api/health", (req, res, next) => {
+//     if (req.query.proxyCheck === "1") {
+//         console.log("Proxy check:", {
+//             trustProxy: app.get("trust proxy"),
+//             detectedIp: req.ip,                              
+//             socketIp: req.socket.remoteAddress,
+//             forwardedFor: req.get("x-forwarded-for"),
+//         });
+//     }
+
+//     next();
+// });
 
 // ================== HEALTH CHECK ==================
 app.get("/api/health", (req, res) => {
