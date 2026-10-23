@@ -20,7 +20,7 @@ npm install dotenv                                           # Load .env variabl
 
 npm install jsonwebtoken                                     # Generate and verify JWTs | Version reference: 9.0.3
 npm install bcrypt                                           # Hash and compare passwords | Version reference: 6.0.0
-npm install-scripts approve bcrypt
+npm install-scripts approve bcrypt                           # Approve bcrypt's install script when blocked by npm
 npm install cookie-parser                                    # Read request cookies | Version reference: 1.4.7
 
 
@@ -34,7 +34,7 @@ npm install express-rate-limit                               # Limit repeated re
 # ===== FILE UPLOADS =====
 
 npm install multer                                           # Handle multipart forms/files | Version reference: 2.4.0
-npm install file-type cfb
+npm install file-type cfb                                     # Detect file types from content and inspect legacy Office files such as .doc
 npm install cloudinary                                       # Upload/delete files on Cloudinary | Version reference: 2.11.0
 
 
