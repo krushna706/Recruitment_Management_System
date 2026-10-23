@@ -1,3 +1,4 @@
+import { formatDate, getInitials } from "../utils/dataFormat";
 import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { Alert, Button, CircularProgress } from "@mui/material";
@@ -29,38 +30,6 @@ function getTimestamp(value) {
     const timestamp = new Date(value).getTime();
 
     return Number.isNaN(timestamp) ? 0 : timestamp;
-}
-
-function formatDate(value, includeTime = false) {
-    if (!value) return "Date unavailable";
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return "Date unavailable";
-    }
-
-    return new Intl.DateTimeFormat("en-IN", {
-        day: "numeric",
-        month: "short",
-        timeZone: "Asia/Kolkata",
-        ...(includeTime
-            ? { hour: "numeric", minute: "2-digit" }
-            : { year: "numeric" }),
-    }).format(date);
-}
-
-function getInitials(name = "") {
-    return (
-        name
-            .trim()
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map((part) => part.charAt(0))
-            .join("")
-            .toUpperCase() || "?"
-    );
 }
 
 // ================== ADMIN DASHBOARD ==================
@@ -139,7 +108,7 @@ function Dashboard({ user }) {
                         </p>
                     </div>
                 </header>
-                <div className="panel-card" role="status" style={{ padding: 40, textAlign: "center" }}>
+                <div className="panel-card panel-dashboard-loading" role="status">
                     <CircularProgress size={28} />
                     <p>Loading recruitment dashboard...</p>
                 </div>
@@ -158,7 +127,7 @@ function Dashboard({ user }) {
                         </p>
                     </div>
                 </header>
-                <Alert severity="error" sx={{ mb: 2 }}>
+                <Alert severity="error" className="panel-space-bottom">
                     {error || "Dashboard data is unavailable."}
                 </Alert>
                 <Button
@@ -266,10 +235,7 @@ function Dashboard({ user }) {
     });
 
     // Preserve unexpected statuses in the total, rather than hiding them.
-    const knownStatusCount = statusChart.reduce(
-        (total, status) => total + status.count,
-        0
-    );
+    const knownStatusCount = statusChart.reduce((total, status) => total + status.count, 0);
 
     const otherStatusCount = Math.max(0, applicationTotal - knownStatusCount);
 
@@ -293,15 +259,13 @@ function Dashboard({ user }) {
                     </p>
                 </div>
 
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <div className="panel-action-row">
                     <Button
                         type="button"
                         variant="outlined"
                         className="panel-button panel-button-outline"
                         onClick={() => setRefreshKey((previous) => previous + 1)}
-                        startIcon={
-                            <i className="fa-solid fa-arrows-rotate" aria-hidden="true" />
-                        }
+                        startIcon={<i className="fa-solid fa-arrows-rotate" aria-hidden="true" />}
                     >
                         Refresh
                     </Button>
@@ -311,19 +275,14 @@ function Dashboard({ user }) {
                         to="/manage/manage-jobs"
                         variant="outlined"
                         className="panel-button panel-button-outline"
-                        startIcon={
-                            <i className="fa-solid fa-briefcase" aria-hidden="true" />
-                        }
+                        startIcon={<i className="fa-solid fa-briefcase" aria-hidden="true" />}
                     >
                         Manage Jobs
                     </Button>
                 </div>
             </header>
 
-            <section
-                className="admin-welcome"
-                aria-labelledby="admin-welcome-title"
-            >
+            <section className="admin-welcome" aria-labelledby="admin-welcome-title">
                 <div className="admin-welcome-copy">
                     <h2 id="admin-welcome-title">
                         Welcome back
@@ -336,19 +295,13 @@ function Dashboard({ user }) {
                     </h2>
 
                     <p>
-                        Keep hiring moving. Review applications, manage openings
-                        and follow your team’s recruitment progress.
+                        Keep hiring moving. Review applications, manage openings and follow your
+                        team’s recruitment progress.
                     </p>
 
-                    <Link
-                        to="/manage/manage-applications"
-                        className="admin-welcome-link"
-                    >
+                    <Link to="/manage/manage-applications" className="admin-welcome-link">
                         Review applications
-                        <i
-                            className="fa-solid fa-arrow-right"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                     </Link>
                 </div>
 
@@ -371,10 +324,7 @@ function Dashboard({ user }) {
                 </div>
             </section>
 
-            <section
-                className="admin-overview-grid"
-                aria-label="Recruitment totals"
-            >
+            <section className="admin-overview-grid" aria-label="Recruitment totals">
                 {overviewCards.map((card) => (
                     <Link
                         key={card.label}
@@ -399,20 +349,14 @@ function Dashboard({ user }) {
                 ))}
             </section>
 
-            <section
-                className="admin-status-grid"
-                aria-label="Application status overview"
-            >
+            <section className="admin-status-grid" aria-label="Application status overview">
                 {statusCards.map((card) => (
                     <article
                         key={card.label}
                         className={`admin-status-card admin-tone-${card.tone}`}
                     >
                         <div className="admin-status-card-top">
-                            <span
-                                className="admin-status-icon"
-                                aria-hidden="true"
-                            >
+                            <span className="admin-status-icon" aria-hidden="true">
                                 <i className={card.icon} />
                             </span>
 
@@ -425,10 +369,7 @@ function Dashboard({ user }) {
                 ))}
             </section>
 
-            <section
-                className="panel-card admin-chart"
-                aria-labelledby="admin-chart-title"
-            >
+            <section className="panel-card admin-chart" aria-labelledby="admin-chart-title">
                 <header className="panel-card-header">
                     <div>
                         <h2 id="admin-chart-title" className="panel-card-title">
@@ -436,8 +377,7 @@ function Dashboard({ user }) {
                         </h2>
 
                         <p className="panel-card-description">
-                            How your applications are distributed across
-                            recruitment stages.
+                            How your applications are distributed across recruitment stages.
                         </p>
                     </div>
 
@@ -449,10 +389,7 @@ function Dashboard({ user }) {
 
                 {applicationTotal > 0 ? (
                     <div className="admin-chart-body">
-                        <div
-                            className="admin-chart-column-labels"
-                            aria-hidden="true"
-                        >
+                        <div className="admin-chart-column-labels" aria-hidden="true">
                             <span>Current status</span>
                             <span>Share of applications</span>
                             <span>Count</span>
@@ -470,10 +407,7 @@ function Dashboard({ user }) {
                                     </span>
 
                                     <div className="admin-chart-bar-group">
-                                        <div
-                                            className="admin-chart-track"
-                                            aria-hidden="true"
-                                        >
+                                        <div className="admin-chart-track" aria-hidden="true">
                                             <div
                                                 className="admin-chart-fill"
                                                 style={{
@@ -498,21 +432,15 @@ function Dashboard({ user }) {
                         </ul>
 
                         <p className="admin-chart-note">
-                            Each application is counted once under its current
-                            status. Pending includes Submitted and Under Review.
+                            Each application is counted once under its current status. Pending
+                            includes Submitted and Under Review.
                         </p>
                     </div>
                 ) : (
                     <div className="panel-empty-state">
-                        <i
-                            className="fa-solid fa-chart-simple"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-chart-simple" aria-hidden="true" />
                         <h3>No application data yet.</h3>
-                        <p>
-                            The chart will appear when applications are
-                            received.
-                        </p>
+                        <p>The chart will appear when applications are received.</p>
                     </div>
                 )}
             </section>
@@ -524,10 +452,7 @@ function Dashboard({ user }) {
                 >
                     <header className="panel-card-header">
                         <div>
-                            <h2
-                                id="admin-applications-title"
-                                className="panel-card-title"
-                            >
+                            <h2 id="admin-applications-title" className="panel-card-title">
                                 Recent applications
                             </h2>
 
@@ -536,15 +461,9 @@ function Dashboard({ user }) {
                             </p>
                         </div>
 
-                        <Link
-                            to="/manage/manage-applications"
-                            className="panel-text-link"
-                        >
+                        <Link to="/manage/manage-applications" className="panel-text-link">
                             View all
-                            <i
-                                className="fa-solid fa-arrow-right"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                         </Link>
                     </header>
 
@@ -552,8 +471,8 @@ function Dashboard({ user }) {
                         <div className="admin-table-scroll">
                             <table className="admin-applications-table">
                                 <caption className="admin-visually-hidden">
-                                    Recent candidates, applied positions,
-                                    application dates and current statuses
+                                    Recent candidates, applied positions, application dates and
+                                    current statuses
                                 </caption>
 
                                 <thead>
@@ -566,8 +485,7 @@ function Dashboard({ user }) {
 
                                 <tbody>
                                     {recentApplications.map((application) => {
-                                        const statusClass =
-                                            statusClasses[application.status];
+                                        const statusClass = statusClasses[application.status];
 
                                         return (
                                             <tr key={application.id}>
@@ -577,9 +495,7 @@ function Dashboard({ user }) {
                                                             className="admin-candidate-avatar"
                                                             aria-hidden="true"
                                                         >
-                                                            {getInitials(
-                                                                application.candidate,
-                                                            )}
+                                                            {getInitials(application.candidate)}
                                                         </span>
 
                                                         <div>
@@ -588,30 +504,16 @@ function Dashboard({ user }) {
                                                                     "Unknown candidate"}
                                                             </h3>
 
-                                                            <p>
-                                                                {
-                                                                    application.title
-                                                                }
-                                                            </p>
+                                                            <p>{application.title}</p>
 
-                                                            <span>
-                                                                {
-                                                                    application.company
-                                                                }
-                                                            </span>
+                                                            <span>{application.company}</span>
                                                         </div>
                                                     </div>
                                                 </td>
 
                                                 <td>
-                                                    <time
-                                                        dateTime={
-                                                            application.appliedAt
-                                                        }
-                                                    >
-                                                        {formatDate(
-                                                            application.appliedAt,
-                                                        )}
+                                                    <time dateTime={application.appliedAt}>
+                                                        {formatDate(application.appliedAt)}
                                                     </time>
                                                 </td>
 
@@ -624,8 +526,7 @@ function Dashboard({ user }) {
                                                         }
                                                     >
                                                         <span aria-hidden="true" />
-                                                        {application.status ||
-                                                            "Unknown"}
+                                                        {application.status || "Unknown"}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -636,10 +537,7 @@ function Dashboard({ user }) {
                         </div>
                     ) : (
                         <div className="panel-empty-state">
-                            <i
-                                className="fa-regular fa-folder-open"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-regular fa-folder-open" aria-hidden="true" />
                             <h3>No applications yet.</h3>
                             <p>New candidate applications will appear here.</p>
                         </div>
@@ -652,16 +550,11 @@ function Dashboard({ user }) {
                 >
                     <header className="panel-card-header">
                         <div>
-                            <h2
-                                id="admin-activity-title"
-                                className="panel-card-title"
-                            >
+                            <h2 id="admin-activity-title" className="panel-card-title">
                                 Recent activity
                             </h2>
 
-                            <p className="panel-card-description">
-                                Latest recruitment updates.
-                            </p>
+                            <p className="panel-card-description">Latest recruitment updates.</p>
                         </div>
                     </header>
 
@@ -672,18 +565,13 @@ function Dashboard({ user }) {
                                     key={activity.id}
                                     className={`admin-activity-item admin-tone-${activity.tone}`}
                                 >
-                                    <span
-                                        className="admin-activity-icon"
-                                        aria-hidden="true"
-                                    >
+                                    <span className="admin-activity-icon" aria-hidden="true">
                                         <i className={activity.icon} />
                                     </span>
 
                                     <div>
                                         <h3>
-                                            <Link to={activity.path}>
-                                                {activity.title}
-                                            </Link>
+                                            <Link to={activity.path}>{activity.title}</Link>
                                         </h3>
 
                                         <p>{activity.description}</p>
@@ -697,10 +585,7 @@ function Dashboard({ user }) {
                         </ol>
                     ) : (
                         <div className="panel-empty-state">
-                            <i
-                                className="fa-regular fa-clock"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-regular fa-clock" aria-hidden="true" />
                             <h3>No recent activity.</h3>
                             <p>Recruitment updates will appear here.</p>
                         </div>

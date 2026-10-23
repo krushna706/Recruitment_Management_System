@@ -1,4 +1,3 @@
-
 // ================== BREVO EMAIL CONFIGURATION ==================
 // Uses Node.js built-in fetch (Node.js 20+).
 // No additional npm package required.
@@ -10,9 +9,7 @@ const OTP_VALIDITY_MINUTES = 10;
 
 // ================== EMAIL SERVICE ERROR ==================
 function createEmailError() {
-    const error = new Error(
-        "Unable to send verification email. Please try again later."
-    );
+    const error = new Error("Unable to send verification email. Please try again later.");
 
     error.code = "EMAIL_SEND_FAILED";
 
@@ -26,14 +23,10 @@ function getEmailConfig() {
     const apiKey = process.env.BREVO_API_KEY?.trim();
     const senderEmail = process.env.BREVO_SENDER_EMAIL?.trim();
 
-    const senderName =
-        process.env.BREVO_SENDER_NAME?.trim() ||
-        "Recruitment Management System";
+    const senderName = process.env.BREVO_SENDER_NAME?.trim() || "Recruitment Management System";
 
     if (!apiKey || !senderEmail) {
-        throw new Error(
-            "Brevo email configuration is incomplete."
-        );
+        throw new Error("Brevo email configuration is incomplete.");
     }
 
     return {
@@ -46,27 +39,22 @@ function getEmailConfig() {
 // ================== ESCAPE HTML CONTENT ==================
 // Prevent user-provided names from injecting HTML into emails.
 function escapeHtml(value) {
-    return String(value ?? "").replace(
-        /[&<>"']/g,
-        (character) => {
-            const entities = {
-                "&": "&amp;",
-                "<": "&lt;",
-                ">": "&gt;",
-                '"': "&quot;",
-                "'": "&#39;",
-            };
+    return String(value ?? "").replace(/[&<>"']/g, (character) => {
+        const entities = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+        };
 
-            return entities[character];
-        }
-    );
+        return entities[character];
+    });
 }
 
 // ================== PASSWORD RESET EMAIL TEMPLATE ==================
 function createOtpEmailTemplate({ otp, name }) {
-    const safeName = escapeHtml(
-        String(name || "User").slice(0, 100)
-    );
+    const safeName = escapeHtml(String(name || "User").slice(0, 100));
 
     return `
         <!DOCTYPE html>
@@ -238,32 +226,18 @@ function createOtpEmailTemplate({ otp, name }) {
 // ================== SEND PASSWORD RESET OTP ==================
 // toEmail must come from the verified MongoDB account,
 // never directly from an unverified request field.
-async function sendPasswordResetOtpEmail({
-    toEmail,
-    otp,
-    name = "",
-}) {
+async function sendPasswordResetOtpEmail({ toEmail, otp, name = "" }) {
     // ================== INPUT VALIDATION ==================
-    if (
-        typeof toEmail !== "string" ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)
-    ) {
+    if (typeof toEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
         throw new TypeError("A valid recipient email is required.");
     }
 
-    if (
-        typeof otp !== "string" ||
-        !/^\d{6}$/.test(otp)
-    ) {
+    if (typeof otp !== "string" || !/^\d{6}$/.test(otp)) {
         throw new TypeError("OTP must contain exactly 6 digits.");
     }
 
     // ================== LOAD BREVO CREDENTIALS ==================
-    const {
-        apiKey,
-        senderEmail,
-        senderName,
-    } = getEmailConfig();
+    const { apiKey, senderEmail, senderName } = getEmailConfig();
 
     // ================== EMAIL REQUEST BODY ==================
     const emailData = {

@@ -1,23 +1,7 @@
+import { formatDate, getErrorMessage, getInitials } from "../utils/dataFormat";
 
 import { useEffect, useState } from "react";
-import {
-    Alert,
-    Button,
-    Chip,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TextField,
-} from "@mui/material";
+import { Alert, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField } from "@mui/material";
 
 import api from "../services/api";
 
@@ -28,47 +12,6 @@ const INITIAL_COUNTS = {
     thisMonth: 0,
     uniqueSenders: 0,
 };
-
-// ================== API ERROR MESSAGE ==================
-function getErrorMessage(error, fallback) {
-    return error.response?.data?.message || fallback;
-}
-
-// ================== SENDER INITIALS ==================
-function getInitials(name = "") {
-    return (
-        name
-            .trim()
-            .split(/\s+/)
-            .slice(0, 2)
-            .map((part) => part.charAt(0))
-            .join("")
-            .toUpperCase() || "?"
-    );
-}
-
-// ================== DATE FORMATTING ==================
-// Display MongoDB timestamps in Indian Standard Time.
-function formatDate(value, includeTime = false) {
-    const date = new Date(value);
-
-    if (!value || Number.isNaN(date.getTime())) {
-        return "Date unavailable";
-    }
-
-    return new Intl.DateTimeFormat("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        timeZone: "Asia/Kolkata",
-        ...(includeTime
-            ? {
-                  hour: "numeric",
-                  minute: "2-digit",
-              }
-            : {}),
-    }).format(date);
-}
 
 // ================== CONTACT DETAIL ==================
 function ContactDetail({ label, value }) {
@@ -110,9 +53,7 @@ function ManageEnquiries() {
     const [detailsRevision, setDetailsRevision] = useState(0);
 
     // ================== DATE RANGE VALIDATION ==================
-    const invalidDateRange = Boolean(
-        fromDate && toDate && fromDate > toDate
-    );
+    const invalidDateRange = Boolean(fromDate && toDate && fromDate > toDate);
 
     // ================== DEBOUNCED SEARCH ==================
     // Avoid sending an API request on every keystroke.
@@ -161,13 +102,10 @@ function ManageEnquiries() {
                 }
 
                 // ================== ADMIN ENQUIRIES API ==================
-                const { data } = await api.get(
-                    "/contact/admin",
-                    {
-                        params,
-                        signal: controller.signal,
-                    }
-                );
+                const { data } = await api.get("/contact/admin", {
+                    params,
+                    signal: controller.signal,
+                });
 
                 if (!active) return;
 
@@ -177,30 +115,18 @@ function ManageEnquiries() {
                     !data.pagination ||
                     !data.counts
                 ) {
-                    throw new Error(
-                        "Invalid enquiry response received."
-                    );
+                    throw new Error("Invalid enquiry response received.");
                 }
 
-                const nextTotal = Number(
-                    data.pagination.total
-                );
+                const nextTotal = Number(data.pagination.total);
 
-                if (
-                    !Number.isSafeInteger(nextTotal) ||
-                    nextTotal < 0
-                ) {
-                    throw new Error(
-                        "Invalid enquiry pagination data."
-                    );
+                if (!Number.isSafeInteger(nextTotal) || nextTotal < 0) {
+                    throw new Error("Invalid enquiry pagination data.");
                 }
 
                 // ================== PAGINATION CORRECTION ==================
                 // Move to the last available page when records change.
-                const lastPage = Math.max(
-                    0,
-                    Math.ceil(nextTotal / rowsPerPage) - 1
-                );
+                const lastPage = Math.max(0, Math.ceil(nextTotal / rowsPerPage) - 1);
 
                 if (page > lastPage) {
                     setPage(lastPage);
@@ -214,10 +140,8 @@ function ManageEnquiries() {
                 setCounts({
                     total: Number(data.counts.total) || 0,
                     today: Number(data.counts.today) || 0,
-                    thisMonth:
-                        Number(data.counts.thisMonth) || 0,
-                    uniqueSenders:
-                        Number(data.counts.uniqueSenders) || 0,
+                    thisMonth: Number(data.counts.thisMonth) || 0,
+                    uniqueSenders: Number(data.counts.uniqueSenders) || 0,
                 });
             } catch (error) {
                 if (!active) return;
@@ -225,12 +149,7 @@ function ManageEnquiries() {
                 setEnquiries([]);
                 setTotal(0);
 
-                setListError(
-                    getErrorMessage(
-                        error,
-                        "Unable to load enquiries. Please try again."
-                    )
-                );
+                setListError(getErrorMessage(error, "Unable to load enquiries. Please try again."));
             } finally {
                 if (active) {
                     setLoading(false);
@@ -244,15 +163,7 @@ function ManageEnquiries() {
             active = false;
             controller.abort();
         };
-    }, [
-        debouncedSearch,
-        fromDate,
-        toDate,
-        page,
-        rowsPerPage,
-        listRevision,
-        invalidDateRange,
-    ]);
+    }, [debouncedSearch, fromDate, toDate, page, rowsPerPage, listRevision, invalidDateRange]);
 
     // ================== FETCH ENQUIRY DETAILS ==================
     // Load the complete enquiry from the protected admin API.
@@ -268,31 +179,21 @@ function ManageEnquiries() {
             setSelectedEnquiry(null);
 
             try {
-                const { data } = await api.get(
-                    `/contact/admin/${encodeURIComponent(selectedId)}`,
-                    {
-                        signal: controller.signal,
-                    }
-                );
+                const { data } = await api.get(`/contact/admin/${encodeURIComponent(selectedId)}`, {
+                    signal: controller.signal,
+                });
 
                 if (!active) return;
 
                 if (!data?.success || !data.enquiry) {
-                    throw new Error(
-                        "Invalid enquiry details received."
-                    );
+                    throw new Error("Invalid enquiry details received.");
                 }
 
                 setSelectedEnquiry(data.enquiry);
             } catch (error) {
                 if (!active) return;
 
-                setDetailsError(
-                    getErrorMessage(
-                        error,
-                        "Unable to load enquiry details."
-                    )
-                );
+                setDetailsError(getErrorMessage(error, "Unable to load enquiry details."));
             } finally {
                 if (active) {
                     setDetailsLoading(false);
@@ -370,9 +271,7 @@ function ManageEnquiries() {
     }
 
     // ================== EMPTY TABLE MESSAGE ==================
-    const hasFilters = Boolean(
-        debouncedSearch || fromDate || toDate
-    );
+    const hasFilters = Boolean(debouncedSearch || fromDate || toDate);
 
     const emptyTitle = invalidDateRange
         ? "Check the date range"
@@ -395,15 +294,11 @@ function ManageEnquiries() {
             {/* ================== PAGE HEADING ================== */}
             <header className="mj-heading">
                 <div>
-                    <span className="mj-eyebrow">
-                        WEBSITE COMMUNICATION
-                    </span>
+                    <span className="mj-eyebrow">WEBSITE COMMUNICATION</span>
 
                     <h1>Manage Enquiries</h1>
 
-                    <p>
-                        Review messages received through your contact form.
-                    </p>
+                    <p>Review messages received through your contact form.</p>
                 </div>
 
                 <Button
@@ -411,12 +306,7 @@ function ManageEnquiries() {
                     variant="outlined"
                     onClick={refreshEnquiries}
                     disabled={loading}
-                    startIcon={
-                        <i
-                            className="fa-solid fa-arrows-rotate"
-                            aria-hidden="true"
-                        />
-                    }
+                    startIcon={<i className="fa-solid fa-arrows-rotate" aria-hidden="true" />}
                 >
                     Refresh
                 </Button>
@@ -430,24 +320,13 @@ function ManageEnquiries() {
             )}
 
             {/* ================== ENQUIRY STATISTICS ================== */}
-            <section
-                className="mj-metrics"
-                aria-label="Enquiry overview"
-            >
+            <section className="mj-metrics" aria-label="Enquiry overview">
                 {metrics.map((metric) => (
-                    <article
-                        key={metric.label}
-                        className={`mj-metric mj-tone-${metric.tone}`}
-                    >
+                    <article key={metric.label} className={`mj-metric mj-tone-${metric.tone}`}>
                         <div className="mj-metric-top">
-                            <span className="mj-metric-label">
-                                {metric.label}
-                            </span>
+                            <span className="mj-metric-label">{metric.label}</span>
 
-                            <span
-                                className="mj-metric-icon"
-                                aria-hidden="true"
-                            >
+                            <span className="mj-metric-icon" aria-hidden="true">
                                 <i className={metric.icon} />
                             </span>
                         </div>
@@ -459,37 +338,22 @@ function ManageEnquiries() {
             </section>
 
             {/* ================== ENQUIRY LIST ================== */}
-            <section
-                className="mj-card"
-                aria-labelledby="me-list-title"
-            >
+            <section className="mj-card" aria-labelledby="me-list-title">
                 <header className="mj-card-header">
                     <div className="mj-card-heading">
-                        <span
-                            className="mj-header-icon"
-                            aria-hidden="true"
-                        >
+                        <span className="mj-header-icon" aria-hidden="true">
                             <i className="fa-regular fa-comments" />
                         </span>
 
                         <div>
-                            <h2 id="me-list-title">
-                                Website enquiries
-                            </h2>
+                            <h2 id="me-list-title">Website enquiries</h2>
 
-                            <p>
-                                View sender details and read their complete message.
-                            </p>
+                            <p>View sender details and read their complete message.</p>
                         </div>
                     </div>
 
-                    <span
-                        className="mj-result-count"
-                        aria-live="polite"
-                    >
-                        {loading
-                            ? "Loading enquiries..."
-                            : `${total} of ${counts.total} enquiries`}
+                    <span className="mj-result-count" aria-live="polite">
+                        {loading ? "Loading enquiries..." : `${total} of ${counts.total} enquiries`}
                     </span>
                 </header>
 
@@ -545,38 +409,27 @@ function ManageEnquiries() {
                         }}
                         error={invalidDateRange}
                         helperText={
-                            invalidDateRange
-                                ? "Choose a date on or after From date."
-                                : undefined
+                            invalidDateRange ? "Choose a date on or after From date." : undefined
                         }
                         size="small"
                         fullWidth
                     />
 
-                    <Button
-                        type="button"
-                        variant="outlined"
-                        onClick={resetFilters}
-                    >
+                    <Button type="button" variant="outlined" onClick={resetFilters}>
                         Reset
                     </Button>
                 </div>
 
                 {/* ================== ENQUIRIES TABLE ================== */}
                 <TableContainer>
-                    <Table
-                        className="mj-table me-table"
-                        aria-label="Contact form enquiries"
-                    >
+                    <Table className="mj-table me-table" aria-label="Contact form enquiries">
                         <TableHead>
                             <TableRow>
                                 <TableCell>Sender</TableCell>
                                 <TableCell>Subject & message</TableCell>
                                 <TableCell>Phone</TableCell>
                                 <TableCell>Received on</TableCell>
-                                <TableCell align="right">
-                                    Action
-                                </TableCell>
+                                <TableCell align="right">Action</TableCell>
                             </TableRow>
                         </TableHead>
 
@@ -584,11 +437,7 @@ function ManageEnquiries() {
                             {/* ================== LOADING STATE ================== */}
                             {loading && (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={5}
-                                        align="center"
-                                        sx={{ py: 6 }}
-                                    >
+                                    <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
                                         <CircularProgress size={26} />
 
                                         <p>Loading enquiries...</p>
@@ -600,49 +449,35 @@ function ManageEnquiries() {
                             {!loading &&
                                 !invalidDateRange &&
                                 enquiries.map((enquiry) => (
-                                    <TableRow
-                                        key={enquiry._id || enquiry.enquiryId}
-                                        hover
-                                    >
+                                    <TableRow key={enquiry._id || enquiry.enquiryId} hover>
                                         <TableCell>
                                             <div className="mj-job-cell">
                                                 <span
                                                     className="mj-company-avatar"
                                                     aria-hidden="true"
                                                 >
-                                                    {getInitials(
-                                                        enquiry.name
-                                                    )}
+                                                    {getInitials(enquiry.name)}
                                                 </span>
 
                                                 <div>
-                                                    <strong>
-                                                        {enquiry.name}
-                                                    </strong>
+                                                    <strong>{enquiry.name}</strong>
 
-                                                    <p>
-                                                        {enquiry.email}
-                                                    </p>
+                                                    <p>{enquiry.email}</p>
                                                 </div>
                                             </div>
                                         </TableCell>
 
                                         <TableCell>
                                             <div className="me-message-cell">
-                                                <strong>
-                                                    {enquiry.subject}
-                                                </strong>
+                                                <strong>{enquiry.subject}</strong>
 
-                                                <p>
-                                                    {enquiry.message}
-                                                </p>
+                                                <p>{enquiry.message}</p>
                                             </div>
                                         </TableCell>
 
                                         <TableCell>
                                             <span className="mj-cell-primary">
-                                                {enquiry.phone ||
-                                                    "Not provided"}
+                                                {enquiry.phone || "Not provided"}
                                             </span>
                                         </TableCell>
 
@@ -651,9 +486,7 @@ function ManageEnquiries() {
                                                 className="me-date"
                                                 dateTime={enquiry.submittedAt}
                                             >
-                                                {formatDate(
-                                                    enquiry.submittedAt
-                                                )}
+                                                {formatDate(enquiry.submittedAt)}
                                             </time>
                                         </TableCell>
 
@@ -662,9 +495,7 @@ function ManageEnquiries() {
                                                 type="button"
                                                 size="small"
                                                 variant="outlined"
-                                                onClick={() =>
-                                                    openEnquiry(enquiry)
-                                                }
+                                                onClick={() => openEnquiry(enquiry)}
                                                 aria-label={`View enquiry from ${enquiry.name}: ${enquiry.subject}`}
                                                 startIcon={
                                                     <i
@@ -680,25 +511,21 @@ function ManageEnquiries() {
                                 ))}
 
                             {/* ================== EMPTY STATE ================== */}
-                            {!loading &&
-                                (invalidDateRange ||
-                                    enquiries.length === 0) && (
-                                    <TableRow>
-                                        <TableCell colSpan={5}>
-                                            <div className="mj-empty">
-                                                <span aria-hidden="true">
-                                                    <i className="fa-regular fa-envelope-open" />
-                                                </span>
+                            {!loading && (invalidDateRange || enquiries.length === 0) && (
+                                <TableRow>
+                                    <TableCell colSpan={5}>
+                                        <div className="mj-empty">
+                                            <span aria-hidden="true">
+                                                <i className="fa-regular fa-envelope-open" />
+                                            </span>
 
-                                                <h3>{emptyTitle}</h3>
+                                            <h3>{emptyTitle}</h3>
 
-                                                <p>
-                                                    {emptyDescription}
-                                                </p>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
+                                            <p>{emptyDescription}</p>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
@@ -708,14 +535,10 @@ function ManageEnquiries() {
                     component="div"
                     count={invalidDateRange ? 0 : total}
                     page={invalidDateRange ? 0 : page}
-                    onPageChange={(_, nextPage) =>
-                        setPage(nextPage)
-                    }
+                    onPageChange={(_, nextPage) => setPage(nextPage)}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={(event) => {
-                        setRowsPerPage(
-                            Number(event.target.value)
-                        );
+                        setRowsPerPage(Number(event.target.value));
                         setPage(0);
                     }}
                     rowsPerPageOptions={[5, 10, 25]}
@@ -741,9 +564,7 @@ function ManageEnquiries() {
                 className="me-dialog"
                 aria-labelledby="me-dialog-title"
             >
-                <DialogTitle id="me-dialog-title">
-                    Enquiry details
-                </DialogTitle>
+                <DialogTitle id="me-dialog-title">Enquiry details</DialogTitle>
 
                 <DialogContent dividers>
                     {/* ================== DETAILS LOADING ================== */}
@@ -769,11 +590,7 @@ function ManageEnquiries() {
                                     type="button"
                                     color="inherit"
                                     size="small"
-                                    onClick={() =>
-                                        setDetailsRevision(
-                                            (previous) => previous + 1
-                                        )
-                                    }
+                                    onClick={() => setDetailsRevision((previous) => previous + 1)}
                                 >
                                     Retry
                                 </Button>
@@ -784,100 +601,73 @@ function ManageEnquiries() {
                     )}
 
                     {/* ================== COMPLETE ENQUIRY ================== */}
-                    {!detailsLoading &&
-                        selectedEnquiry &&
-                        !detailsError && (
-                            <>
-                                <div className="me-sender-banner">
-                                    <span
-                                        className="me-avatar"
-                                        aria-hidden="true"
-                                    >
-                                        {getInitials(
-                                            selectedEnquiry.name
-                                        )}
-                                    </span>
+                    {!detailsLoading && selectedEnquiry && !detailsError && (
+                        <>
+                            <div className="me-sender-banner">
+                                <span className="me-avatar" aria-hidden="true">
+                                    {getInitials(selectedEnquiry.name)}
+                                </span>
 
-                                    <div className="me-sender-copy">
-                                        <h2>
-                                            {selectedEnquiry.name}
-                                        </h2>
+                                <div className="me-sender-copy">
+                                    <h2>{selectedEnquiry.name}</h2>
 
-                                        <p>
-                                            {selectedEnquiry.email}
-                                        </p>
+                                    <p>{selectedEnquiry.email}</p>
 
-                                        <span>
-                                            {selectedEnquiry.enquiryId}
-                                        </span>
-                                    </div>
-
-                                    <Chip
-                                        label="Website contact"
-                                        color="primary"
-                                        size="small"
-                                        variant="outlined"
-                                    />
+                                    <span>{selectedEnquiry.enquiryId}</span>
                                 </div>
 
-                                {/* ================== CONTACT INFORMATION ================== */}
-                                <section className="me-section">
-                                    <h3>Contact information</h3>
+                                <Chip
+                                    label="Website contact"
+                                    color="primary"
+                                    size="small"
+                                    variant="outlined"
+                                />
+                            </div>
 
-                                    <dl className="me-detail-grid">
-                                        <ContactDetail
-                                            label="Full name"
-                                            value={selectedEnquiry.name}
-                                        />
+                            {/* ================== CONTACT INFORMATION ================== */}
+                            <section className="me-section">
+                                <h3>Contact information</h3>
 
-                                        <ContactDetail
-                                            label="Email address"
-                                            value={selectedEnquiry.email}
-                                        />
+                                <dl className="me-detail-grid">
+                                    <ContactDetail label="Full name" value={selectedEnquiry.name} />
 
-                                        <ContactDetail
-                                            label="Phone number"
-                                            value={selectedEnquiry.phone}
-                                        />
+                                    <ContactDetail
+                                        label="Email address"
+                                        value={selectedEnquiry.email}
+                                    />
 
-                                        <ContactDetail
-                                            label="Submitted on"
-                                            value={formatDate(
-                                                selectedEnquiry.submittedAt,
-                                                true
-                                            )}
-                                        />
-                                    </dl>
-                                </section>
+                                    <ContactDetail
+                                        label="Phone number"
+                                        value={selectedEnquiry.phone}
+                                    />
 
-                                {/* ================== COMPLETE MESSAGE ================== */}
-                                <section className="me-section">
-                                    <h3>Message</h3>
+                                    <ContactDetail
+                                        label="Submitted on"
+                                        value={formatDate(selectedEnquiry.submittedAt, true)}
+                                    />
+                                </dl>
+                            </section>
 
-                                    <div className="me-message-panel">
-                                        <div className="me-subject">
-                                            <span>SUBJECT</span>
+                            {/* ================== COMPLETE MESSAGE ================== */}
+                            <section className="me-section">
+                                <h3>Message</h3>
 
-                                            <h4>
-                                                {selectedEnquiry.subject}
-                                            </h4>
-                                        </div>
+                                <div className="me-message-panel">
+                                    <div className="me-subject">
+                                        <span>SUBJECT</span>
 
-                                        <p className="me-full-message">
-                                            {selectedEnquiry.message}
-                                        </p>
+                                        <h4>{selectedEnquiry.subject}</h4>
                                     </div>
-                                </section>
-                            </>
-                        )}
+
+                                    <p className="me-full-message">{selectedEnquiry.message}</p>
+                                </div>
+                            </section>
+                        </>
+                    )}
                 </DialogContent>
 
                 <DialogActions>
-                    <Button
-                        type="button"
-                        variant="outlined"
-                        onClick={closeEnquiry}
-                    >
+                    <Button type="button" variant="outlined" onClick={closeEnquiry}>
                         Close
                     </Button>
                 </DialogActions>

@@ -91,10 +91,7 @@ export default function Careers() {
     return (
         <div className="careers-page">
             {/* ================== BANNER ================== */}
-            <section
-                className="about-hero"
-                aria-labelledby="contact-title"
-            >
+            <section className="about-hero" aria-labelledby="contact-title">
                 <img
                     className="about-hero-image"
                     src="/images/about-banner.jpg"
@@ -103,10 +100,7 @@ export default function Careers() {
                 />
 
                 <div className="website-shell about-hero-inner">
-                    <nav
-                        className="about-breadcrumb"
-                        aria-label="Breadcrumb"
-                    >
+                    <nav className="about-breadcrumb" aria-label="Breadcrumb">
                         <ol>
                             <li>
                                 <Link to="/">Home</Link>
@@ -117,21 +111,16 @@ export default function Careers() {
                     </nav>
 
                     <div className="about-hero-content">
-                        <p className="website-section-label">
-                            GROW WITH US
-                        </p>
+                        <p className="website-section-label">GROW WITH US</p>
 
-                        <h1
-                            id="contact-title"
-                            className="website-section-title"
-                        >
+                        <h1 id="contact-title" className="website-section-title">
                             Bring your talent.
                             <span>Build what comes next.</span>
                         </h1>
 
-                         <p className="website-section-description careers-banner-description">
-                            Discover opportunities within our team and take
-                            your next career step with us.
+                        <p className="website-section-description careers-banner-description">
+                            Discover opportunities within our team and take your next career step
+                            with us.
                         </p>
                     </div>
                 </div>
@@ -148,17 +137,14 @@ export default function Careers() {
                         <div className="careers-section-heading">
                             <p className="website-section-label">OPEN POSITIONS</p>
 
-                            <h2
-                                id="careers-positions-title"
-                                className="website-section-title"
-                            >
+                            <h2 id="careers-positions-title" className="website-section-title">
                                 Find your next
                                 <span> opportunity.</span>
                             </h2>
 
                             <p className="website-section-description">
-                                Explore opportunities with us. Apply through
-                                your account and track your progress in My Applications.
+                                Explore opportunities with us. Apply through your account and track
+                                your progress in My Applications.
                             </p>
                         </div>
 
@@ -304,8 +290,8 @@ export default function Careers() {
                                 <h3>No open positions right now.</h3>
 
                                 <p className="website-section-description">
-                                    Please check back for future opportunities.
-                                    Thank you for your interest in joining us.
+                                    Please check back for future opportunities. Thank you for your
+                                    interest in joining us.
                                 </p>
 
                                 <div className="careers-empty-actions">

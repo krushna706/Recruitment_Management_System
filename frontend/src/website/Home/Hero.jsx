@@ -8,8 +8,7 @@ const slides = [
         tag: "YOUR NEXT CHAPTER",
         title: "Your next career move",
         highlight: "starts here.",
-        description:
-            "Find opportunities that match your skills, experience and ambitions.",
+        description: "Find opportunities that match your skills, experience and ambitions.",
         image: "/images/hero-1.avif",
     },
     {
@@ -17,8 +16,7 @@ const slides = [
         tag: "FIND YOUR OPPORTUNITY",
         title: "Bring your talent.",
         highlight: "Build your future.",
-        description:
-            "Discover your next role in technology, business and design.",
+        description: "Discover your next role in technology, business and design.",
         image: "/images/hero-2.avif",
     },
     {
@@ -26,8 +24,7 @@ const slides = [
         tag: "LEARN. CONTRIBUTE. GROW.",
         title: "Build on your skills.",
         highlight: "Take the next step.",
-        description:
-            "Starting out or moving forward? Find an opportunity that fits you.",
+        description: "Starting out or moving forward? Find an opportunity that fits you.",
         image: "/images/hero-3.avif",
     },
     {
@@ -35,8 +32,7 @@ const slides = [
         tag: "MORE POSSIBILITIES AHEAD",
         title: "A fresh direction.",
         highlight: "A new beginning.",
-        description:
-            "Explore on-site, remote and hybrid roles across India.",
+        description: "Explore on-site, remote and hybrid roles across India.",
         image: "/images/hero-4.avif",
     },
 ];
@@ -44,8 +40,8 @@ const slides = [
 function Hero() {
     const [activeIndex, setActiveIndex] = useState(0);
 
-    const [isPaused, setIsPaused] = useState(() =>
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const [isPaused, setIsPaused] = useState(
+        () => window.matchMedia("(prefers-reduced-motion: reduce)").matches
     );
 
     useEffect(() => {
@@ -59,9 +55,7 @@ function Hero() {
     }, [activeIndex, isPaused]);
 
     useEffect(() => {
-        const preference = window.matchMedia(
-            "(prefers-reduced-motion: reduce)"
-        );
+        const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
 
         function handleChange(event) {
             if (event.matches) {
@@ -97,9 +91,7 @@ function Hero() {
                 {slides.map((item, index) => (
                     <div
                         key={item.id}
-                        className={`rms-hero-image ${
-                            index === activeIndex ? "is-active" : ""
-                        }`}
+                        className={`rms-hero-image ${index === activeIndex ? "is-active" : ""}`}
                         style={{
                             backgroundImage: `url("${item.image}")`,
                         }}
@@ -127,9 +119,7 @@ function Hero() {
                         <span>{slide.highlight}</span>
                     </h1>
 
-                    <p className="rms-hero-description">
-                        {slide.description}
-                    </p>
+                    <p className="rms-hero-description">{slide.description}</p>
                 </div>
 
                 <div className="rms-hero-search-wrap">
@@ -137,10 +127,7 @@ function Hero() {
                 </div>
 
                 <p className="rms-hero-search-note">
-                    <i
-                        className="fa-solid fa-location-dot"
-                        aria-hidden="true"
-                    />
+                    <i className="fa-solid fa-location-dot" aria-hidden="true" />
                     Discover opportunities across India
                 </p>
             </div>
@@ -148,10 +135,8 @@ function Hero() {
             <div className="website-shell rms-hero-controls">
                 <div className="rms-hero-pagination">
                     <span className="rms-hero-count" aria-hidden="true">
-                        <strong>
-                            {String(activeIndex + 1).padStart(2, "0")}
-                        </strong>
-                        / {String(slides.length).padStart(2, "0")}
+                        <strong>{String(activeIndex + 1).padStart(2, "0")}</strong>/{" "}
+                        {String(slides.length).padStart(2, "0")}
                     </span>
 
                     <div className="rms-hero-dots">
@@ -163,9 +148,7 @@ function Hero() {
                                     index === activeIndex ? "is-active" : ""
                                 }`}
                                 aria-label={`Show slide ${index + 1}`}
-                                aria-current={
-                                    index === activeIndex ? "true" : undefined
-                                }
+                                aria-current={index === activeIndex ? "true" : undefined}
                                 onClick={() => changeSlide(index)}
                             />
                         ))}
@@ -175,17 +158,11 @@ function Hero() {
                 <div className="rms-hero-buttons">
                     <button
                         type="button"
-                        aria-label={
-                            isPaused ? "Play slideshow" : "Pause slideshow"
-                        }
-                        onClick={() =>
-                            setIsPaused((previous) => !previous)
-                        }
+                        aria-label={isPaused ? "Play slideshow" : "Pause slideshow"}
+                        onClick={() => setIsPaused((previous) => !previous)}
                     >
                         <i
-                            className={`fa-solid ${
-                                isPaused ? "fa-play" : "fa-pause"
-                            }`}
+                            className={`fa-solid ${isPaused ? "fa-play" : "fa-pause"}`}
                             aria-hidden="true"
                         />
                     </button>
@@ -195,10 +172,7 @@ function Hero() {
                         aria-label="Previous slide"
                         onClick={() => changeSlide(activeIndex - 1)}
                     >
-                        <i
-                            className="fa-solid fa-arrow-left"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-arrow-left" aria-hidden="true" />
                     </button>
 
                     <button
@@ -206,10 +180,7 @@ function Hero() {
                         aria-label="Next slide"
                         onClick={() => changeSlide(activeIndex + 1)}
                     >
-                        <i
-                            className="fa-solid fa-arrow-right"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                     </button>
                 </div>
             </div>

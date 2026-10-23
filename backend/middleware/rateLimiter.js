@@ -26,9 +26,7 @@ const loginAccountLimiter = rateLimit({
     skipSuccessfulRequests: true,
 
     keyGenerator: (req) => {
-        return createHash("sha256")
-            .update(req.body.email)
-            .digest("hex");
+        return createHash("sha256").update(req.body.email).digest("hex");
     },
 
     message: {
@@ -70,10 +68,26 @@ const applicationLimiter = rateLimit({
     },
 });
 
+// ================== SENSITIVE ACCOUNT ACTIONS ==================
+// Apply after authentication, before password comparison or admin mutations.
+const accountActionLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    keyGenerator: (req) => String(req.user._id),
+    message: {
+        success: false,
+        message: "Too many account verification attempts. Please try again later.",
+    },
+});
+
 // ================== EXPORTS ==================
 module.exports = {
     loginIpLimiter,
     loginAccountLimiter,
     signupLimiter,
     applicationLimiter,
+    accountActionLimiter,
 };

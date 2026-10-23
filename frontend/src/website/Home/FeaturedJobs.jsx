@@ -18,11 +18,7 @@ function getPostingInfo(value) {
 
     const now = new Date();
 
-    const today = Date.UTC(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate()
-    );
+    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
 
     const postedDay = Date.UTC(
         postedDate.getFullYear(),
@@ -32,13 +28,14 @@ function getPostingInfo(value) {
 
     const days = Math.floor((today - postedDay) / 86400000);
 
-    const label = days < 0
-        ? "Recently posted"
-        : days === 0
-          ? "Today"
-          : days === 1
-            ? "1 day ago"
-            : `${days} days ago`;
+    const label =
+        days < 0
+            ? "Recently posted"
+            : days === 0
+              ? "Today"
+              : days === 1
+                ? "1 day ago"
+                : `${days} days ago`;
 
     return {
         label,
@@ -117,43 +114,29 @@ function FeaturedJobs() {
                 {/* ================== SECTION HEADER ================== */}
                 <div className="rms-featured-header">
                     <div>
-                        <p className="website-section-label">
-                            FIND YOUR NEXT OPPORTUNITY
-                        </p>
+                        <p className="website-section-label">FIND YOUR NEXT OPPORTUNITY</p>
 
-                        <h2
-                            id="rms-featured-title"
-                            className="website-section-title"
-                        >
+                        <h2 id="rms-featured-title" className="website-section-title">
                             Explore featured
                             <span> job openings.</span>
                         </h2>
 
                         <p className="website-section-description">
-                            Discover roles that match your experience and take
-                            the next step in your career.
+                            Discover roles that match your experience and take the next step in your
+                            career.
                         </p>
                     </div>
 
-                    <Link
-                        to="/jobs"
-                        className="website-button website-button-outline"
-                    >
+                    <Link to="/jobs" className="website-button website-button-outline">
                         View All Jobs
-                        <i
-                            className="fa-solid fa-arrow-right"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                     </Link>
                 </div>
 
                 {/* ================== LOADING AND ERROR STATES ================== */}
                 {loading ? (
                     <div className="rms-jobs-empty" role="status">
-                        <i
-                            className="fa-solid fa-spinner fa-spin"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
 
                         <h3>Loading featured jobs...</h3>
                         <p>Please wait while we fetch the latest openings.</p>
@@ -166,9 +149,7 @@ function FeaturedJobs() {
                                 type="button"
                                 color="inherit"
                                 size="small"
-                                onClick={() =>
-                                    setRefreshKey((previous) => previous + 1)
-                                }
+                                onClick={() => setRefreshKey((previous) => previous + 1)}
                             >
                                 Retry
                             </Button>
@@ -181,15 +162,10 @@ function FeaturedJobs() {
                         {jobs.map((job) => {
                             const jobUrl = `/jobs/${encodeURIComponent(job.id)}`;
 
-                            const posting = getPostingInfo(
-                                job.publishedAt || job.createdAt
-                            );
+                            const posting = getPostingInfo(job.publishedAt || job.createdAt);
 
                             return (
-                                <article
-                                    key={job.id}
-                                    className="rms-job-card jobs-position-card"
-                                >
+                                <article key={job.id} className="rms-job-card jobs-position-card">
                                     {/* ================== COMPANY AND DATE ================== */}
                                     <div className="jobs-card-topline">
                                         <p className="rms-job-company">
@@ -245,9 +221,7 @@ function FeaturedJobs() {
                                                 Experience
                                             </dt>
 
-                                            <dd>
-                                                {job.experience || "Not specified"}
-                                            </dd>
+                                            <dd>{job.experience || "Not specified"}</dd>
                                         </div>
 
                                         <div>
@@ -259,26 +233,19 @@ function FeaturedJobs() {
                                                 Salary
                                             </dt>
 
-                                            <dd>
-                                                {job.salary || "Not disclosed"}
-                                            </dd>
+                                            <dd>{job.salary || "Not disclosed"}</dd>
                                         </div>
                                     </dl>
 
                                     {/* ================== LOCATION AND DETAILS ================== */}
                                     <div className="rms-job-footer">
-                                        <p
-                                            className="rms-job-location"
-                                            title={job.location}
-                                        >
+                                        <p className="rms-job-location" title={job.location}>
                                             <i
                                                 className="fa-solid fa-location-dot"
                                                 aria-hidden="true"
                                             />
 
-                                            <span>
-                                                {job.location || "Not specified"}
-                                            </span>
+                                            <span>{job.location || "Not specified"}</span>
                                         </p>
 
                                         <Link
@@ -299,10 +266,7 @@ function FeaturedJobs() {
                     </div>
                 ) : (
                     <div className="rms-jobs-empty">
-                        <i
-                            className="fa-solid fa-briefcase"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-briefcase" aria-hidden="true" />
 
                         <h3>No featured openings right now</h3>
                         <p>Check back later or explore our jobs page.</p>
@@ -312,27 +276,16 @@ function FeaturedJobs() {
                 {/* ================== EXPLORE ALL JOBS ================== */}
                 <div className="rms-jobs-cta">
                     <div>
-                        <p className="website-section-label">
-                            YOUR NEXT CHAPTER
-                        </p>
+                        <p className="website-section-label">YOUR NEXT CHAPTER</p>
 
                         <h3>Ready to find your next opportunity?</h3>
 
-                        <p>
-                            Explore available roles and find the one that fits
-                            your goals.
-                        </p>
+                        <p>Explore available roles and find the one that fits your goals.</p>
                     </div>
 
-                    <Link
-                        to="/jobs"
-                        className="website-button website-button-white"
-                    >
+                    <Link to="/jobs" className="website-button website-button-white">
                         Explore All Jobs
-                        <i
-                            className="fa-solid fa-arrow-right"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                     </Link>
                 </div>
             </div>

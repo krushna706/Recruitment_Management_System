@@ -15,14 +15,14 @@ const router = express.Router();
 // Keep these routes before /admin/:id.
 router.get("/admin/vacancies", authMiddleware, roleMiddleware("admin"), jobController.getAdminVacancies);
 router.get("/admin/vacancies/:id", authMiddleware, roleMiddleware("admin"), jobController.getAdminVacancy);
-router.post("/admin/vacancies", authMiddleware, roleMiddleware("admin"), validateMiddleware(vacancySchema), jobController.createVacancy);
-router.put("/admin/vacancies/:id", authMiddleware, roleMiddleware("admin"), validateMiddleware(vacancySchema), jobController.updateVacancy);
+router.post("/admin/vacancies", authMiddleware, roleMiddleware("admin"), validateMiddleware(vacancySchema.fork("version", (rule) => rule.forbidden())), jobController.createVacancy);
+router.put("/admin/vacancies/:id", authMiddleware, roleMiddleware("admin"), validateMiddleware(vacancySchema.fork("version", (rule) => rule.required())), jobController.updateVacancy);
 
 // ================== ADMIN CLIENT JOB ROUTES ==================
 router.get("/admin", authMiddleware, roleMiddleware("admin"), jobController.getAdminJobs);
 router.get("/admin/:id", authMiddleware, roleMiddleware("admin"), jobController.getAdminJob);
-router.post("/admin", authMiddleware, roleMiddleware("admin"), validateMiddleware(clientJobSchema), jobController.createJob);
-router.put("/admin/:id", authMiddleware, roleMiddleware("admin"), validateMiddleware(clientJobSchema), jobController.updateJob);
+router.post("/admin", authMiddleware, roleMiddleware("admin"), validateMiddleware(clientJobSchema.fork("version", (rule) => rule.forbidden())), jobController.createJob);
+router.put("/admin/:id", authMiddleware, roleMiddleware("admin"), validateMiddleware(clientJobSchema.fork("version", (rule) => rule.required())), jobController.updateJob);
 
 // ================== PUBLIC CAREERS ROUTES ==================
 // Keep /vacancies before /:id.

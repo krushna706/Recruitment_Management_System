@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useMediaQuery } from "@mui/material";
 import { toast } from "react-toastify";
 
@@ -9,6 +9,7 @@ import PanelSidebar from "../components/PanelSidebar";
 import "../css/panel.css";
 
 function PanelLayout({ user = null, onLogout }) {
+    const navigate = useNavigate();
     const isMobile = useMediaQuery("(max-width: 991.98px)");
 
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -28,15 +29,14 @@ function PanelLayout({ user = null, onLogout }) {
         if (isLoggingOut) return;
 
         if (!onLogout) {
-            toast.info(
-                "Logout will work after authentication is connected."
-            );
+            toast.info("Logout will work after authentication is connected.");
             return;
         }
 
         try {
             setIsLoggingOut(true);
             await onLogout();
+            navigate("/", { replace: true });
         } catch {
             toast.error("Unable to log out. Please try again.");
         } finally {
@@ -44,20 +44,13 @@ function PanelLayout({ user = null, onLogout }) {
         }
     };
 
-    const accountKey =
-        `${user?._id || user?.id || "guest"}-${user?.role || ""}`;
+    const accountKey = `${user?._id || user?.id || "guest"}-${user?.role || ""}`;
 
     return (
-        <div
-            className={`panel-layout ${
-                sidebarCollapsed ? "is-sidebar-collapsed" : ""
-            }`}
-        >
+        <div className={`panel-layout ${sidebarCollapsed ? "is-sidebar-collapsed" : ""}`}>
             <PanelHeader
                 user={user}
-                isSidebarOpen={
-                    isMobile ? mobileOpen : !sidebarCollapsed
-                }
+                isSidebarOpen={isMobile ? mobileOpen : !sidebarCollapsed}
                 onToggleSidebar={toggleSidebar}
                 onLogout={handleLogout}
                 isLoggingOut={isLoggingOut}

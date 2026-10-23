@@ -9,11 +9,7 @@ function WebsiteFooter() {
                 <div className="row g-4 g-lg-5 website-footer-content">
                     {/* Brand */}
                     <div className="col-12 col-lg-4">
-                        <Link
-                            to="/"
-                            className="website-brand"
-                            aria-label="Recruitment portal home"
-                        >
+                        <Link to="/" className="website-brand" aria-label="Recruitment portal home">
                             <img
                                 src="/images/company_logo.svg"
                                 alt="Company logo"
@@ -28,8 +24,8 @@ function WebsiteFooter() {
                         </p>
 
                         <p className="website-footer-description">
-                            Explore open roles, discover our workplace and stay
-                            connected throughout your application journey.
+                            Explore open roles, discover our workplace and stay connected throughout
+                            your application journey.
                         </p>
                     </div>
 
@@ -65,14 +61,10 @@ function WebsiteFooter() {
                                     <Link to="/jobs">Browse Jobs</Link>
                                 </li>
                                 <li>
-                                    <Link to="/manage/signup">
-                                        Create Account
-                                    </Link>
+                                    <Link to="/manage/signup">Create Account</Link>
                                 </li>
                                 <li>
-                                    <Link to="/manage?from=website">
-                                        Sign In
-                                    </Link>
+                                    <Link to="/manage?from=website">Sign In</Link>
                                 </li>
                             </ul>
                         </nav>
@@ -80,29 +72,21 @@ function WebsiteFooter() {
 
                     {/* Contact */}
                     <div className="col-12 col-lg-4">
-                        <h2 className="website-footer-heading">
-                            Let’s connect
-                        </h2>
+                        <h2 className="website-footer-heading">Let’s connect</h2>
 
                         <p className="website-footer-help">
-                            Questions about a vacancy or the application
-                            process? Get in touch with our team.
+                            Questions about a vacancy or the application process? Get in touch with
+                            our team.
                         </p>
 
                         <Link to="/contact" className="website-footer-contact">
                             <span className="website-contact-icon">
-                                <i
-                                    className="fa-regular fa-envelope"
-                                    aria-hidden="true"
-                                />
+                                <i className="fa-regular fa-envelope" aria-hidden="true" />
                             </span>
 
                             <span>Contact Us</span>
 
-                            <i
-                                className="fa-solid fa-arrow-right"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                         </Link>
                     </div>
                 </div>

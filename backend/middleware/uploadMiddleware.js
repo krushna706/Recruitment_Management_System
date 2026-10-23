@@ -1,4 +1,3 @@
-
 const multer = require("multer");
 const path = require("node:path");
 const CFB = require("cfb");
@@ -30,20 +29,12 @@ function checkResumeExtension(req, file, callback) {
     const filename = file.originalname || "";
     const extension = path.extname(filename).toLowerCase();
 
-    if (
-        !filename.trim() ||
-        filename.length > 255 ||
-        /[\u0000-\u001f\u007f]/.test(filename)
-    ) {
-        return callback(
-            new ExpressError(400, "Resume filename is invalid or too long.")
-        );
+    if (!filename.trim() || filename.length > 255 || /[\u0000-\u001f\u007f]/.test(filename)) {
+        return callback(new ExpressError(400, "Resume filename is invalid or too long."));
     }
 
     if (!Object.prototype.hasOwnProperty.call(RESUME_TYPES, extension)) {
-        return callback(
-            new ExpressError(400, "Upload a PDF, DOC or DOCX resume.")
-        );
+        return callback(new ExpressError(400, "Upload a PDF, DOC or DOCX resume."));
     }
 
     return callback(null, true);
@@ -101,10 +92,10 @@ async function verifyResumeFormat(file) {
         );
     }
 
-    const validFormat = extension === ".doc"
-        ? ["cfb", "doc"].includes(detectedType?.ext) &&
-          isWordDocument(file.buffer)
-        : detectedType?.ext === extension.slice(1);
+    const validFormat =
+        extension === ".doc"
+            ? ["cfb", "doc"].includes(detectedType?.ext) && isWordDocument(file.buffer)
+            : detectedType?.ext === extension.slice(1);
 
     if (!validFormat) {
         throw new ExpressError(
@@ -127,21 +118,12 @@ function handleUploadError(error) {
         return new ExpressError(413, "Resume size must not exceed 5 MB.");
     }
 
-    if (
-        error.code === "LIMIT_FILE_COUNT" ||
-        error.code === "LIMIT_UNEXPECTED_FILE"
-    ) {
-        return new ExpressError(
-            400,
-            "Upload only one file using the resume field."
-        );
+    if (error.code === "LIMIT_FILE_COUNT" || error.code === "LIMIT_UNEXPECTED_FILE") {
+        return new ExpressError(400, "Upload only one file using the resume field.");
     }
 
     if (error.code === "LIMIT_FIELD_VALUE") {
-        return new ExpressError(
-            413,
-            "An application field exceeds the allowed size."
-        );
+        return new ExpressError(413, "An application field exceeds the allowed size.");
     }
 
     return new ExpressError(
@@ -154,12 +136,7 @@ function handleUploadError(error) {
 // Use after authentication and rate limiting on the application route.
 function uploadResume(req, res, next) {
     if (!req.is("multipart/form-data")) {
-        return next(
-            new ExpressError(
-                415,
-                "Submit the application using multipart/form-data."
-            )
-        );
+        return next(new ExpressError(415, "Submit the application using multipart/form-data."));
     }
 
     receiveResume(req, res, (error) => {
@@ -169,17 +146,13 @@ function uploadResume(req, res, next) {
         }
 
         if (!req.file) {
-            return next(
-                new ExpressError(400, "Please upload your resume.")
-            );
+            return next(new ExpressError(400, "Please upload your resume."));
         }
 
         if (!req.file.buffer?.length) {
             delete req.file;
 
-            return next(
-                new ExpressError(400, "The resume file cannot be empty.")
-            );
+            return next(new ExpressError(400, "The resume file cannot be empty."));
         }
 
         verifyResumeFormat(req.file)
@@ -196,20 +169,12 @@ function checkAvatarExtension(req, file, callback) {
     const filename = file.originalname || "";
     const extension = path.extname(filename).toLowerCase();
 
-    if (
-        !filename.trim() ||
-        filename.length > 255 ||
-        /[\u0000-\u001f\u007f]/.test(filename)
-    ) {
-        return callback(
-            new ExpressError(400, "Image filename is invalid or too long.")
-        );
+    if (!filename.trim() || filename.length > 255 || /[\u0000-\u001f\u007f]/.test(filename)) {
+        return callback(new ExpressError(400, "Image filename is invalid or too long."));
     }
 
     if (!Object.prototype.hasOwnProperty.call(AVATAR_TYPES, extension)) {
-        return callback(
-            new ExpressError(400, "Upload a JPG, JPEG, PNG or WebP image.")
-        );
+        return callback(new ExpressError(400, "Upload a JPG, JPEG, PNG or WebP image."));
     }
 
     return callback(null, true);
@@ -242,10 +207,7 @@ async function verifyAvatarFormat(file) {
     try {
         detectedType = await fileTypeFromBuffer(file.buffer);
     } catch {
-        throw new ExpressError(
-            400,
-            "The image format could not be read. Choose another image."
-        );
+        throw new ExpressError(400, "The image format could not be read. Choose another image.");
     }
 
     if (
@@ -270,38 +232,21 @@ function handleAvatarUploadError(error) {
     }
 
     if (error.code === "LIMIT_FILE_SIZE") {
-        return new ExpressError(
-            413,
-            "Profile image size must not exceed 3 MB."
-        );
+        return new ExpressError(413, "Profile image size must not exceed 3 MB.");
     }
 
-    if (
-        error.code === "LIMIT_FILE_COUNT" ||
-        error.code === "LIMIT_UNEXPECTED_FILE"
-    ) {
-        return new ExpressError(
-            400,
-            "Upload only one image using the avatar field."
-        );
+    if (error.code === "LIMIT_FILE_COUNT" || error.code === "LIMIT_UNEXPECTED_FILE") {
+        return new ExpressError(400, "Upload only one image using the avatar field.");
     }
 
-    return new ExpressError(
-        400,
-        "Upload only one profile image without extra form fields."
-    );
+    return new ExpressError(400, "Upload only one profile image without extra form fields.");
 }
 
 // ================== AVATAR UPLOAD MIDDLEWARE ==================
 // Use after authentication and rate limiting on the profile route.
 function uploadAvatar(req, res, next) {
     if (!req.is("multipart/form-data")) {
-        return next(
-            new ExpressError(
-                415,
-                "Submit the image using multipart/form-data."
-            )
-        );
+        return next(new ExpressError(415, "Submit the image using multipart/form-data."));
     }
 
     receiveAvatar(req, res, (error) => {
@@ -313,9 +258,7 @@ function uploadAvatar(req, res, next) {
         if (!req.file?.buffer?.length) {
             delete req.file;
 
-            return next(
-                new ExpressError(400, "Please upload a valid image.")
-            );
+            return next(new ExpressError(400, "Please upload a valid image."));
         }
 
         verifyAvatarFormat(req.file)

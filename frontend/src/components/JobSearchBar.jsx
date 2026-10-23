@@ -28,18 +28,12 @@ function JobSearchBar() {
 
     const requestedExperience = params.get("experience") || "";
 
-    const experience = experienceOptions.some(
-        (option) => option.value === requestedExperience
-    )
+    const experience = experienceOptions.some((option) => option.value === requestedExperience)
         ? requestedExperience
         : "";
 
     // Reinitialize fields when URL filters change, including Back/Forward.
-    const formKey = JSON.stringify([
-        designation,
-        experience,
-        jobLocation,
-    ]);
+    const formKey = JSON.stringify([designation, experience, jobLocation]);
 
     function handleSearch(event) {
         event.preventDefault();
@@ -47,17 +41,11 @@ function JobSearchBar() {
         const formData = new FormData(event.currentTarget);
         const searchParams = new URLSearchParams();
 
-        const nextDesignation = String(
-            formData.get("designation") || ""
-        ).trim();
+        const nextDesignation = String(formData.get("designation") || "").trim();
 
-        const nextExperience = String(
-            formData.get("experience") || ""
-        );
+        const nextExperience = String(formData.get("experience") || "");
 
-        const nextLocation = String(
-            formData.get("location") || ""
-        ).trim();
+        const nextLocation = String(formData.get("location") || "").trim();
 
         if (nextDesignation) {
             searchParams.set("designation", nextDesignation);
@@ -88,10 +76,7 @@ function JobSearchBar() {
             onSubmit={handleSearch}
         >
             <div className="job-search-field">
-                <i
-                    className="fa-solid fa-magnifying-glass"
-                    aria-hidden="true"
-                />
+                <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
 
                 <input
                     name="designation"
@@ -104,10 +89,7 @@ function JobSearchBar() {
             </div>
 
             <div className="job-search-field">
-                <i
-                    className="fa-solid fa-briefcase"
-                    aria-hidden="true"
-                />
+                <i className="fa-solid fa-briefcase" aria-hidden="true" />
 
                 <Select
                     name="experience"
@@ -121,16 +103,10 @@ function JobSearchBar() {
                     }}
                     renderValue={(selected) => {
                         if (selected === "") {
-                            return (
-                                <span className="job-search-placeholder">
-                                    Experience
-                                </span>
-                            );
+                            return <span className="job-search-placeholder">Experience</span>;
                         }
 
-                        return experienceOptions.find(
-                            (option) => option.value === selected
-                        )?.label;
+                        return experienceOptions.find((option) => option.value === selected)?.label;
                     }}
                     MenuProps={{
                         disableScrollLock: true,
@@ -150,10 +126,7 @@ function JobSearchBar() {
                     }}
                 >
                     {experienceOptions.map((option) => (
-                        <MenuItem
-                            key={option.value || "any"}
-                            value={option.value}
-                        >
+                        <MenuItem key={option.value || "any"} value={option.value}>
                             {option.label}
                         </MenuItem>
                     ))}
@@ -161,10 +134,7 @@ function JobSearchBar() {
             </div>
 
             <div className="job-search-field">
-                <i
-                    className="fa-solid fa-location-dot"
-                    aria-hidden="true"
-                />
+                <i className="fa-solid fa-location-dot" aria-hidden="true" />
 
                 <input
                     name="location"
@@ -181,10 +151,7 @@ function JobSearchBar() {
                 className="website-button website-button-primary job-search-submit"
             >
                 Search Jobs
-                <i
-                    className="fa-solid fa-arrow-right"
-                    aria-hidden="true"
-                />
+                <i className="fa-solid fa-arrow-right" aria-hidden="true" />
             </button>
         </form>
     );

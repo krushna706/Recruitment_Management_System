@@ -1,11 +1,10 @@
-
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const { randomUUID } = require("node:crypto");
 const User = require("../models/User");
 const Application = require("../models/Application");
 const Job = require("../models/Job");
-const cloudinary = require("../config/cloudinary");
+const { uploadAvatar: uploadAdminAvatar, deleteAvatar: deleteAdminAvatar, sendPrivateResume } = require("../utils/fileStorage");
 const ExpressError = require("../utils/ExpressError");
 
 // ================== ADMIN ACCESS ==================
@@ -31,10 +30,7 @@ function positiveInteger(value, defaultValue, maximum, label) {
     if (value === undefined) return defaultValue;
 
     if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
-        throw new ExpressError(
-            400,
-            `${label} must be a positive whole number.`
-        );
+        throw new ExpressError(400, `${label} must be a positive whole number.`);
     }
 
     const number = Number(value);
@@ -130,34 +126,16 @@ async function getUsers(req, res, next) {
     try {
         requireAdmin(req);
 
-        validateQuery(req.query, [
-            "page",
-            "limit",
-            "search",
-            "status",
-        ]);
+        validateQuery(req.query, ["page", "limit", "search", "status"]);
 
-        const page = positiveInteger(
-            req.query.page,
-            1,
-            100000,
-            "Page"
-        );
+        const page = positiveInteger(req.query.page, 1, 100000, "Page");
 
-        const limit = positiveInteger(
-            req.query.limit,
-            5,
-            100,
-            "Page size"
-        );
+        const limit = positiveInteger(req.query.limit, 5, 100, "Page size");
 
         const status = req.query.status ?? "All";
 
         if (!["All", "Active", "Inactive"].includes(status)) {
-            throw new ExpressError(
-                400,
-                "Invalid account status filter."
-            );
+            throw new ExpressError(400, "Invalid account status filter.");
         }
 
         // ================== ROLE AND STATUS FILTER ==================
@@ -172,23 +150,14 @@ async function getUsers(req, res, next) {
 
         // ================== SEARCH FILTER ==================
         if (req.query.search !== undefined) {
-            if (
-                typeof req.query.search !== "string" ||
-                req.query.search.length > 100
-            ) {
-                throw new ExpressError(
-                    400,
-                    "Search cannot exceed 100 characters."
-                );
+            if (typeof req.query.search !== "string" || req.query.search.length > 100) {
+                throw new ExpressError(400, "Search cannot exceed 100 characters.");
             }
 
             const search = req.query.search.trim();
 
             if (search) {
-                const regex = new RegExp(
-                    escapeRegex(search),
-                    "i"
-                );
+                const regex = new RegExp(escapeRegex(search), "i");
 
                 filter.$or = [
                     { name: regex },
@@ -211,9 +180,9 @@ async function getUsers(req, res, next) {
             User.find(filter)
                 .select(
                     "name email phone address qualification experience " +
-                    "skills avatar.url resume.name resume.mimeType " +
-                    "resume.size resume.uploadedAt role status " +
-                    "createdAt updatedAt lastLoginAt"
+                        "skills avatar.url resume.name resume.mimeType " +
+                        "resume.size resume.uploadedAt role status " +
+                        "createdAt updatedAt lastLoginAt"
                 )
                 .sort({
                     createdAt: -1,
@@ -249,10 +218,7 @@ async function getUsers(req, res, next) {
             : [];
 
         const totalsByUser = new Map(
-            applicationTotals.map((entry) => [
-                String(entry._id),
-                entry.count,
-            ])
+            applicationTotals.map((entry) => [String(entry._id), entry.count])
         );
 
         res.set("Cache-Control", "no-store");
@@ -261,10 +227,7 @@ async function getUsers(req, res, next) {
             success: true,
 
             users: users.map((user) =>
-                toUserResponse(
-                    user,
-                    totalsByUser.get(String(user._id)) || 0
-                )
+                toUserResponse(user, totalsByUser.get(String(user._id)) || 0)
             ),
 
             pagination: {
@@ -292,19 +255,9 @@ async function getUserDetails(req, res, next) {
 
         const userId = getUserId(req.params.id);
 
-        const page = positiveInteger(
-            req.query.page,
-            1,
-            100000,
-            "Page"
-        );
+        const page = positiveInteger(req.query.page, 1, 100000, "Page");
 
-        const limit = positiveInteger(
-            req.query.limit,
-            10,
-            50,
-            "Page size"
-        );
+        const limit = positiveInteger(req.query.limit, 10, 50, "Page size");
 
         // ================== FETCH CANDIDATE PROFILE ==================
         const user = await User.findOne({
@@ -313,57 +266,44 @@ async function getUserDetails(req, res, next) {
         })
             .select(
                 "name email phone address qualification experience " +
-                "skills avatar.url resume.name resume.mimeType " +
-                "resume.size resume.uploadedAt role status " +
-                "createdAt updatedAt lastLoginAt"
+                    "skills avatar.url resume.name resume.mimeType " +
+                    "resume.size resume.uploadedAt role status " +
+                    "createdAt updatedAt lastLoginAt"
             )
             .lean();
 
         if (!user) {
-            throw new ExpressError(
-                404,
-                "Candidate account not found."
-            );
+            throw new ExpressError(404, "Candidate account not found.");
         }
 
         // ================== FETCH APPLICATION HISTORY ==================
-        const [applications, totalApplications] =
-            await Promise.all([
-                Application.find({ userId })
-                    .select(
-                        "openingType jobSnapshot.title " +
-                        "jobSnapshot.company status createdAt"
-                    )
-                    .sort({
-                        createdAt: -1,
-                        _id: -1,
-                    })
-                    .skip((page - 1) * limit)
-                    .limit(limit)
-                    .lean(),
+        const [applications, totalApplications] = await Promise.all([
+            Application.find({ userId })
+                .select("openingType jobSnapshot.title " + "jobSnapshot.company status createdAt")
+                .sort({
+                    createdAt: -1,
+                    _id: -1,
+                })
+                .skip((page - 1) * limit)
+                .limit(limit)
+                .lean(),
 
-                Application.countDocuments({ userId }),
-            ]);
+            Application.countDocuments({ userId }),
+        ]);
 
         res.set("Cache-Control", "no-store");
 
         return res.status(200).json({
             success: true,
 
-            user: toUserResponse(
-                user,
-                totalApplications
-            ),
+            user: toUserResponse(user, totalApplications),
 
             applications: applications.map((application) => ({
                 id: String(application._id),
                 _id: application._id,
                 openingType: application.openingType,
-                title:
-                    application.jobSnapshot?.title ||
-                    "Job unavailable",
-                company:
-                    application.jobSnapshot?.company || "",
+                title: application.jobSnapshot?.title || "Job unavailable",
+                company: application.jobSnapshot?.company || "",
                 status: application.status,
                 appliedAt: application.createdAt,
             })),
@@ -372,9 +312,7 @@ async function getUserDetails(req, res, next) {
                 page,
                 limit,
                 total: totalApplications,
-                totalPages: Math.ceil(
-                    totalApplications / limit
-                ),
+                totalPages: Math.ceil(totalApplications / limit),
             },
         });
     } catch (error) {
@@ -396,18 +334,12 @@ async function updateUserStatus(req, res, next) {
         // ================== STATUS VALIDATION ==================
         if (
             !req.body ||
-            Object.keys(req.body).some(
-                (key) =>
-                    !["expectedStatus", "status"].includes(key)
-            ) ||
+            Object.keys(req.body).some((key) => !["expectedStatus", "status"].includes(key)) ||
             !["Active", "Inactive"].includes(expectedStatus) ||
             !["Active", "Inactive"].includes(status) ||
             expectedStatus === status
         ) {
-            throw new ExpressError(
-                400,
-                "Provide a valid account status change."
-            );
+            throw new ExpressError(400, "Provide a valid account status change.");
         }
 
         // ================== ATOMIC STATUS UPDATE ==================
@@ -466,169 +398,48 @@ async function updateUserStatus(req, res, next) {
     }
 }
 
+// ================== ADMIN PROFILE RESUME ACCESS ==================
+// GET /api/admin/users/:id/resume?mode=view|download
+// Only authenticated admins can access candidate profile resumes.
+async function getUserProfileResume(req, res, next) {
+    try {
+        requireAdmin(req);
 
- // ================== ADMIN PROFILE RESUME ACCESS ==================
- // GET /api/admin/users/:id/resume?mode=view|download
- // Only authenticated admins can access candidate profile resumes.
- async function getUserProfileResume(req, res, next) {
-     try {
-         requireAdmin(req);
+        const userId = getUserId(req.params.id);
 
-         const userId = getUserId(req.params.id);
+        validateQuery(req.query, ["mode"]);
 
-         validateQuery(req.query, ["mode"]);
+        const mode = req.query.mode ?? "download";
 
-         const mode = req.query.mode ?? "download";
+        if (typeof mode !== "string" || !["view", "download"].includes(mode)) {
+            throw new ExpressError(400, "Resume mode must be view or download.");
+        }
 
-         if (
-             typeof mode !== "string" ||
-             !["view", "download"].includes(mode)
-         ) {
-             throw new ExpressError(
-                 400,
-                 "Resume mode must be view or download."
-             );
-         }
+        // ================== FETCH CANDIDATE RESUME ==================
+        // Fetch private storage ID only on this authorized endpoint.
+        const user = await User.findOne({
+            _id: userId,
+            role: "user",
+        })
+            .select("resume.name resume.mimeType resume.size +resume.publicId")
+            .lean();
 
-         // ================== FETCH CANDIDATE RESUME ==================
-         // Fetch private storage ID only on this authorized endpoint.
-         const user = await User.findOne({
-             _id: userId,
-             role: "user",
-         })
-             .select(
-                 "resume.name resume.mimeType resume.size +resume.publicId"
-             )
-             .lean();
+        if (!user) {
+            throw new ExpressError(404, "Candidate not found.");
+        }
 
-         if (!user) {
-             throw new ExpressError(404, "Candidate not found.");
-         }
+        const resume = user.resume;
 
-         const resume = user.resume;
+        if (!resume?.publicId) {
+            throw new ExpressError(404, "Candidate profile resume not found.");
+        }
 
-         if (!resume?.publicId) {
-             throw new ExpressError(
-                 404,
-                 "Candidate profile resume not found."
-             );
-         }
+        return await sendPrivateResume(res, resume, mode, resume.publicId);
+    } catch (error) {
+        return next(error);
+    }
+}
 
-         if (
-             mode === "view" &&
-             resume.mimeType !== "application/pdf"
-         ) {
-             throw new ExpressError(
-                 400,
-                 "Preview is available only for PDF resumes."
-             );
-         }
-
-         // ================== PRIVATE CLOUDINARY ACCESS ==================
-         // Generate a short-lived signed URL on the server.
-         // Never expose this URL directly to the frontend.
-         const signedUrl = cloudinary.utils.private_download_url(
-             resume.publicId,
-             undefined,
-             {
-                 resource_type: "raw",
-                 type: "private",
-                 attachment: false,
-                 expires_at: Math.floor(Date.now() / 1000) + 60,
-                 secure: true,
-             }
-         );
-
-         // ================== DOWNLOAD PRIVATE FILE ==================
-         const maxSize = 5 * 1024 * 1024;
-         let fileBuffer;
-
-         try {
-             const response = await fetch(signedUrl, {
-                 signal: AbortSignal.timeout(60000),
-             });
-
-             if (!response.ok || !response.body) {
-                 await response.body?.cancel();
-                 throw new Error("Resume storage unavailable.");
-             }
-
-             const contentLength = Number(
-                 response.headers.get("content-length")
-             );
-
-             if (contentLength > maxSize) {
-                 await response.body.cancel();
-                 throw new Error("Resume exceeds size limit.");
-             }
-
-             const reader = response.body.getReader();
-             const chunks = [];
-             let receivedSize = 0;
-
-             try {
-                 while (true) {
-                     const { done, value } = await reader.read();
-
-                     if (done) break;
-
-                     receivedSize += value.byteLength;
-
-                     if (receivedSize > maxSize) {
-                         await reader.cancel();
-                         throw new Error("Resume exceeds size limit.");
-                     }
-
-                     chunks.push(Buffer.from(value));
-                 }
-             } finally {
-                 reader.releaseLock();
-             }
-
-             if (
-                 !receivedSize ||
-                 receivedSize !== resume.size
-             ) {
-                 throw new Error("Incomplete resume received.");
-             }
-
-             fileBuffer = Buffer.concat(
-                 chunks,
-                 receivedSize
-             );
-         } catch {
-             throw new ExpressError(
-                 502,
-                 "Resume could not be retrieved. Please try again."
-             );
-         }
-
-         // ================== SECURE FILE RESPONSE ==================
-         res.attachment(resume.name);
-
-         if (mode === "view") {
-             res.set(
-                 "Content-Disposition",
-                 res.get("Content-Disposition").replace(
-                     /^attachment/i,
-                     "inline"
-                 )
-             );
-         }
-
-         res.set("Content-Type", resume.mimeType);
-         res.set("Content-Length", String(fileBuffer.length));
-         res.set("Cache-Control", "private, no-store");
-         res.set("X-Content-Type-Options", "nosniff");
-         res.set("Referrer-Policy", "no-referrer");
-
-         return res.status(200).send(fileBuffer);
-     } catch (error) {
-         return next(error);
-     }
- }
-
- 
 // ================== SAFE ADMIN RESPONSE ==================
 // Never expose password hashes, token versions or Cloudinary public IDs.
 function toAdminResponse(admin) {
@@ -656,30 +467,15 @@ function toAdminResponse(admin) {
 // ================== ADMIN DATABASE ERRORS ==================
 function handleAdminError(error, next) {
     if (error.code === 11000 && error.keyPattern?.email) {
-        return next(
-            new ExpressError(
-                409,
-                "This email address is already in use."
-            )
-        );
+        return next(new ExpressError(409, "This email address is already in use."));
     }
 
     if (error.name === "ValidationError") {
-        return next(
-            new ExpressError(400, "Admin details are invalid.")
-        );
+        return next(new ExpressError(400, "Admin details are invalid."));
     }
 
-    if (
-        error.name === "VersionError" ||
-        error.hasErrorLabel?.("TransientTransactionError")
-    ) {
-        return next(
-            new ExpressError(
-                409,
-                "Account changed. Refresh and try again."
-            )
-        );
+    if (error.name === "VersionError" || error.hasErrorLabel?.("TransientTransactionError")) {
+        return next(new ExpressError(409, "Account changed. Refresh and try again."));
     }
 
     return next(error);
@@ -695,36 +491,21 @@ async function verifyActingAdminPassword(adminId, password) {
     }).select("+passwordHash +mustChangePassword");
 
     if (!admin) {
-        throw new ExpressError(
-            403,
-            "Admin account is unavailable."
-        );
+        throw new ExpressError(403, "Admin account is unavailable.");
     }
 
     if (typeof password !== "string") {
-        throw new ExpressError(
-            400,
-            "Enter your current password."
-        );
+        throw new ExpressError(400, "Enter your current password.");
     }
 
-    const matches = await bcrypt.compare(
-        password,
-        admin.passwordHash
-    );
+    const matches = await bcrypt.compare(password, admin.passwordHash);
 
     if (!matches) {
-        throw new ExpressError(
-            403,
-            "Current password is incorrect."
-        );
+        throw new ExpressError(403, "Current password is incorrect.");
     }
 
     if (admin.mustChangePassword) {
-        throw new ExpressError(
-            403,
-            "Change your initial password before managing admins."
-        );
+        throw new ExpressError(403, "Change your initial password before managing admins.");
     }
 
     return admin;
@@ -755,28 +536,16 @@ async function getAdmins(req, res, next) {
     try {
         requireAdmin(req);
 
-        validateQuery(req.query, [
-            "page",
-            "limit",
-            "search",
-            "status",
-        ]);
+        validateQuery(req.query, ["page", "limit", "search", "status"]);
 
-        const page = positiveInteger(
-            req.query.page, 1, 100000, "Page"
-        );
+        const page = positiveInteger(req.query.page, 1, 100000, "Page");
 
-        const limit = positiveInteger(
-            req.query.limit, 10, 100, "Page size"
-        );
+        const limit = positiveInteger(req.query.limit, 10, 100, "Page size");
 
         const status = req.query.status ?? "All";
 
         if (!["All", "Active", "Inactive"].includes(status)) {
-            throw new ExpressError(
-                400,
-                "Invalid admin status filter."
-            );
+            throw new ExpressError(400, "Invalid admin status filter.");
         }
 
         // ================== ADMIN FILTER ==================
@@ -788,29 +557,16 @@ async function getAdmins(req, res, next) {
 
         // ================== SEARCH FILTER ==================
         if (req.query.search !== undefined) {
-            if (
-                typeof req.query.search !== "string" ||
-                req.query.search.length > 100
-            ) {
-                throw new ExpressError(
-                    400,
-                    "Search cannot exceed 100 characters."
-                );
+            if (typeof req.query.search !== "string" || req.query.search.length > 100) {
+                throw new ExpressError(400, "Search cannot exceed 100 characters.");
             }
 
             const search = req.query.search.trim();
 
             if (search) {
-                const regex = new RegExp(
-                    escapeRegex(search),
-                    "i"
-                );
+                const regex = new RegExp(escapeRegex(search), "i");
 
-                filter.$or = [
-                    { name: regex },
-                    { email: regex },
-                    { phone: regex },
-                ];
+                filter.$or = [{ name: regex }, { email: regex }, { phone: regex }];
             }
         }
 
@@ -819,7 +575,7 @@ async function getAdmins(req, res, next) {
             User.find(filter)
                 .select(
                     "name email phone role status avatar.url " +
-                    "createdAt updatedAt lastLoginAt createdBy"
+                        "createdAt updatedAt lastLoginAt createdBy"
                 )
                 .sort({ createdAt: -1, _id: -1 })
                 .skip((page - 1) * limit)
@@ -866,15 +622,12 @@ async function getAdminDetails(req, res, next) {
         })
             .select(
                 "name email phone role status avatar.url " +
-                "createdAt updatedAt lastLoginAt createdBy"
+                    "createdAt updatedAt lastLoginAt createdBy"
             )
             .lean();
 
         if (!admin) {
-            throw new ExpressError(
-                404,
-                "Admin account not found."
-            );
+            throw new ExpressError(404, "Admin account not found.");
         }
 
         res.set("Cache-Control", "no-store");
@@ -895,19 +648,10 @@ async function createAdmin(req, res, next) {
     try {
         requireAdmin(req);
 
-        const {
-            name,
-            email,
-            phone,
-            password,
-            currentPassword,
-        } = req.body;
+        const { name, email, phone, password, currentPassword } = req.body;
 
         // Verify the currently logged-in administrator.
-        await verifyActingAdminPassword(
-            req.user._id,
-            currentPassword
-        );
+        await verifyActingAdminPassword(req.user._id, currentPassword);
 
         // ================== HASH ADMIN PASSWORD ==================
         const passwordHash = await bcrypt.hash(password, 12);
@@ -929,8 +673,7 @@ async function createAdmin(req, res, next) {
 
         return res.status(201).json({
             success: true,
-            message:
-                "Admin created successfully. Initial password change is required.",
+            message: "Admin created successfully. Initial password change is required.",
             admin: toAdminResponse(admin),
         });
     } catch (error) {
@@ -955,18 +698,12 @@ async function updateAdmin(req, res, next) {
         }
 
         if (!Object.keys(changes).length) {
-            throw new ExpressError(
-                400,
-                "No admin changes provided."
-            );
+            throw new ExpressError(400, "No admin changes provided.");
         }
 
         // ================== EMAIL CHANGE SECURITY ==================
         if (changes.email !== undefined) {
-            await verifyActingAdminPassword(
-                req.user._id,
-                req.body.currentPassword
-            );
+            await verifyActingAdminPassword(req.user._id, req.body.currentPassword);
         }
 
         const existing = await User.findOne({
@@ -975,15 +712,10 @@ async function updateAdmin(req, res, next) {
         }).select("email __v");
 
         if (!existing) {
-            throw new ExpressError(
-                404,
-                "Admin account not found."
-            );
+            throw new ExpressError(404, "Admin account not found.");
         }
 
-        const emailChanged =
-            changes.email !== undefined &&
-            changes.email !== existing.email;
+        const emailChanged = changes.email !== undefined && changes.email !== existing.email;
 
         // ================== ATOMIC ADMIN UPDATE ==================
         const updated = await User.findOneAndUpdate(
@@ -994,11 +726,10 @@ async function updateAdmin(req, res, next) {
             },
             {
                 $set: changes,
+                ...(emailChanged ? { $unset: { passwordReset: "" } } : {}),
                 $inc: {
                     __v: 1,
-                    ...(emailChanged
-                        ? { tokenVersion: 1 }
-                        : {}),
+                    ...(emailChanged ? { tokenVersion: 1 } : {}),
                 },
             },
             {
@@ -1008,10 +739,7 @@ async function updateAdmin(req, res, next) {
         );
 
         if (!updated) {
-            throw new ExpressError(
-                409,
-                "Admin changed. Refresh and try again."
-            );
+            throw new ExpressError(409, "Admin changed. Refresh and try again.");
         }
 
         res.set("Cache-Control", "no-store");
@@ -1032,11 +760,7 @@ async function updateAdmin(req, res, next) {
 async function lockAdminStatusGuard(session) {
     await mongoose.connection
         .collection("system_guards")
-        .updateOne(
-            { _id: "admin-access" },
-            { $inc: { revision: 1 } },
-            { session }
-        );
+        .updateOne({ _id: "admin-access" }, { $inc: { revision: 1 } }, { session });
 }
 
 // ================== ACTIVATE / DEACTIVATE ADMIN ==================
@@ -1049,11 +773,7 @@ async function updateAdminStatus(req, res, next) {
 
         const adminId = getUserId(req.params.id);
 
-        const {
-            expectedStatus,
-            status,
-            currentPassword,
-        } = req.body || {};
+        const { expectedStatus, status, currentPassword } = req.body || {};
 
         // ================== VALIDATE STATUS ==================
         if (
@@ -1068,10 +788,11 @@ async function updateAdminStatus(req, res, next) {
             );
         }
 
-        await verifyActingAdminPassword(
-            req.user._id,
-            currentPassword
-        );
+        if (status === "Inactive" && String(adminId) === String(req.user._id)) {
+            throw new ExpressError(409, "You cannot deactivate your own account here.");
+        }
+
+        const actingAdmin = await verifyActingAdminPassword(req.user._id, currentPassword);
 
         // Initialize the shared guard before starting the transaction.
         await mongoose.connection
@@ -1089,23 +810,33 @@ async function updateAdminStatus(req, res, next) {
         await session.withTransaction(async () => {
             await lockAdminStatusGuard(session);
 
+            // Serialize with account changes and recheck the actor inside the transaction.
+            const actor = await User.updateOne(
+                {
+                    _id: actingAdmin._id,
+                    role: "admin",
+                    status: "Active",
+                    passwordHash: actingAdmin.passwordHash,
+                    mustChangePassword: false,
+                },
+                { $inc: { __v: 1 } },
+                { session }
+            );
+            if (actor.matchedCount !== 1) {
+                throw new ExpressError(403, "Your admin access changed. Please login again.");
+            }
+
             const target = await User.findOne({
                 _id: adminId,
                 role: "admin",
             }).session(session);
 
             if (!target) {
-                throw new ExpressError(
-                    404,
-                    "Admin account not found."
-                );
+                throw new ExpressError(404, "Admin account not found.");
             }
 
             if (target.status !== expectedStatus) {
-                throw new ExpressError(
-                    409,
-                    "Admin status changed. Refresh and try again."
-                );
+                throw new ExpressError(409, "Admin status changed. Refresh and try again.");
             }
 
             // ================== LAST ACTIVE ADMIN PROTECTION ==================
@@ -1116,10 +847,7 @@ async function updateAdminStatus(req, res, next) {
                 }).session(session);
 
                 if (activeCount <= 1) {
-                    throw new ExpressError(
-                        409,
-                        "Cannot deactivate the last active admin."
-                    );
+                    throw new ExpressError(409, "Cannot deactivate the last active admin.");
                 }
 
                 // Verify replacement access before retiring
@@ -1130,6 +858,7 @@ async function updateAdminStatus(req, res, next) {
                         role: "admin",
                         status: "Active",
                         lastLoginAt: { $ne: null },
+                        mustChangePassword: false,
                     }).session(session);
 
                     if (!replacement) {
@@ -1163,10 +892,7 @@ async function updateAdminStatus(req, res, next) {
             );
 
             if (!updatedAdmin) {
-                throw new ExpressError(
-                    409,
-                    "Admin changed. Refresh and try again."
-                );
+                throw new ExpressError(409, "Admin changed. Refresh and try again.");
             }
         });
 
@@ -1190,7 +916,6 @@ async function updateAdminStatus(req, res, next) {
         }
     }
 }
-
 
 // ================== GET MY ADMIN PROFILE ==================
 // GET /api/admin/me/profile
@@ -1272,10 +997,7 @@ async function updateMyAdminProfile(req, res, next) {
         ).select("+mustChangePassword");
 
         if (!updated) {
-            throw new ExpressError(
-                409,
-                "Profile changed. Refresh and try again."
-            );
+            throw new ExpressError(409, "Profile changed. Refresh and try again.");
         }
 
         res.set("Cache-Control", "no-store");
@@ -1330,10 +1052,7 @@ async function changeMyAdminPassword(req, res, next) {
             throw new ExpressError(403, "Admin account is unavailable.");
         }
 
-        const matches = await bcrypt.compare(
-            currentPassword,
-            admin.passwordHash
-        );
+        const matches = await bcrypt.compare(currentPassword, admin.passwordHash);
 
         if (!matches) {
             throw new ExpressError(403, "Current password is incorrect.");
@@ -1357,6 +1076,7 @@ async function changeMyAdminPassword(req, res, next) {
                     passwordChangedAt: new Date(),
                     mustChangePassword: false,
                 },
+                $unset: { passwordReset: "" },
                 $inc: {
                     tokenVersion: 1,
                     __v: 1,
@@ -1369,10 +1089,7 @@ async function changeMyAdminPassword(req, res, next) {
         );
 
         if (!updated) {
-            throw new ExpressError(
-                409,
-                "Account changed. Please login again."
-            );
+            throw new ExpressError(409, "Account changed. Please login again.");
         }
 
         // ================== CLEAR AUTHENTICATION COOKIE ==================
@@ -1393,50 +1110,6 @@ async function changeMyAdminPassword(req, res, next) {
         });
     } catch (error) {
         return handleAdminError(error, next);
-    }
-}
-
-// ================== UPLOAD ADMIN AVATAR TO CLOUDINARY ==================
-// Store verified images in the same folder as candidate avatars.
-function uploadAdminAvatar(file, publicId) {
-    return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-            {
-                resource_type: "image",
-                type: "upload",
-                folder: "recruitment_management/profile_avatars",
-                public_id: publicId,
-                overwrite: false,
-                timeout: 60000,
-            },
-            (error, result) => {
-                if (error) return reject(error);
-
-                if (!result?.public_id || !result?.secure_url) {
-                    return reject(
-                        new Error("Admin avatar upload was not confirmed.")
-                    );
-                }
-
-                return resolve(result);
-            }
-        );
-
-        stream.on("error", reject);
-        stream.end(file.buffer);
-    });
-}
-
-// ================== DELETE CLOUDINARY AVATAR ==================
-async function deleteAdminAvatar(publicId) {
-    const result = await cloudinary.uploader.destroy(publicId, {
-        resource_type: "image",
-        type: "upload",
-        invalidate: true,
-    });
-
-    if (!["ok", "not found"].includes(result?.result)) {
-        throw new Error("Cloudinary avatar deletion failed.");
     }
 }
 
@@ -1473,14 +1146,9 @@ async function uploadMyAdminAvatar(req, res, next) {
         if (
             !req.file?.buffer?.length ||
             req.file.size > MAX_AVATAR_SIZE ||
-            !["image/jpeg", "image/png", "image/webp"].includes(
-                req.file.mimetype
-            )
+            !["image/jpeg", "image/png", "image/webp"].includes(req.file.mimetype)
         ) {
-            throw new ExpressError(
-                400,
-                "Upload a valid JPG, PNG or WebP image up to 3 MB."
-            );
+            throw new ExpressError(400, "Upload a valid JPG, PNG or WebP image up to 3 MB.");
         }
 
         // ================== GET EXISTING AVATAR ==================
@@ -1501,17 +1169,11 @@ async function uploadMyAdminAvatar(req, res, next) {
         let uploaded;
 
         try {
-            uploaded = await uploadAdminAvatar(
-                req.file,
-                `${admin._id}_${randomUUID()}`
-            );
+            uploaded = await uploadAdminAvatar(req.file, `${admin._id}_${randomUUID()}`);
 
             uploadedPublicId = uploaded.public_id;
         } catch {
-            throw new ExpressError(
-                502,
-                "Profile image upload failed. Please try again."
-            );
+            throw new ExpressError(502, "Profile image upload failed. Please try again.");
         }
 
         // ================== ATOMIC AVATAR REPLACEMENT ==================
@@ -1538,20 +1200,14 @@ async function uploadMyAdminAvatar(req, res, next) {
         );
 
         if (!updated) {
-            throw new ExpressError(
-                409,
-                "Profile changed. Refresh and upload again."
-            );
+            throw new ExpressError(409, "Profile changed. Refresh and upload again.");
         }
 
         avatarSaved = true;
 
         // ================== DELETE PREVIOUS AVATAR ==================
         // Delete only after successful MongoDB update.
-        if (
-            previousPublicId &&
-            previousPublicId !== uploadedPublicId
-        ) {
+        if (previousPublicId && previousPublicId !== uploadedPublicId) {
             try {
                 await deleteAdminAvatar(previousPublicId);
             } catch {
@@ -1608,11 +1264,7 @@ async function getAdminDashboard(req, res, next) {
                         total: { $sum: 1 },
                         published: {
                             $sum: {
-                                $cond: [
-                                    { $eq: ["$status", "Published"] },
-                                    1,
-                                    0,
-                                ],
+                                $cond: [{ $eq: ["$status", "Published"] }, 1, 0],
                             },
                         },
                     },
@@ -1636,7 +1288,7 @@ async function getAdminDashboard(req, res, next) {
             Application.find()
                 .select(
                     "applicant.name jobSnapshot.title " +
-                    "jobSnapshot.company openingType status createdAt"
+                        "jobSnapshot.company openingType status createdAt"
                 )
                 .sort({ createdAt: -1, _id: -1 })
                 .limit(5)
@@ -1716,34 +1368,24 @@ async function getAdminDashboard(req, res, next) {
         }
 
         // Pending = Submitted + Under Review.
-        const pending =
-            statusCounts.Submitted +
-            statusCounts["Under Review"];
+        const pending = statusCounts.Submitted + statusCounts["Under Review"];
 
         // ================== RECENT APPLICATIONS ==================
-        const recentApplications = latestApplications.map(
-            (application) => ({
-                id: String(application._id),
+        const recentApplications = latestApplications.map((application) => ({
+            id: String(application._id),
 
-                candidate:
-                    application.applicant?.name ||
-                    "Unknown candidate",
+            candidate: application.applicant?.name || "Unknown candidate",
 
-                title:
-                    application.jobSnapshot?.title ||
-                    "Job unavailable",
+            title: application.jobSnapshot?.title || "Job unavailable",
 
-                company:
-                    application.jobSnapshot?.company ||
-                    (application.openingType === "internal"
-                        ? "Internal Vacancy"
-                        : ""),
+            company:
+                application.jobSnapshot?.company ||
+                (application.openingType === "internal" ? "Internal Vacancy" : ""),
 
-                openingType: application.openingType,
-                status: application.status,
-                appliedAt: application.createdAt,
-            })
-        );
+            openingType: application.openingType,
+            status: application.status,
+            appliedAt: application.createdAt,
+        }));
 
         // ================== ACTIVITY DISPLAY CONFIG ==================
         const activityConfig = {
@@ -1785,66 +1427,46 @@ async function getAdminDashboard(req, res, next) {
         };
 
         // ================== APPLICATION ACTIVITIES ==================
-        const applicationActivities = statusHistory.map(
-            (entry) => {
-                const config = activityConfig[entry.status] || {
-                    title: "Application updated",
-                    icon: "fa-regular fa-file-lines",
-                    tone: "blue",
-                };
+        const applicationActivities = statusHistory.map((entry) => {
+            const config = activityConfig[entry.status] || {
+                title: "Application updated",
+                icon: "fa-regular fa-file-lines",
+                tone: "blue",
+            };
 
-                return {
-                    id:
-                        `application-${entry._id}-` +
-                        `${entry.status}-${new Date(entry.at).getTime()}`,
+            return {
+                id: `application-${entry._id}-` + `${entry.status}-${new Date(entry.at).getTime()}`,
 
-                    title: config.title,
+                title: config.title,
 
-                    description:
-                        `${entry.candidate || "Candidate"} · ` +
-                        `${entry.jobTitle || "Job"}`,
+                description: `${entry.candidate || "Candidate"} · ` + `${entry.jobTitle || "Job"}`,
 
-                    at: entry.at,
-                    icon: config.icon,
-                    tone: config.tone,
-                    path: "/manage/manage-applications",
-                };
-            }
-        );
+                at: entry.at,
+                icon: config.icon,
+                tone: config.tone,
+                path: "/manage/manage-applications",
+            };
+        });
 
         // ================== JOB PUBLICATION ACTIVITIES ==================
-        const jobActivities = latestPublishedJobs.map(
-            (job) => ({
-                id: `job-${job._id}`,
+        const jobActivities = latestPublishedJobs.map((job) => ({
+            id: `job-${job._id}`,
 
-                title:
-                    job.openingType === "internal"
-                        ? "Vacancy published"
-                        : "Client job published",
+            title: job.openingType === "internal" ? "Vacancy published" : "Client job published",
 
-                description: `${job.title} published for applications.`,
+            description: `${job.title} published for applications.`,
 
-                at: job.publishedAt,
-                icon: "fa-solid fa-briefcase",
-                tone: "purple",
+            at: job.publishedAt,
+            icon: "fa-solid fa-briefcase",
+            tone: "purple",
 
-                path:
-                    job.openingType === "internal"
-                        ? "/manage/manage-vacancies"
-                        : "/manage/manage-jobs",
-            })
-        );
+            path:
+                job.openingType === "internal" ? "/manage/manage-vacancies" : "/manage/manage-jobs",
+        }));
 
         // ================== RECENT ACTIVITIES ==================
-        const recentActivities = [
-            ...applicationActivities,
-            ...jobActivities,
-        ]
-            .sort(
-                (a, b) =>
-                    new Date(b.at).getTime() -
-                    new Date(a.at).getTime()
-            )
+        const recentActivities = [...applicationActivities, ...jobActivities]
+            .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
             .slice(0, 4);
 
         // ================== DASHBOARD RESPONSE ==================
@@ -1876,8 +1498,6 @@ async function getAdminDashboard(req, res, next) {
         return next(error);
     }
 }
-
-
 
 // ================== EXPORTS ==================
 module.exports = {

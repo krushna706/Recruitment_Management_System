@@ -17,17 +17,9 @@ function getPostedLabel(dateString) {
 
     const now = new Date();
 
-    const postedDay = Date.UTC(
-        posted.getFullYear(),
-        posted.getMonth(),
-        posted.getDate()
-    );
+    const postedDay = Date.UTC(posted.getFullYear(), posted.getMonth(), posted.getDate());
 
-    const currentDay = Date.UTC(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate()
-    );
+    const currentDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
 
     const days = Math.floor((currentDay - postedDay) / 86400000);
 
@@ -41,27 +33,19 @@ function getPostedLabel(dateString) {
 // ================== RELATED JOB RANKING ==================
 // Rank the fetched suggestions by department, skills and location.
 function getRelatedJobs(jobs, currentJob) {
-    const currentSkills = new Set(
-        currentJob.skills.map((skill) => skill.toLowerCase())
-    );
+    const currentSkills = new Set(currentJob.skills.map((skill) => skill.toLowerCase()));
 
     return jobs
         .map(normalizeJob)
-        .filter(
-            (job) =>
-                job.id !== currentJob.id &&
-                job.status === "Published"
-        )
+        .filter((job) => job.id !== currentJob.id && job.status === "Published")
         .map((job) => {
             const sameDepartment =
                 Boolean(currentJob.department) &&
-                job.department?.toLowerCase() ===
-                    currentJob.department.toLowerCase();
+                job.department?.toLowerCase() === currentJob.department.toLowerCase();
 
             const sameLocation =
                 Boolean(currentJob.location) &&
-                job.location?.toLowerCase() ===
-                    currentJob.location.toLowerCase();
+                job.location?.toLowerCase() === currentJob.location.toLowerCase();
 
             const matchingSkills = job.skills.filter((skill) =>
                 currentSkills.has(skill.toLowerCase())
@@ -69,10 +53,7 @@ function getRelatedJobs(jobs, currentJob) {
 
             return {
                 ...job,
-                relevance:
-                    (sameDepartment ? 4 : 0) +
-                    matchingSkills +
-                    (sameLocation ? 1 : 0),
+                relevance: (sameDepartment ? 4 : 0) + matchingSkills + (sameLocation ? 1 : 0),
             };
         })
         .filter((job) => job.relevance > 0)
@@ -122,10 +103,9 @@ function JobDetailsContent({ id, user }) {
             }
 
             try {
-                const { data } = await api.get(
-                    `/jobs/${encodeURIComponent(id)}`,
-                    { signal: controller.signal }
-                );
+                const { data } = await api.get(`/jobs/${encodeURIComponent(id)}`, {
+                    signal: controller.signal,
+                });
 
                 if (controller.signal.aborted) return;
 
@@ -205,19 +185,11 @@ function JobDetailsContent({ id, user }) {
     // ================== LOADING STATE ==================
     if (loading) {
         return (
-            <section
-                className="website-section website-shell"
-                aria-busy="true"
-            >
+            <section className="website-section website-shell" aria-busy="true">
                 <div className="rms-jobs-empty jd-not-found" role="status">
-                    <i
-                        className="fa-solid fa-spinner fa-spin"
-                        aria-hidden="true"
-                    />
+                    <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
 
-                    <h1 className="website-section-title">
-                        Loading job details...
-                    </h1>
+                    <h1 className="website-section-title">Loading job details...</h1>
 
                     <p>Please wait while we fetch this opportunity.</p>
                 </div>
@@ -230,9 +202,7 @@ function JobDetailsContent({ id, user }) {
         return (
             <section className="website-section website-shell">
                 <div className="rms-jobs-empty jd-not-found">
-                    <h1 className="website-section-title">
-                        Unable to load this job.
-                    </h1>
+                    <h1 className="website-section-title">Unable to load this job.</h1>
 
                     <Alert severity="error">{error}</Alert>
 
@@ -259,9 +229,7 @@ function JobDetailsContent({ id, user }) {
 
                     <h1 className="website-section-title">Job not found.</h1>
 
-                    <p>
-                        This position is unavailable or the link is incorrect.
-                    </p>
+                    <p>This position is unavailable or the link is incorrect.</p>
 
                     <Button
                         component={Link}
@@ -321,10 +289,7 @@ function JobDetailsContent({ id, user }) {
     return (
         <div className="jd-page">
             {/* ================== WEBSITE BANNER ================== */}
-            <section
-                className="about-hero"
-                aria-labelledby="job-details-page-title"
-            >
+            <section className="about-hero" aria-labelledby="job-details-page-title">
                 <img
                     className="about-hero-image"
                     src="/images/about-banner.jpg"
@@ -335,28 +300,27 @@ function JobDetailsContent({ id, user }) {
                 <div className="website-shell about-hero-inner">
                     <nav className="about-breadcrumb" aria-label="Breadcrumb">
                         <ol>
-                            <li><Link to="/">Home</Link></li>
-                            <li><Link to="/jobs">Jobs</Link></li>
+                            <li>
+                                <Link to="/">Home</Link>
+                            </li>
+                            <li>
+                                <Link to="/jobs">Jobs</Link>
+                            </li>
                             <li aria-current="page">Job Details</li>
                         </ol>
                     </nav>
 
                     <div className="about-hero-content">
-                        <p className="website-section-label">
-                            YOUR NEXT CAREER MOVE
-                        </p>
+                        <p className="website-section-label">YOUR NEXT CAREER MOVE</p>
 
-                        <h1
-                            id="job-details-page-title"
-                            className="website-section-title"
-                        >
+                        <h1 id="job-details-page-title" className="website-section-title">
                             Explore the role.
                             <span>Picture your next step.</span>
                         </h1>
 
                         <p className="website-section-description jd-banner-description">
-                            Get to know the opportunity, understand the
-                            requirements and take the next step in your career.
+                            Get to know the opportunity, understand the requirements and take the
+                            next step in your career.
                         </p>
                     </div>
                 </div>
@@ -367,14 +331,9 @@ function JobDetailsContent({ id, user }) {
                 <div className="website-shell">
                     <div className="jd-container">
                         <div className="jd-layout">
-                            <article
-                                className="jd-content-card"
-                                aria-labelledby="job-title"
-                            >
+                            <article className="jd-content-card" aria-labelledby="job-title">
                                 <header className="jd-role-header">
-                                    <p className="website-section-label">
-                                        ABOUT THE ROLE
-                                    </p>
+                                    <p className="website-section-label">ABOUT THE ROLE</p>
 
                                     <div className="jd-summary-top">
                                         <div className="jd-summary-heading">
@@ -440,24 +399,16 @@ function JobDetailsContent({ id, user }) {
 
                                     <div className="jd-posting-info">
                                         <p>
-                                            <i
-                                                className="fa-solid fa-users"
-                                                aria-hidden="true"
-                                            />
+                                            <i className="fa-solid fa-users" aria-hidden="true" />
 
                                             <span>
                                                 Openings:{" "}
-                                                <strong>
-                                                    {job.openings ?? "Not specified"}
-                                                </strong>
+                                                <strong>{job.openings ?? "Not specified"}</strong>
                                             </span>
                                         </p>
 
                                         <p>
-                                            <i
-                                                className="fa-regular fa-clock"
-                                                aria-hidden="true"
-                                            />
+                                            <i className="fa-regular fa-clock" aria-hidden="true" />
 
                                             <span>
                                                 Posted:{" "}
@@ -470,16 +421,11 @@ function JobDetailsContent({ id, user }) {
                                 </header>
 
                                 <section className="jd-content-section">
-                                    <h3 className="jd-section-title">
-                                        Job description
-                                    </h3>
+                                    <h3 className="jd-section-title">Job description</h3>
 
                                     {descriptionParagraphs.length ? (
                                         descriptionParagraphs.map((paragraph, index) => (
-                                            <p
-                                                key={index}
-                                                className="website-section-description"
-                                            >
+                                            <p key={index} className="website-section-description">
                                                 {paragraph}
                                             </p>
                                         ))
@@ -492,15 +438,11 @@ function JobDetailsContent({ id, user }) {
 
                                 {job.requirements.length > 0 && (
                                     <section className="jd-content-section">
-                                        <h3 className="jd-section-title">
-                                            What we’re looking for
-                                        </h3>
+                                        <h3 className="jd-section-title">What we’re looking for</h3>
 
                                         <ul className="jd-point-list">
                                             {job.requirements.map((item, index) => (
-                                                <li key={`${index}-${item}`}>
-                                                    {item}
-                                                </li>
+                                                <li key={`${index}-${item}`}>{item}</li>
                                             ))}
                                         </ul>
                                     </section>
@@ -508,9 +450,7 @@ function JobDetailsContent({ id, user }) {
 
                                 {job.qualification && (
                                     <section className="jd-content-section">
-                                        <h3 className="jd-section-title">
-                                            Qualification
-                                        </h3>
+                                        <h3 className="jd-section-title">Qualification</h3>
 
                                         <p className="website-section-description">
                                             {job.qualification}
@@ -520,18 +460,11 @@ function JobDetailsContent({ id, user }) {
 
                                 {job.skills.length > 0 && (
                                     <section className="jd-content-section">
-                                        <h3 className="jd-section-title">
-                                            Relevant skills
-                                        </h3>
+                                        <h3 className="jd-section-title">Relevant skills</h3>
 
-                                        <ul
-                                            className="jd-skills"
-                                            aria-label="Relevant skills"
-                                        >
+                                        <ul className="jd-skills" aria-label="Relevant skills">
                                             {job.skills.map((skill, index) => (
-                                                <li key={`${index}-${skill}`}>
-                                                    {skill}
-                                                </li>
+                                                <li key={`${index}-${skill}`}>{skill}</li>
                                             ))}
                                         </ul>
                                     </section>
@@ -539,20 +472,12 @@ function JobDetailsContent({ id, user }) {
                             </article>
 
                             {/* ================== RELATED JOBS ================== */}
-                            <aside
-                                className="jd-sidebar"
-                                aria-labelledby="related-jobs-title"
-                            >
+                            <aside className="jd-sidebar" aria-labelledby="related-jobs-title">
                                 <section className="jd-related-panel">
                                     <div className="jd-related-heading">
-                                        <p className="website-section-label">
-                                            KEEP EXPLORING
-                                        </p>
+                                        <p className="website-section-label">KEEP EXPLORING</p>
 
-                                        <h2
-                                            id="related-jobs-title"
-                                            className="jd-section-title"
-                                        >
+                                        <h2 id="related-jobs-title" className="jd-section-title">
                                             Related jobs
                                         </h2>
 

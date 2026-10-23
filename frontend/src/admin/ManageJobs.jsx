@@ -1,3 +1,4 @@
+import { getErrorMessage } from "../utils/dataFormat";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Chip, FormControlLabel, MenuItem, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField } from "@mui/material";
 import { toast } from "react-toastify";
@@ -61,10 +62,7 @@ function getFormValues(source = {}) {
     return Object.fromEntries(
         Object.entries(EMPTY_FORM).map(([key, fallback]) => {
             if (key === "openings") {
-                return [
-                    key,
-                    Number.isInteger(source[key]) ? String(source[key]) : "",
-                ];
+                return [key, Number.isInteger(source[key]) ? String(source[key]) : ""];
             }
 
             if (key === "skills" && Array.isArray(source[key])) {
@@ -75,12 +73,7 @@ function getFormValues(source = {}) {
                 return [key, source[key].join("\n")];
             }
 
-            return [
-                key,
-                typeof source[key] === typeof fallback
-                    ? source[key]
-                    : fallback,
-            ];
+            return [key, typeof source[key] === typeof fallback ? source[key] : fallback];
         })
     );
 }
@@ -117,12 +110,7 @@ function validateJob(form) {
 
     const openings = form.openings.trim();
 
-    if (
-        openings &&
-        (!/^\d+$/.test(openings) ||
-            Number(openings) < 1 ||
-            Number(openings) > 10000)
-    ) {
+    if (openings && (!/^\d+$/.test(openings) || Number(openings) < 1 || Number(openings) > 10000)) {
         errors.openings = "Enter a whole number between 1 and 10,000.";
     }
 
@@ -182,13 +170,6 @@ function validateJob(form) {
 }
 
 // ================== RESPONSE HELPERS ==================
-function getErrorMessage(error, fallback) {
-    const message = error.response?.data?.message;
-
-    return typeof message === "string" && message.trim()
-        ? message
-        : fallback;
-}
 
 function getInitials(company = "") {
     return (
@@ -231,6 +212,7 @@ function ManageJobs() {
     const [form, setForm] = useState({ ...EMPTY_FORM });
     const [errors, setErrors] = useState({});
     const [editingId, setEditingId] = useState(null);
+    const [editingVersion, setEditingVersion] = useState(null);
 
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -328,12 +310,7 @@ function ManageJobs() {
                 if (controller.signal.aborted) return;
 
                 setJobs([]);
-                setListError(
-                    getErrorMessage(
-                        error,
-                        "Jobs could not be loaded. Please try again."
-                    )
-                );
+                setListError(getErrorMessage(error, "Jobs could not be loaded. Please try again."));
             } finally {
                 if (!controller.signal.aborted) {
                     setLoading(false);
@@ -387,21 +364,18 @@ function ManageJobs() {
             [name]: value,
         }));
 
-        setErrors((previous) =>
-            name === "status" ? {} : { ...previous, [name]: "" }
-        );
+        setErrors((previous) => (name === "status" ? {} : { ...previous, [name]: "" }));
     }
 
     function resetForm() {
         setForm({ ...EMPTY_FORM });
         setErrors({});
         setEditingId(null);
+        setEditingVersion(null);
     }
 
     function focusForm() {
-        const reduceMotion = window.matchMedia(
-            "(prefers-reduced-motion: reduce)"
-        ).matches;
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
         formRef.current?.scrollIntoView({
             behavior: reduceMotion ? "auto" : "smooth",
@@ -427,23 +401,21 @@ function ManageJobs() {
         editRequestRef.current = controller;
 
         try {
-            const { data } = await api.get(
-                `/jobs/admin/${encodeURIComponent(job.id)}`,
-                { signal: controller.signal }
-            );
+            const { data } = await api.get(`/jobs/admin/${encodeURIComponent(job.id)}`, {
+                signal: controller.signal,
+            });
 
             if (controller.signal.aborted || !mountedRef.current) return;
 
             setForm(getFormValues(data.job));
+            setEditingVersion(data.job.version);
             setEditingId(String(data.job.id || data.job._id));
             setErrors({});
             focusForm();
         } catch (error) {
             if (controller.signal.aborted || !mountedRef.current) return;
 
-            toast.error(
-                getErrorMessage(error, "Job details could not be loaded.")
-            );
+            toast.error(getErrorMessage(error, "Job details could not be loaded."));
         } finally {
             busyRef.current = false;
 
@@ -474,28 +446,23 @@ function ManageJobs() {
             ])
         );
 
-        payload.openings = payload.openings
-            ? Number(payload.openings)
-            : null;
+        payload.openings = payload.openings ? Number(payload.openings) : null;
+
+        if (isEditing) payload.version = editingVersion;
 
         busyRef.current = true;
         setSaving(true);
 
         try {
             const response = isEditing
-                ? await api.put(
-                    `/jobs/admin/${encodeURIComponent(editingId)}`,
-                    payload
-                )
+                ? await api.put(`/jobs/admin/${encodeURIComponent(editingId)}`, payload)
                 : await api.post("/jobs/admin", payload);
 
             if (!mountedRef.current) return;
 
             toast.success(
                 response.data.message ||
-                (isEditing
-                    ? "Job updated successfully."
-                    : "Job created successfully.")
+                    (isEditing ? "Job updated successfully." : "Job created successfully.")
             );
 
             // Cancel an older list request before refreshing saved data.
@@ -565,21 +532,16 @@ function ManageJobs() {
 
             <section className="mj-metrics" aria-label="Job overview">
                 {metrics.map((metric) => (
-                    <article
-                        key={metric.label}
-                        className={`mj-metric mj-tone-${metric.tone}`}
-                    >
+                    <article key={metric.label} className={`mj-metric mj-tone-${metric.tone}`}>
                         <div className="mj-metric-top">
-                            <span className="mj-metric-label">
-                                {metric.label}
-                            </span>
+                            <span className="mj-metric-label">{metric.label}</span>
 
                             <span className="mj-metric-icon" aria-hidden="true">
                                 <i className={metric.icon} />
                             </span>
                         </div>
 
-                        <strong>{listError ? "—" : metric.value ?? "—"}</strong>
+                        <strong>{listError ? "—" : (metric.value ?? "—")}</strong>
                         <p>{metric.detail}</p>
                     </article>
                 ))}
@@ -596,9 +558,7 @@ function ManageJobs() {
                         <span className="mj-header-icon" aria-hidden="true">
                             <i
                                 className={
-                                    isEditing
-                                        ? "fa-regular fa-pen-to-square"
-                                        : "fa-solid fa-plus"
+                                    isEditing ? "fa-regular fa-pen-to-square" : "fa-solid fa-plus"
                                 }
                             />
                         </span>
@@ -749,42 +709,33 @@ function ManageJobs() {
                         >
                             <div className="mj-description-grid">
                                 <TextField
-                                    {...field(
-                                        "shortDescription",
-                                        "Short description",
-                                        {
-                                            required: publishing,
-                                            placeholder: "Write a brief summary for homepage and job cards.",
-                                            helperText: `${form.shortDescription.length}/150 characters. Used on job cards.`,
-                                        }
-                                    )}
+                                    {...field("shortDescription", "Short description", {
+                                        required: publishing,
+                                        placeholder:
+                                            "Write a brief summary for homepage and job cards.",
+                                        helperText: `${form.shortDescription.length}/150 characters. Used on job cards.`,
+                                    })}
                                     multiline
                                     minRows={3}
                                 />
 
                                 <TextField
-                                    {...field(
-                                        "description",
-                                        "Full job description",
-                                        {
-                                            required: publishing,
-                                            placeholder: "Describe the role and daily responsibilities.",
-                                            helperText: "Displayed on the Job Details page.",
-                                        }
-                                    )}
+                                    {...field("description", "Full job description", {
+                                        required: publishing,
+                                        placeholder:
+                                            "Describe the role and daily responsibilities.",
+                                        helperText: "Displayed on the Job Details page.",
+                                    })}
                                     multiline
                                     minRows={5}
                                 />
 
                                 <TextField
-                                    {...field(
-                                        "requirements",
-                                        "Job requirements",
-                                        {
-                                            required: publishing,
-                                            placeholder: "Describe the abilities and experience needed.",
-                                        }
-                                    )}
+                                    {...field("requirements", "Job requirements", {
+                                        required: publishing,
+                                        placeholder:
+                                            "Describe the abilities and experience needed.",
+                                    })}
                                     multiline
                                     minRows={5}
                                 />
@@ -813,10 +764,7 @@ function ManageJobs() {
                                 <div className="mj-featured-option">
                                     <div>
                                         <span className="mj-featured-heading">
-                                            <i
-                                                className="fa-regular fa-star"
-                                                aria-hidden="true"
-                                            />
+                                            <i className="fa-regular fa-star" aria-hidden="true" />
                                             Homepage visibility
                                         </span>
 
@@ -846,10 +794,7 @@ function ManageJobs() {
                             </div>
 
                             <div className="mj-status-note" role="status">
-                                <i
-                                    className="fa-solid fa-circle-info"
-                                    aria-hidden="true"
-                                />
+                                <i className="fa-solid fa-circle-info" aria-hidden="true" />
                                 <p>{STATUS_DESCRIPTIONS[form.status]}</p>
                             </div>
                         </FormSection>
@@ -857,8 +802,8 @@ function ManageJobs() {
 
                     <footer className="mj-form-footer">
                         <p>
-                            <span>*</span> Required fields.
-                            Additional fields become required when publishing.
+                            <span>*</span> Required fields. Additional fields become required when
+                            publishing.
                         </p>
 
                         <div className="mj-form-actions">
@@ -877,10 +822,7 @@ function ManageJobs() {
                                 disableElevation
                                 disabled={formBusy}
                                 startIcon={
-                                    <i
-                                        className="fa-regular fa-floppy-disk"
-                                        aria-hidden="true"
-                                    />
+                                    <i className="fa-regular fa-floppy-disk" aria-hidden="true" />
                                 }
                             >
                                 {submitLabel}
@@ -995,93 +937,91 @@ function ManageJobs() {
                                 </TableRow>
                             )}
 
-                            {!loading && !listError && jobs.map((job) => (
-                                <TableRow
-                                    key={job.id}
-                                    hover
-                                    selected={editingId === job.id}
-                                >
-                                    <TableCell>
-                                        <div className="mj-job-cell">
-                                            <span
-                                                className="mj-company-avatar"
-                                                aria-hidden="true"
-                                            >
-                                                {getInitials(job.company)}
-                                            </span>
+                            {!loading &&
+                                !listError &&
+                                jobs.map((job) => (
+                                    <TableRow key={job.id} hover selected={editingId === job.id}>
+                                        <TableCell>
+                                            <div className="mj-job-cell">
+                                                <span
+                                                    className="mj-company-avatar"
+                                                    aria-hidden="true"
+                                                >
+                                                    {getInitials(job.company)}
+                                                </span>
 
-                                            <div>
-                                                <strong>{job.title}</strong>
-                                                <p>{job.company}</p>
+                                                <div>
+                                                    <strong>{job.title}</strong>
+                                                    <p>{job.company}</p>
 
-                                                <div className="mj-job-tags">
-                                                    {job.department && (
-                                                        <span>{job.department}</span>
-                                                    )}
+                                                    <div className="mj-job-tags">
+                                                        {job.department && (
+                                                            <span>{job.department}</span>
+                                                        )}
 
-                                                    {job.featured && (
-                                                        <span className="mj-featured-tag">
-                                                            <i
-                                                                className="fa-solid fa-star"
-                                                                aria-hidden="true"
-                                                            />
-                                                            Featured
-                                                        </span>
-                                                    )}
+                                                        {job.featured && (
+                                                            <span className="mj-featured-tag">
+                                                                <i
+                                                                    className="fa-solid fa-star"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                Featured
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </TableCell>
+                                        </TableCell>
 
-                                    <TableCell>
-                                        <span className="mj-cell-primary">
-                                            {job.location || "Not set"}
-                                        </span>
+                                        <TableCell>
+                                            <span className="mj-cell-primary">
+                                                {job.location || "Not set"}
+                                            </span>
 
-                                        <span className="mj-cell-secondary">
-                                            {job.type} · {job.mode}
-                                        </span>
-                                    </TableCell>
+                                            <span className="mj-cell-secondary">
+                                                {job.type} · {job.mode}
+                                            </span>
+                                        </TableCell>
 
-                                    <TableCell>
-                                        <span className="mj-cell-primary">
-                                            {job.experience || "Not set"}
-                                        </span>
+                                        <TableCell>
+                                            <span className="mj-cell-primary">
+                                                {job.experience || "Not set"}
+                                            </span>
 
-                                        <span className="mj-cell-secondary">
-                                            {job.salary || "Not disclosed"}
-                                        </span>
-                                    </TableCell>
+                                            <span className="mj-cell-secondary">
+                                                {job.salary || "Not disclosed"}
+                                            </span>
+                                        </TableCell>
 
-                                    <TableCell>
-                                        <Chip
-                                            label={job.status}
-                                            color={STATUS_COLORS[job.status] || "default"}
-                                            size="small"
-                                            variant="outlined"
-                                        />
-                                    </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={job.status}
+                                                color={STATUS_COLORS[job.status] || "default"}
+                                                size="small"
+                                                variant="outlined"
+                                            />
+                                        </TableCell>
 
-                                    <TableCell align="right">
-                                        <Button
-                                            type="button"
-                                            size="small"
-                                            variant="outlined"
-                                            disabled={formBusy}
-                                            onClick={() => handleEdit(job)}
-                                            aria-label={`Edit ${job.title} at ${job.company}`}
-                                            startIcon={
-                                                <i
-                                                    className="fa-regular fa-pen-to-square"
-                                                    aria-hidden="true"
-                                                />
-                                            }
-                                        >
-                                            Edit
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                                        <TableCell align="right">
+                                            <Button
+                                                type="button"
+                                                size="small"
+                                                variant="outlined"
+                                                disabled={formBusy}
+                                                onClick={() => handleEdit(job)}
+                                                aria-label={`Edit ${job.title} at ${job.company}`}
+                                                startIcon={
+                                                    <i
+                                                        className="fa-regular fa-pen-to-square"
+                                                        aria-hidden="true"
+                                                    />
+                                                }
+                                            >
+                                                Edit
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
 
                             {!loading && !listError && !jobs.length && (
                                 <TableRow>

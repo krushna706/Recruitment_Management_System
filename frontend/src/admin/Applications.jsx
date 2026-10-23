@@ -1,36 +1,14 @@
+import { formatDate, formatFileSize, getErrorMessage, getInitials } from "../utils/dataFormat";
+import { openPrivateResume } from "../utils/fileAccess";
 import { useEffect, useRef, useState } from "react";
-import {
-    Alert,
-    Button,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    MenuItem,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TextField,
-} from "@mui/material";
+import { Alert, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField } from "@mui/material";
 import { toast } from "react-toastify";
 
 import api from "../services/api";
 import { toAdminApplication } from "../utils/dataFormat";
 
 // ================== APPLICATION CONFIGURATION ==================
-const STATUSES = [
-    "Submitted",
-    "Under Review",
-    "Shortlisted",
-    "Interview",
-    "Selected",
-    "Rejected",
-];
+const STATUSES = ["Submitted", "Under Review", "Shortlisted", "Interview", "Selected", "Rejected"];
 
 const NEXT_STATUS = {
     Submitted: "Under Review",
@@ -49,56 +27,6 @@ const STATUS_COLORS = {
 };
 
 const INTERVIEW_MODES = ["Online", "In-person", "Phone"];
-
-// ================== ERROR MESSAGE ==================
-function getErrorMessage(error, fallback) {
-    return error.response?.data?.message || fallback;
-}
-
-// ================== DATE FORMATTING ==================
-function formatDate(value, includeTime = false) {
-    const date = new Date(value);
-
-    if (!value || Number.isNaN(date.getTime())) {
-        return "Date unavailable";
-    }
-
-    return new Intl.DateTimeFormat("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        timeZone: "Asia/Kolkata",
-        ...(includeTime ? { hour: "numeric", minute: "2-digit" } : {}),
-    }).format(date);
-}
-
-// ================== FILE SIZE ==================
-function formatFileSize(value) {
-    const bytes = Number(value);
-
-    if (!Number.isFinite(bytes) || bytes <= 0) {
-        return "Size unavailable";
-    }
-
-    if (bytes < 1024 * 1024) {
-        return `${Math.ceil(bytes / 1024)} KB`;
-    }
-
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
-
-// ================== CANDIDATE INITIALS ==================
-function getInitials(name = "") {
-    return (
-        name
-            .trim()
-            .split(/\s+/)
-            .slice(0, 2)
-            .map((part) => part.charAt(0))
-            .join("")
-            .toUpperCase() || "?"
-    );
-}
 
 // ================== ALLOWED STATUS OPTIONS ==================
 function getAllowedStatuses(status) {
@@ -227,10 +155,7 @@ function Applications() {
 
                 if (controller.signal.aborted) return;
 
-                const lastPage = Math.max(
-                    0,
-                    data.pagination.totalPages - 1
-                );
+                const lastPage = Math.max(0, data.pagination.totalPages - 1);
 
                 // A status update can remove the last row from a filtered page.
                 if (page > lastPage) {
@@ -238,9 +163,7 @@ function Applications() {
                     return;
                 }
 
-                setApplications(
-                    data.applications.map(toAdminApplication)
-                );
+                setApplications(data.applications.map(toAdminApplication));
                 setTotal(data.pagination.total);
                 setCounts(data.counts);
             } catch (error) {
@@ -250,10 +173,7 @@ function Applications() {
                 setTotal(0);
                 setCounts(null);
                 setListError(
-                    getErrorMessage(
-                        error,
-                        "Applications could not be loaded. Please try again."
-                    )
+                    getErrorMessage(error, "Applications could not be loaded. Please try again.")
                 );
             } finally {
                 if (!controller.signal.aborted) {
@@ -265,15 +185,7 @@ function Applications() {
         fetchApplications();
 
         return () => controller.abort();
-    }, [
-        page,
-        rowsPerPage,
-        debouncedSearch,
-        typeFilter,
-        jobFilter,
-        statusFilter,
-        listRevision,
-    ]);
+    }, [page, rowsPerPage, debouncedSearch, typeFilter, jobFilter, statusFilter, listRevision]);
 
     // ================== FETCH JOB FILTER OPTIONS ==================
     useEffect(() => {
@@ -284,10 +196,9 @@ function Applications() {
             setOptionsError("");
 
             try {
-                const { data } = await api.get(
-                    "/applications/admin/options",
-                    { signal: controller.signal }
-                );
+                const { data } = await api.get("/applications/admin/options", {
+                    signal: controller.signal,
+                });
 
                 if (controller.signal.aborted) return;
 
@@ -295,12 +206,7 @@ function Applications() {
             } catch (error) {
                 if (controller.signal.aborted) return;
 
-                setOptionsError(
-                    getErrorMessage(
-                        error,
-                        "Job filter options could not be loaded."
-                    )
-                );
+                setOptionsError(getErrorMessage(error, "Job filter options could not be loaded."));
             } finally {
                 if (!controller.signal.aborted) {
                     setOptionsLoading(false);
@@ -336,12 +242,7 @@ function Applications() {
             } catch (error) {
                 if (controller.signal.aborted) return;
 
-                setDetailsError(
-                    getErrorMessage(
-                        error,
-                        "Application details could not be loaded."
-                    )
-                );
+                setDetailsError(getErrorMessage(error, "Application details could not be loaded."));
             } finally {
                 if (!controller.signal.aborted) {
                     setDetailsLoading(false);
@@ -355,14 +256,10 @@ function Applications() {
     }, [selectedId, detailsRevision]);
 
     // ================== DISPLAY VALUES ==================
-    const allowedStatuses = selected
-        ? getAllowedStatuses(selected.status)
-        : [];
+    const allowedStatuses = selected ? getAllowedStatuses(selected.status) : [];
 
     const jobOptions = openings.filter(
-        (opening) =>
-            typeFilter === "All" ||
-            opening.openingType === typeFilter
+        (opening) => typeFilter === "All" || opening.openingType === typeFilter
     );
 
     const metrics = [
@@ -480,9 +377,7 @@ function Applications() {
                 interviewDate.getTime() <= Date.now() ||
                 !INTERVIEW_MODES.includes(interviewMode)
             ) {
-                toast.error(
-                    "Select a future interview date, time and valid mode."
-                );
+                toast.error("Select a future interview date, time and valid mode.");
                 return;
             }
 
@@ -507,9 +402,7 @@ function Applications() {
             resetStatusForm();
             setListRevision((value) => value + 1);
 
-            toast.success(
-                data.message || "Application status updated successfully."
-            );
+            toast.success(data.message || "Application status updated successfully.");
         } catch (error) {
             if (!mountedRef.current) return;
 
@@ -521,11 +414,7 @@ function Applications() {
             );
 
             // A conflict or uncertain response requires fresh server details.
-            if (
-                error.response?.status === 409 ||
-                !error.response ||
-                error.response.status >= 500
-            ) {
+            if (error.response?.status === 409 || !error.response || error.response.status >= 500) {
                 resetStatusForm();
                 setDetailsRevision((value) => value + 1);
                 setListRevision((value) => value + 1);
@@ -539,222 +428,31 @@ function Applications() {
         }
     }
 
-// ================== PRIVATE RESUME ACCESS ==================
-async function openResume(mode) {
-    if (!selected || resumeBusyRef.current || savingRef.current) {
-        return;
-    }
+    // ================== PRIVATE RESUME ACCESS ==================
 
-    if (mode === "view" && selected.resumeMimeType !== "application/pdf") {
-        toast.error("Preview is available only for PDF resumes.");
-        return;
-    }
-
-    const filename = selected.resumeName || "Resume";
-    const applicationId = selected.id;
-
-    let previewWindow = null;
-    let objectUrl = "";
-
-    // Only View opens a new tab.
-    if (mode === "view") {
-        previewWindow = window.open("about:blank", "_blank");
-
-        if (!previewWindow) {
-            toast.error("Please allow popups to view the resume.");
+    // ================== SHARED RESUME PREVIEW / DOWNLOAD ==================
+    async function openResume(mode) {
+        if (!selected || resumeBusyRef.current || savingRef.current) return;
+        if (mode === "view" && selected.resumeMimeType !== "application/pdf") {
+            toast.error("Preview is available only for PDF resumes.");
             return;
         }
-
-        previewWindow.opener = null;
-        previewWindow.document.title = filename;
-        previewWindow.document.body.textContent = "Loading resume...";
-    }
-
-    resumeBusyRef.current = true;
-    setResumeAction(mode);
-
-    try {
-        const { data } = await api.get(
-            `/applications/${encodeURIComponent(applicationId)}/resume`,
-            {
-                params: { mode },
-                responseType: "blob",
-                timeout: 75000,
-            }
-        );
-
-        if (!mountedRef.current) {
-            previewWindow?.close();
-            return;
-        }
-
-        if (!data.size) {
-            throw new Error("Empty resume response.");
-        }
-
-        objectUrl = URL.createObjectURL(data);
-
-        // ================== DIRECT DOWNLOAD ==================
-        if (mode === "download") {
-            const link = document.createElement("a");
-
-            link.href = objectUrl;
-            link.download = filename;
-            link.hidden = true;
-
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            // Allow the browser time to start reading the file.
-            const downloadUrl = objectUrl;
-
-            window.setTimeout(() => {
-                URL.revokeObjectURL(downloadUrl);
-            }, 60000);
-
-            objectUrl = "";
-            return;
-        }
-
-        // ================== PDF PREVIEW ==================
-        if (!previewWindow || previewWindow.closed) {
-            URL.revokeObjectURL(objectUrl);
-            objectUrl = "";
-            return;
-        }
-
-        const previewDocument = previewWindow.document;
-
-        previewDocument.title = filename;
-        previewDocument.body.replaceChildren();
-
-        // Preview document styles belong to the separate browser tab.
-        const style = previewDocument.createElement("style");
-
-        style.textContent = `
-            html,
-            body {
-                height: 100%;
-                margin: 0;
-            }
-
-            body {
-                display: flex;
-                flex-direction: column;
-                font-family: Arial, sans-serif;
-                background: #f3f4f6;
-                color: #172033;
-            }
-
-            .resume-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                flex-wrap: wrap;
-                gap: 12px;
-                padding: 14px 20px;
-                background: #ffffff;
-                border-bottom: 1px solid #e2e8f0;
-            }
-
-            .resume-title {
-                margin: 0;
-                font-size: 16px;
-                font-weight: 600;
-                overflow-wrap: anywhere;
-            }
-
-            .resume-download {
-                padding: 9px 14px;
-                border-radius: 6px;
-                background: #2563eb;
-                color: #ffffff;
-                font-size: 14px;
-                text-decoration: none;
-            }
-
-            .resume-preview {
-                flex: 1;
-                width: 100%;
-                min-height: 0;
-                border: 0;
-            }
-        `;
-
-        previewDocument.head.appendChild(style);
-
-        const header = previewDocument.createElement("header");
-        header.className = "resume-header";
-
-        const title = previewDocument.createElement("h1");
-        title.className = "resume-title";
-        title.textContent = filename;
-
-        const downloadLink = previewDocument.createElement("a");
-        downloadLink.className = "resume-download";
-        downloadLink.href = objectUrl;
-        downloadLink.download = filename;
-        downloadLink.textContent = "Download resume";
-
-        const frame = previewDocument.createElement("iframe");
-        frame.className = "resume-preview";
-        frame.title = filename;
-        frame.src = objectUrl;
-
-        header.append(title, downloadLink);
-        previewDocument.body.append(header, frame);
-
-        // Keep the file available while the preview tab is open.
-        const previewUrl = objectUrl;
-        const openedWindow = previewWindow;
-
-        const cleanupTimer = window.setInterval(() => {
-            if (openedWindow.closed) {
-                URL.revokeObjectURL(previewUrl);
-                window.clearInterval(cleanupTimer);
-            }
-        }, 1000);
-
-        objectUrl = "";
-    } catch (error) {
-        if (objectUrl) {
-            URL.revokeObjectURL(objectUrl);
-        }
-
-        if (previewWindow && !previewWindow.closed) {
-            previewWindow.close();
-        }
-
-        let errorMessage = "Resume could not be opened. Please try again.";
-
-        // With responseType blob, API error JSON also arrives as a Blob.
-        if (error.response?.data instanceof Blob) {
-            try {
-                const errorText = await error.response.data.text();
-                const errorData = JSON.parse(errorText);
-
-                if (typeof errorData.message === "string") {
-                    errorMessage = errorData.message;
-                }
-            } catch {
-                // Use the fallback message if the response is not JSON.
-            }
-        } else {
-            errorMessage = getErrorMessage(error, errorMessage);
-        }
-
-        if (mountedRef.current) {
-            toast.error(errorMessage);
-        }
-    } finally {
-        resumeBusyRef.current = false;
-
-        if (mountedRef.current) {
-            setResumeAction("");
+        resumeBusyRef.current = true;
+        setResumeAction(mode);
+        try {
+            await openPrivateResume({
+                endpoint: `/applications/${encodeURIComponent(selected.id)}/resume`,
+                filename: selected.resumeName || "Resume",
+                mode,
+                isActive: () => mountedRef.current,
+            });
+        } catch (error) {
+            if (mountedRef.current) toast.error(error.message || "Resume could not be opened.");
+        } finally {
+            resumeBusyRef.current = false;
+            if (mountedRef.current) setResumeAction("");
         }
     }
-}
 
     return (
         <div className="manage-jobs applications-page">
@@ -777,10 +475,7 @@ async function openResume(mode) {
 
             <section className="mj-metrics" aria-label="Application totals">
                 {metrics.map((metric) => (
-                    <article
-                        key={metric.label}
-                        className={`mj-metric mj-tone-${metric.tone}`}
-                    >
+                    <article key={metric.label} className={`mj-metric mj-tone-${metric.tone}`}>
                         <div className="mj-metric-top">
                             <span className="mj-metric-label">{metric.label}</span>
 
@@ -897,7 +592,9 @@ async function openResume(mode) {
                         <MenuItem value="Pending">Pending</MenuItem>
 
                         {STATUSES.map((status) => (
-                            <MenuItem key={status} value={status}>{status}</MenuItem>
+                            <MenuItem key={status} value={status}>
+                                {status}
+                            </MenuItem>
                         ))}
                     </TextField>
 
@@ -1058,10 +755,7 @@ async function openResume(mode) {
                 <TablePagination
                     component="div"
                     count={total}
-                    page={Math.min(
-                        page,
-                        Math.max(0, Math.ceil(total / rowsPerPage) - 1)
-                    )}
+                    page={Math.min(page, Math.max(0, Math.ceil(total / rowsPerPage) - 1))}
                     onPageChange={(_, nextPage) => setPage(nextPage)}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={(event) => {
@@ -1223,7 +917,9 @@ async function openResume(mode) {
                                         </Detail>
 
                                         <Detail label="Mode">{selected.interview.mode}</Detail>
-                                        <Detail label="Instructions">{selected.interview.note}</Detail>
+                                        <Detail label="Instructions">
+                                            {selected.interview.note}
+                                        </Detail>
                                     </dl>
                                 </section>
                             )}
@@ -1341,9 +1037,7 @@ async function openResume(mode) {
                                             variant="contained"
                                             disableElevation
                                             disabled={
-                                                saving ||
-                                                Boolean(resumeAction) ||
-                                                !nextStatus
+                                                saving || Boolean(resumeAction) || !nextStatus
                                             }
                                         >
                                             {saving ? "Saving..." : "Save status update"}
@@ -1352,13 +1046,11 @@ async function openResume(mode) {
                                 ) : (
                                     <Alert
                                         severity={
-                                            selected.status === "Selected"
-                                                ? "success"
-                                                : "info"
+                                            selected.status === "Selected" ? "success" : "info"
                                         }
                                     >
-                                        This application is {selected.status.toLowerCase()}.
-                                        Its recruitment flow is complete.
+                                        This application is {selected.status.toLowerCase()}. Its
+                                        recruitment flow is complete.
                                     </Alert>
                                 )}
                             </section>
@@ -1368,14 +1060,14 @@ async function openResume(mode) {
 
                                 <ol className="ap-history">
                                     {[...selected.history].reverse().map((entry, index) => (
-                                        <li key={`${entry.at}-${index}`}>
+                                        <li key={`${entry.createdAt}-${index}`}>
                                             <span className="ap-history-dot" aria-hidden="true" />
 
                                             <div>
                                                 <strong>{entry.status}</strong>
 
-                                                <time dateTime={entry.at}>
-                                                    {formatDate(entry.at, true)} IST
+                                                <time dateTime={entry.createdAt}>
+                                                    {formatDate(entry.createdAt, true)}
                                                 </time>
 
                                                 {entry.message && <p>{entry.message}</p>}

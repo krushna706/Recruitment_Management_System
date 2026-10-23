@@ -21,7 +21,9 @@ export function toTextList(value, separator = /[,\n]/) {
 
 // ================== EXPERIENCE RANGE ==================
 export function getExperienceRange(value) {
-    const text = String(value || "").trim().toLowerCase();
+    const text = String(value || "")
+        .trim()
+        .toLowerCase();
 
     if (text === "fresher") {
         return { min: 0, max: 0 };
@@ -50,127 +52,67 @@ export function normalizeJob(source = {}) {
 }
 
 // ================== APPLICATION DATA ==================
-// Support backend records and existing frontend demo records.
-export function normalizeApplication(source = {}) {
+// Current API shape only; obsolete demo-record compatibility is not needed.
+export function toAdminApplication(source = {}) {
+    const opening = source.jobSnapshot || {};
     const applicant = source.applicant || {};
-    const jobSnapshot = source.jobSnapshot || {};
-
-    const resume =
-        source.resume ||
-        (source.resumeUrl
-            ? {
-                  url: source.resumeUrl,
-                  name: source.resumeName || "Submitted resume",
-              }
-            : null);
-
-    const history = Array.isArray(source.history)
-        ? source.history
-        : [];
-
     return {
         ...source,
-
+        ...opening,
         id: String(source.id || source._id || ""),
-        jobId: String(source.jobId || ""),
-        openingType: source.openingType || "",
-
-        // Prefer the job details saved when the application was submitted.
-        title: jobSnapshot.title ?? source.title ?? "",
-        company: jobSnapshot.company ?? source.company ?? "",
-        department: jobSnapshot.department ?? source.department ?? "",
-        location: jobSnapshot.location ?? source.location ?? "",
-        type: jobSnapshot.type ?? source.type ?? "",
-        mode: jobSnapshot.mode ?? source.mode ?? "",
-        salary: jobSnapshot.salary ?? source.salary ?? "",
-
-        appliedAt: source.createdAt ?? source.appliedAt ?? "",
-
-        applicant: {
-            ...applicant,
-            name: applicant.name ?? source.candidate ?? source.name ?? "",
-            email: applicant.email ?? source.email ?? "",
-            phone: applicant.phone ?? source.phone ?? "",
-            qualification:
-                applicant.qualification ?? source.qualification ?? "",
-            experience: applicant.experience ?? source.experience ?? "",
-            skills: toTextList(applicant.skills ?? source.skills),
-        },
-
-        resume,
-
-        // Preserve interview and selection information from the API.
-        interview: source.interview ?? null,
-        selection: source.selection ?? null,
-
-        history: history.map((entry) => {
-            const message = entry.message ?? entry.note ?? "";
-            const createdAt = entry.createdAt ?? entry.at ?? "";
-
-            return {
-                ...entry,
-                message,
-                note: message,
-                createdAt,
-                at: createdAt,
-            };
-        }),
+        candidate: applicant.name || "",
+        email: applicant.email || "",
+        phone: applicant.phone || "",
+        qualification: applicant.qualification || "",
+        experience: applicant.experience || "",
+        skills: toTextList(applicant.skills),
+        appliedAt: source.createdAt,
+        resumeName: source.resume?.name || "",
+        resumeMimeType: source.resume?.mimeType || "",
+        resumeSize: source.resume?.size || 0,
+        history: source.history || [],
     };
 }
 
-// ================== ADMIN APPLICATION DATA ==================
-// Match the field names used by the admin table and details dialog.
-export function toAdminApplication(source = {}) {
-    const normalized = normalizeApplication(source);
-
-    return {
-        ...normalized,
-        candidate: normalized.applicant.name,
-        email: normalized.applicant.email,
-        phone: normalized.applicant.phone,
-        qualification: normalized.applicant.qualification,
-        experience: normalized.applicant.experience,
-        skills: normalized.applicant.skills,
-
-        resumeName: normalized.resume?.name || "",
-        resumeMimeType: normalized.resume?.mimeType || "",
-        resumeSize: normalized.resume?.size ?? 0,
-
-        // Compatibility for existing demo records.
-        // Private application resume links come from the resume access API.
-        resumeUrl: getResumeUrl(normalized.resume?.url),
-    };
+// ================== SHARED PANEL DISPLAY ==================
+export function formatDate(value, includeTime = false) {
+    const date = new Date(value);
+    if (!value || Number.isNaN(date.getTime())) return "Not available";
+    return new Intl.DateTimeFormat("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        timeZone: "Asia/Kolkata",
+        ...(includeTime ? { hour: "numeric", minute: "2-digit", timeZoneName: "short" } : {}),
+    }).format(date);
 }
 
-// ================== RESUME URL CHECK ==================
-// Accept HTTPS links or same-origin paths.
-// This checks URL format only; backend authorization is still required.
-export function getResumeUrl(value) {
-    if (typeof value !== "string") return "";
+export function formatFileSize(value) {
+    const bytes = Number(value);
+    if (!Number.isFinite(bytes) || bytes <= 0) return "Size unavailable";
+    return bytes < 1024 * 1024
+        ? `${Math.ceil(bytes / 1024)} KB`
+        : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
-    const url = value.trim();
+export function getInitials(name = "") {
+    return (
+        name
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part.charAt(0))
+            .join("")
+            .toUpperCase() || "?"
+    );
+}
 
-    if (!url || /[\\\u0000-\u001f\u007f]/.test(url)) {
-        return "";
-    }
+export function getErrorMessage(error, fallback) {
+    const message = error.response?.data?.message;
+    return typeof message === "string" && message.trim() ? message : fallback;
+}
 
-    if (/^\/(?!\/)/.test(url)) {
-        return url;
-    }
-
-    try {
-        const parsed = new URL(url);
-
-        if (
-            parsed.protocol !== "https:" ||
-            parsed.username ||
-            parsed.password
-        ) {
-            return "";
-        }
-
-        return parsed.href;
-    } catch {
-        return "";
-    }
+export function normalizeSkills(skills = []) {
+    return [...new Map(toTextList(skills).map((skill) => [skill.toLowerCase(), skill])).values()];
 }

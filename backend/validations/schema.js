@@ -1,19 +1,13 @@
 const Joi = require("joi");
 
 // ================== COMMON EMAIL RULE ==================
-const emailRule = Joi.string()
-    .trim()
-    .lowercase()
-    .email()
-    .max(254)
-    .required()
-    .messages({
-        "string.base": "Email must be a string.",
-        "string.empty": "Email is required.",
-        "string.email": "Enter a valid email address.",
-        "string.max": "Email cannot exceed 254 characters.",
-        "any.required": "Email is required.",
-    });
+const emailRule = Joi.string().trim().lowercase().email().max(254).required().messages({
+    "string.base": "Email must be a string.",
+    "string.empty": "Email is required.",
+    "string.email": "Enter a valid email address.",
+    "string.max": "Email cannot exceed 254 characters.",
+    "any.required": "Email is required.",
+});
 
 // ================== COMMON PASSWORD RULE ==================
 // Never trim or lowercase passwords.
@@ -37,18 +31,13 @@ const passwordRule = Joi.string()
 
 // ================== SIGNUP VALIDATION ==================
 const signupSchema = Joi.object({
-    name: Joi.string()
-        .trim()
-        .min(2)
-        .max(100)
-        .required()
-        .messages({
-            "string.base": "Name must be a string.",
-            "string.empty": "Name is required.",
-            "string.min": "Name must contain at least 2 characters.",
-            "string.max": "Name cannot exceed 100 characters.",
-            "any.required": "Name is required.",
-        }),
+    name: Joi.string().trim().min(2).max(100).required().messages({
+        "string.base": "Name must be a string.",
+        "string.empty": "Name is required.",
+        "string.min": "Name must contain at least 2 characters.",
+        "string.max": "Name cannot exceed 100 characters.",
+        "any.required": "Name is required.",
+    }),
 
     email: emailRule,
 
@@ -63,11 +52,9 @@ const signupSchema = Joi.object({
             "any.required": "Phone number is required.",
         }),
 
-    password: passwordRule
-        .min(6)
-        .messages({
-            "string.min": "Password must contain at least 6 characters.",
-        }),
+    password: passwordRule.min(6).messages({
+        "string.min": "Password must contain at least 6 characters.",
+    }),
 })
     .required()
     .unknown(false)
@@ -90,7 +77,6 @@ const loginSchema = Joi.object({
         "any.required": "Request body is required.",
     });
 
-    
 // ================== FORGOT PASSWORD IDENTIFIER ==================
 // Accept registered Email ID or 10-digit Indian mobile number.
 const forgotPasswordIdentifierRule = Joi.alternatives()
@@ -103,10 +89,8 @@ const forgotPasswordIdentifierRule = Joi.alternatives()
     )
     .required()
     .messages({
-        "alternatives.match":
-            "Enter a valid email address or 10-digit Indian mobile number.",
-        "any.required":
-            "Email address or phone number is required.",
+        "alternatives.match": "Enter a valid email address or 10-digit Indian mobile number.",
+        "any.required": "Email address or phone number is required.",
     });
 
 // ================== REQUEST / RESEND PASSWORD OTP ==================
@@ -127,8 +111,7 @@ const forgotPasswordVerifySchema = Joi.object({
         .strict()
         .messages({
             "string.empty": "Enter the OTP.",
-            "string.pattern.base":
-                "OTP must contain exactly 6 digits.",
+            "string.pattern.base": "OTP must contain exactly 6 digits.",
             "any.required": "OTP is required.",
         }),
 })
@@ -142,43 +125,30 @@ const forgotPasswordResetSchema = Joi.object({
         .pattern(/^[a-f0-9]{64}$/)
         .required()
         .messages({
-            "string.empty":
-                "Password reset authorization is required.",
-            "string.pattern.base":
-                "Invalid password reset authorization.",
-            "any.required":
-                "Password reset authorization is required.",
+            "string.empty": "Password reset authorization is required.",
+            "string.pattern.base": "Invalid password reset authorization.",
+            "any.required": "Password reset authorization is required.",
         }),
 
-    newPassword: passwordRule
-        .min(6)
-        .messages({
-            "string.min":
-                "Password must contain at least 6 characters.",
-        }),
+    newPassword: passwordRule.min(6).messages({
+        "string.min": "Password must contain at least 6 characters.",
+    }),
 })
     .required()
     .unknown(false);
 
-
 // ================== COMMON OPENING RULES ==================
-const openingStatusRule = Joi.string()
-    .valid("Draft", "Published", "Closed")
-    .required()
-    .messages({
-        "any.only": "Select Draft, Published or Closed.",
-        "any.required": "Opening status is required.",
-        "string.empty": "Opening status is required.",
-    });
+const openingStatusRule = Joi.string().valid("Draft", "Published", "Closed").required().messages({
+    "any.only": "Select Draft, Published or Closed.",
+    "any.required": "Opening status is required.",
+    "string.empty": "Opening status is required.",
+});
 
-const workModeRule = Joi.string()
-    .valid("On-site", "Hybrid", "Remote")
-    .required()
-    .messages({
-        "any.only": "Select On-site, Hybrid or Remote.",
-        "any.required": "Work mode is required.",
-        "string.empty": "Work mode is required.",
-    });
+const workModeRule = Joi.string().valid("On-site", "Hybrid", "Remote").required().messages({
+    "any.only": "Select On-site, Hybrid or Remote.",
+    "any.required": "Work mode is required.",
+    "string.empty": "Work mode is required.",
+});
 
 // ================== PUBLISHING TEXT RULE ==================
 function publishedTextRule(label, maxLength) {
@@ -245,10 +215,7 @@ function validateJobSkills(value, helpers) {
         ),
     ];
 
-    if (
-        helpers.state.ancestors[0].status === "Published" &&
-        !skills.length
-    ) {
+    if (helpers.state.ancestors[0].status === "Published" && !skills.length) {
         return helpers.error("skills.required");
     }
 
@@ -266,25 +233,19 @@ function validateJobSkills(value, helpers) {
 // ================== CLIENT JOB VALIDATION ==================
 // Used for full-form create and edit requests.
 const clientJobSchema = Joi.object({
-    company: Joi.string()
-        .trim()
-        .max(150)
-        .required()
-        .messages({
-            "string.empty": "Company name is required.",
-            "string.max": "Company name cannot exceed 150 characters.",
-            "any.required": "Company name is required.",
-        }),
+    // Required on edit routes; forbidden on create routes.
+    version: Joi.number().integer().min(0).strict(),
+    company: Joi.string().trim().max(150).required().messages({
+        "string.empty": "Company name is required.",
+        "string.max": "Company name cannot exceed 150 characters.",
+        "any.required": "Company name is required.",
+    }),
 
-    title: Joi.string()
-        .trim()
-        .max(150)
-        .required()
-        .messages({
-            "string.empty": "Job title is required.",
-            "string.max": "Job title cannot exceed 150 characters.",
-            "any.required": "Job title is required.",
-        }),
+    title: Joi.string().trim().max(150).required().messages({
+        "string.empty": "Job title is required.",
+        "string.max": "Job title cannot exceed 150 characters.",
+        "any.required": "Job title is required.",
+    }),
 
     department: publishedTextRule("Department", 100),
 
@@ -307,14 +268,9 @@ const clientJobSchema = Joi.object({
             "experience.format": "Use Fresher, 2 years, 2–4 years or 5+ years.",
         }),
 
-    salary: Joi.string()
-        .trim()
-        .max(100)
-        .allow("")
-        .default("")
-        .messages({
-            "string.max": "Salary cannot exceed 100 characters.",
-        }),
+    salary: Joi.string().trim().max(100).allow("").default("").messages({
+        "string.max": "Salary cannot exceed 100 characters.",
+    }),
 
     openings: Joi.number()
         .integer()
@@ -348,12 +304,9 @@ const clientJobSchema = Joi.object({
 
     status: openingStatusRule,
 
-    featured: Joi.boolean()
-        .strict()
-        .default(false)
-        .messages({
-            "boolean.base": "Featured must be true or false.",
-        }),
+    featured: Joi.boolean().strict().default(false).messages({
+        "boolean.base": "Featured must be true or false.",
+    }),
 })
     .required()
     .unknown(false)
@@ -365,15 +318,13 @@ const clientJobSchema = Joi.object({
 
 // ================== INTERNAL VACANCY VALIDATION ==================
 const vacancySchema = Joi.object({
-    title: Joi.string()
-        .trim()
-        .max(150)
-        .required()
-        .messages({
-            "string.empty": "Vacancy title is required.",
-            "string.max": "Vacancy title cannot exceed 150 characters.",
-            "any.required": "Vacancy title is required.",
-        }),
+    // Required on edit routes; forbidden on create routes.
+    version: Joi.number().integer().min(0).strict(),
+    title: Joi.string().trim().max(150).required().messages({
+        "string.empty": "Vacancy title is required.",
+        "string.max": "Vacancy title cannot exceed 150 characters.",
+        "any.required": "Vacancy title is required.",
+    }),
 
     department: publishedTextRule("Department", 100),
 
@@ -443,11 +394,7 @@ const APPLICATION_EXPERIENCE = [
 function validateApplicationPhone(value, helpers) {
     const digits = value.replace(/\D/g, "");
 
-    if (
-        !/^\+?[\d\s()-]+$/.test(value) ||
-        digits.length < 10 ||
-        digits.length > 15
-    ) {
+    if (!/^\+?[\d\s()-]+$/.test(value) || digits.length < 10 || digits.length > 15) {
         return helpers.error("phone.format");
     }
 
@@ -458,18 +405,13 @@ function validateApplicationPhone(value, helpers) {
 // Ownership and job details are set by the controller.
 // Upload middleware validates the resume separately.
 const applicationSchema = Joi.object({
-    name: Joi.string()
-        .trim()
-        .min(2)
-        .max(100)
-        .required()
-        .messages({
-            "string.base": "Name must be text.",
-            "string.empty": "Full name is required.",
-            "string.min": "Name must contain at least 2 characters.",
-            "string.max": "Name cannot exceed 100 characters.",
-            "any.required": "Full name is required.",
-        }),
+    name: Joi.string().trim().min(2).max(100).required().messages({
+        "string.base": "Name must be text.",
+        "string.empty": "Full name is required.",
+        "string.min": "Name must contain at least 2 characters.",
+        "string.max": "Name cannot exceed 100 characters.",
+        "any.required": "Full name is required.",
+    }),
 
     email: emailRule,
 
@@ -510,17 +452,12 @@ const applicationSchema = Joi.object({
 
     skills: Joi.array()
         .items(
-            Joi.string()
-                .trim()
-                .min(1)
-                .max(60)
-                .required()
-                .messages({
-                    "string.base": "Each skill must be text.",
-                    "string.empty": "Skills cannot contain empty values.",
-                    "string.min": "Skills cannot contain empty values.",
-                    "string.max": "Each skill cannot exceed 60 characters.",
-                })
+            Joi.string().trim().min(1).max(60).required().messages({
+                "string.base": "Each skill must be text.",
+                "string.empty": "Skills cannot contain empty values.",
+                "string.min": "Skills cannot contain empty values.",
+                "string.max": "Each skill cannot exceed 60 characters.",
+            })
         )
         .min(1)
         .max(15)
@@ -549,20 +486,14 @@ const applicationSchema = Joi.object({
         "any.required": "Application details are required.",
     });
 
-    
- // ================== USER PROFILE UPDATE VALIDATION ==================
- // Validate editable profile fields. Reject role/status changes.
- const profileUpdateSchema = Joi.object({
-     name: Joi.string()
-         .trim()
-         .min(2)
-         .max(100)
-         .optional(),
+// ================== USER PROFILE UPDATE VALIDATION ==================
+// Validate editable profile fields. Reject role/status changes.
+const profileUpdateSchema = Joi.object({
+    name: Joi.string().trim().min(2).max(100).optional(),
 
-     email: emailRule.optional(),
+    email: emailRule.optional(),
 
-
-     phone: Joi.string()
+    phone: Joi.string()
         .trim()
         .pattern(/^[6-9]\d{9}$/)
         .optional()
@@ -571,57 +502,41 @@ const applicationSchema = Joi.object({
             "string.pattern.base": "Enter a valid 10-digit Indian mobile number.",
         }),
 
+    address: Joi.string().trim().max(500).allow("").optional(),
 
-     address: Joi.string()
-         .trim()
-         .max(500)
-         .allow("")
-         .optional(),
+    qualification: Joi.string()
+        .valid("", ...APPLICATION_QUALIFICATIONS)
+        .optional(),
 
-     qualification: Joi.string()
-         .valid("", ...APPLICATION_QUALIFICATIONS)
-         .optional(),
+    experience: Joi.string()
+        .valid("", ...APPLICATION_EXPERIENCE)
+        .optional(),
 
-     experience: Joi.string()
-         .valid("", ...APPLICATION_EXPERIENCE)
-         .optional(),
+    skills: Joi.array()
+        .items(Joi.string().trim().min(1).max(60))
+        .max(15)
+        .unique((first, second) => first.toLowerCase() === second.toLowerCase())
+        .optional()
+        .messages({
+            "array.max": "You can add a maximum of 15 skills.",
+            "array.unique": "Remove duplicate skills.",
+        }),
 
-     skills: Joi.array()
-         .items(Joi.string().trim().min(1).max(60))
-         .max(20)
-         .unique((first, second) =>
-             first.toLowerCase() === second.toLowerCase()
-         )
-         .optional()
-         .messages({
-             "array.max": "You can add a maximum of 20 skills.",
-             "array.unique": "Remove duplicate skills.",
-         }),
-
-     // Required by controller only when email actually changes.
-     currentPassword: Joi.when("email", {
-         is: Joi.exist(),
-         then: passwordRule.optional(),
-         otherwise: Joi.forbidden(),
-     }),
- })
-     .or(
-         "name",
-         "email",
-         "phone",
-         "address",
-         "qualification",
-         "experience",
-         "skills"
-     )
-     .required()
-     .unknown(false)
-     .messages({
-         "object.base": "Profile details must be a JSON object.",
-         "object.missing": "Provide at least one profile field to update.",
-         "object.unknown": "Profile contains an unsupported field.",
-     });
-
+    // Required by controller only when email actually changes.
+    currentPassword: Joi.when("email", {
+        is: Joi.exist(),
+        then: passwordRule.optional(),
+        otherwise: Joi.forbidden(),
+    }),
+})
+    .or("name", "email", "phone", "address", "qualification", "experience", "skills")
+    .required()
+    .unknown(false)
+    .messages({
+        "object.base": "Profile details must be a JSON object.",
+        "object.missing": "Provide at least one profile field to update.",
+        "object.unknown": "Profile contains an unsupported field.",
+    });
 
 // ================== INTERVIEW UPDATE VALIDATION ==================
 // Frontend sends an ISO timestamp with an explicit timezone.
@@ -648,15 +563,12 @@ const interviewUpdateSchema = Joi.object({
             "any.required": "Interview date and time are required.",
         }),
 
-    mode: Joi.string()
-        .valid("Online", "In-person", "Phone")
-        .required()
-        .messages({
-            "string.base": "Interview mode must be text.",
-            "string.empty": "Select an interview mode.",
-            "any.only": "Select Online, In-person or Phone.",
-            "any.required": "Interview mode is required.",
-        }),
+    mode: Joi.string().valid("Online", "In-person", "Phone").required().messages({
+        "string.base": "Interview mode must be text.",
+        "string.empty": "Select an interview mode.",
+        "any.only": "Select Online, In-person or Phone.",
+        "any.required": "Interview mode is required.",
+    }),
 })
     .unknown(false)
     .messages({
@@ -687,15 +599,10 @@ const applicationStatusSchema = Joi.object({
             "any.required": "Next application status is required.",
         }),
 
-    message: Joi.string()
-        .trim()
-        .max(1000)
-        .allow("")
-        .default("")
-        .messages({
-            "string.base": "Update message must be text.",
-            "string.max": "Keep the update message within 1,000 characters.",
-        }),
+    message: Joi.string().trim().max(1000).allow("").default("").messages({
+        "string.base": "Update message must be text.",
+        "string.max": "Keep the update message within 1,000 characters.",
+    }),
 
     interview: Joi.when("status", {
         is: "Interview",
@@ -715,220 +622,174 @@ const applicationStatusSchema = Joi.object({
         "any.required": "Status update is required.",
     });
 
-    
- // ================== CONTACT ENQUIRY VALIDATION ==================
- // Validate public contact form submissions.
- // Enquiry ID and submission date are generated by the backend.
- const contactEnquirySchema = Joi.object({
-     name: Joi.string()
-         .trim()
-         .min(2)
-         .max(100)
-         .required()
-         .messages({
-             "string.empty": "Full name is required.",
-             "string.min": "Name must contain at least 2 characters.",
-             "string.max": "Name cannot exceed 100 characters.",
-             "any.required": "Full name is required.",
-         }),
+// ================== CONTACT ENQUIRY VALIDATION ==================
+// Validate public contact form submissions.
+// Enquiry ID and submission date are generated by the backend.
+const contactEnquirySchema = Joi.object({
+    name: Joi.string().trim().min(2).max(100).required().messages({
+        "string.empty": "Full name is required.",
+        "string.min": "Name must contain at least 2 characters.",
+        "string.max": "Name cannot exceed 100 characters.",
+        "any.required": "Full name is required.",
+    }),
 
-     email: emailRule,
+    email: emailRule,
 
-     
-        phone: Joi.string()
-            .trim()
-            .pattern(/^[6-9]\d{9}$/)
-            .required()
-            .messages({
-                "string.base": "Phone number must be a string.",
-                "string.empty": "Phone number is required.",
-                "string.pattern.base": "Enter a valid 10-digit Indian mobile number.",
-                "any.required": "Phone number is required.",
+    phone: Joi.string()
+        .trim()
+        .pattern(/^[6-9]\d{9}$/)
+        .required()
+        .messages({
+            "string.base": "Phone number must be a string.",
+            "string.empty": "Phone number is required.",
+            "string.pattern.base": "Enter a valid 10-digit Indian mobile number.",
+            "any.required": "Phone number is required.",
         }),
 
+    subject: Joi.string().trim().min(1).max(150).required().messages({
+        "string.empty": "Subject is required.",
+        "string.max": "Subject cannot exceed 150 characters.",
+        "any.required": "Subject is required.",
+    }),
 
-     subject: Joi.string()
-         .trim()
-         .min(1)
-         .max(150)
-         .required()
-         .messages({
-             "string.empty": "Subject is required.",
-             "string.max": "Subject cannot exceed 150 characters.",
-             "any.required": "Subject is required.",
-         }),
+    message: Joi.string().trim().min(1).max(3000).required().messages({
+        "string.empty": "Message is required.",
+        "string.max": "Message cannot exceed 3000 characters.",
+        "any.required": "Message is required.",
+    }),
+})
+    .required()
+    .unknown(false)
+    .messages({
+        "object.base": "Contact details must be a JSON object.",
+        "object.unknown": "Contact form contains an unsupported field.",
+    });
 
-     message: Joi.string()
-         .trim()
-         .min(1)
-         .max(3000)
-         .required()
-         .messages({
-             "string.empty": "Message is required.",
-             "string.max": "Message cannot exceed 3000 characters.",
-             "any.required": "Message is required.",
-         }),
- })
-     .required()
-     .unknown(false)
-     .messages({
-         "object.base": "Contact details must be a JSON object.",
-         "object.unknown": "Contact form contains an unsupported field.",
-     });
+// ================== USER ACCOUNT STATUS VALIDATION ==================
+// Validate admin requests to activate or deactivate a user.
+// The controller also verifies the current MongoDB status.
+const userStatusSchema = Joi.object({
+    expectedStatus: Joi.string().valid("Active", "Inactive").required().messages({
+        "any.only": "Invalid current account status.",
+        "any.required": "Current account status is required.",
+    }),
 
-     
- // ================== USER ACCOUNT STATUS VALIDATION ==================
- // Validate admin requests to activate or deactivate a user.
- // The controller also verifies the current MongoDB status.
- const userStatusSchema = Joi.object({
-     expectedStatus: Joi.string()
-         .valid("Active", "Inactive")
-         .required()
-         .messages({
-             "any.only": "Invalid current account status.",
-             "any.required": "Current account status is required.",
-         }),
+    status: Joi.string().valid("Active", "Inactive").required().messages({
+        "any.only": "Select Active or Inactive.",
+        "any.required": "New account status is required.",
+    }),
+})
+    .custom((value, helpers) => {
+        if (value.expectedStatus === value.status) {
+            return helpers.message("New account status must be different from the current status.");
+        }
 
-     status: Joi.string()
-         .valid("Active", "Inactive")
-         .required()
-         .messages({
-             "any.only": "Select Active or Inactive.",
-             "any.required": "New account status is required.",
-         }),
- })
-     .custom((value, helpers) => {
-         if (value.expectedStatus === value.status) {
-             return helpers.message(
-                 "New account status must be different from the current status."
-             );
-         }
+        return value;
+    })
+    .required()
+    .unknown(false)
+    .messages({
+        "object.base": "Status update must be a JSON object.",
+        "object.unknown": "Unsupported account status field.",
+    });
 
-         return value;
-     })
-     .required()
-     .unknown(false)
-     .messages({
-         "object.base": "Status update must be a JSON object.",
-         "object.unknown": "Unsupported account status field.",
-     });
+// ================== ADMIN VALIDATION RULES ==================
+// Use the same 10-digit Indian mobile rule as Signup.
+const adminNameRule = Joi.string().trim().min(2).max(100);
 
-     
- // ================== ADMIN VALIDATION RULES ==================
- // Use the same 10-digit Indian mobile rule as Signup.
- const adminNameRule = Joi.string()
-     .trim()
-     .min(2)
-     .max(100);
+const adminPhoneRule = Joi.string()
+    .trim()
+    .pattern(/^[6-9]\d{9}$/)
+    .messages({
+        "string.pattern.base": "Enter a valid 10-digit Indian mobile number.",
+    });
 
- const adminPhoneRule = Joi.string()
-     .trim()
-     .pattern(/^[6-9]\d{9}$/)
-     .messages({
-         "string.pattern.base": "Enter a valid 10-digit Indian mobile number.",
-     });
+// Use the agreed password length and UTF-8 byte limit for admin accounts.
+const adminPasswordRule = passwordRule.min(6).messages({
+    "string.min": "Admin password must contain at least 6 characters.",
+});
 
- // Require stronger passwords for administrator accounts.
- const adminPasswordRule = passwordRule
-     .min(6)
-     .messages({
-         "string.min": "Admin password must contain at least 6 characters.",
-     });
+// ================== CREATE ADMIN VALIDATION ==================
+// Only authorized admins can create another admin.
+const adminCreateSchema = Joi.object({
+    name: adminNameRule.required(),
+    email: emailRule,
+    phone: adminPhoneRule.required(),
+    password: adminPasswordRule,
 
- // ================== CREATE ADMIN VALIDATION ==================
- // Only authorized admins can create another admin.
- const adminCreateSchema = Joi.object({
-     name: adminNameRule.required(),
-     email: emailRule,
-     phone: adminPhoneRule.required(),
-     password: adminPasswordRule,
+    // Verify the acting admin before creating another admin.
+    currentPassword: passwordRule,
+})
+    .required()
+    .unknown(false);
 
-     // Verify the acting admin before creating another admin.
-     currentPassword: passwordRule,
- })
-     .required()
-     .unknown(false);
+// ================== EDIT ADMIN VALIDATION ==================
+// Account role and permission fields cannot be changed here.
+const adminEditSchema = Joi.object({
+    name: adminNameRule.optional(),
+    email: emailRule.optional(),
+    phone: adminPhoneRule.optional(),
 
- // ================== EDIT ADMIN VALIDATION ==================
- // Account role and permission fields cannot be changed here.
- const adminEditSchema = Joi.object({
-     name: adminNameRule.optional(),
-     email: emailRule.optional(),
-     phone: adminPhoneRule.optional(),
+    // Changing another admin's email requires reauthentication.
+    currentPassword: Joi.when("email", {
+        is: Joi.exist(),
+        then: passwordRule.required(),
+        otherwise: Joi.forbidden(),
+    }),
+})
+    .or("name", "email", "phone")
+    .required()
+    .unknown(false);
 
-     // Changing another admin's email requires reauthentication.
-     currentPassword: Joi.when("email", {
-         is: Joi.exist(),
-         then: passwordRule.required(),
-         otherwise: Joi.forbidden(),
-     }),
- })
-     .or("name", "email", "phone")
-     .required()
-     .unknown(false);
+// ================== ADMIN PROFILE VALIDATION ==================
+// Admins can update their own name and phone.
+const adminProfileSchema = Joi.object({
+    name: adminNameRule.optional(),
+    phone: adminPhoneRule.optional(),
+})
+    .min(1)
+    .required()
+    .unknown(false);
 
- // ================== ADMIN PROFILE VALIDATION ==================
- // Admins can update their own name and phone.
- const adminProfileSchema = Joi.object({
-     name: adminNameRule.optional(),
-     phone: adminPhoneRule.optional(),
- })
-     .min(1)
-     .required()
-     .unknown(false);
+// ================== ADMIN PASSWORD CHANGE VALIDATION ==================
+// Require the current password before setting a new one.
+const adminPasswordChangeSchema = Joi.object({
+    currentPassword: passwordRule,
+    newPassword: adminPasswordRule,
+})
+    .custom((value, helpers) => {
+        if (value.currentPassword === value.newPassword) {
+            return helpers.message("New password must be different from your current password.");
+        }
 
- // ================== ADMIN PASSWORD CHANGE VALIDATION ==================
- // Require the current password before setting a new one.
- const adminPasswordChangeSchema = Joi.object({
-     currentPassword: passwordRule,
-     newPassword: adminPasswordRule,
- })
-     .custom((value, helpers) => {
-         if (value.currentPassword === value.newPassword) {
-             return helpers.message(
-                 "New password must be different from your current password."
-             );
-         }
+        return value;
+    })
+    .required()
+    .unknown(false);
 
-         return value;
-     })
-     .required()
-     .unknown(false);
+// ================== ADMIN ACCOUNT STATUS VALIDATION ==================
+// Validate admin activation/deactivation requests.
+// Current password is required for security.
+const adminStatusSchema = Joi.object({
+    expectedStatus: Joi.string().valid("Active", "Inactive").required(),
 
-     
- // ================== ADMIN ACCOUNT STATUS VALIDATION ==================
- // Validate admin activation/deactivation requests.
- // Current password is required for security.
- const adminStatusSchema = Joi.object({
-     expectedStatus: Joi.string()
-         .valid("Active", "Inactive")
-         .required(),
+    status: Joi.string().valid("Active", "Inactive").required(),
 
-     status: Joi.string()
-         .valid("Active", "Inactive")
-         .required(),
+    currentPassword: passwordRule.required(),
+})
+    .custom((value, helpers) => {
+        if (value.expectedStatus === value.status) {
+            return helpers.message("New status must be different from the current status.");
+        }
 
-     currentPassword: passwordRule.required(),
- })
-     .custom((value, helpers) => {
-         if (value.expectedStatus === value.status) {
-             return helpers.message(
-                 "New status must be different from the current status."
-             );
-         }
-
-         return value;
-     })
-     .required()
-     .unknown(false)
-     .messages({
-         "object.base": "Status update must be a JSON object.",
-         "object.unknown": "Unsupported admin status field.",
-     });
-
-
-
-
+        return value;
+    })
+    .required()
+    .unknown(false)
+    .messages({
+        "object.base": "Status update must be a JSON object.",
+        "object.unknown": "Unsupported admin status field.",
+    });
 
 // ================== EXPORTS ==================
 

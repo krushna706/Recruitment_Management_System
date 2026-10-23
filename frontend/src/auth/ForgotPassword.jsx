@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import {
-    Button,
-    CircularProgress,
-    IconButton,
-    InputAdornment,
-    TextField,
-} from "@mui/material";
+import { Button, CircularProgress, IconButton, InputAdornment, TextField } from "@mui/material";
 
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -73,8 +67,10 @@ function getErrorMessage(error, fallback) {
 
 // ================== ACCOUNT IDENTIFIER VALIDATION ==================
 function validIdentifier(value) {
-    return /^[6-9]\d{9}$/.test(value) ||
-        (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254);
+    return (
+        /^[6-9]\d{9}$/.test(value) ||
+        (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254)
+    );
 }
 
 // ================== PASSWORD VISIBILITY CONTROL ==================
@@ -127,9 +123,7 @@ function ForgotPassword() {
         if (step !== 1 || !resendAt) return undefined;
 
         const updateRemaining = () => {
-            setResendSeconds(
-                Math.max(0, Math.ceil((resendAt - Date.now()) / 1000))
-            );
+            setResendSeconds(Math.max(0, Math.ceil((resendAt - Date.now()) / 1000)));
         };
 
         updateRemaining();
@@ -170,8 +164,10 @@ function ForgotPassword() {
             setIdentifier(normalized);
             setOtp("");
             setResetToken("");
-            setNotice(data.message ||
-                "If your account is active, an OTP will be sent to its registered email.");
+            setNotice(
+                data.message ||
+                    "If your account is active, an OTP will be sent to its registered email."
+            );
             startCooldown(Number(data.resendCooldownSeconds) || DEFAULT_RESEND_SECONDS);
             setStep(1);
 
@@ -319,7 +315,10 @@ function ForgotPassword() {
 
                 <div className="auth-card">
                     {/* ================== RECOVERY INTRODUCTION ================== */}
-                    <aside className="auth-introduction" aria-labelledby="recovery-introduction-title">
+                    <aside
+                        className="auth-introduction"
+                        aria-labelledby="recovery-introduction-title"
+                    >
                         <img
                             className="auth-background"
                             src="/images/about-banner.jpg"
@@ -334,7 +333,8 @@ function ForgotPassword() {
                                 <span> Back to your journey.</span>
                             </h2>
                             <p className="website-section-description">
-                                Follow these steps to reset your password and regain access to your account.
+                                Follow these steps to reset your password and regain access to your
+                                account.
                             </p>
 
                             <ol className="auth-features auth-recovery-steps">
@@ -346,7 +346,10 @@ function ForgotPassword() {
                                     >
                                         <span className="auth-feature-icon">
                                             {index < step ? (
-                                                <i className="fa-solid fa-check" aria-hidden="true" />
+                                                <i
+                                                    className="fa-solid fa-check"
+                                                    aria-hidden="true"
+                                                />
                                             ) : (
                                                 <span aria-hidden="true">{index + 1}</span>
                                             )}
@@ -369,7 +372,11 @@ function ForgotPassword() {
                     <section className="auth-form-panel" aria-labelledby="recovery-title">
                         <div className="auth-form-content">
                             <header className="auth-form-header">
-                                <Link to="/" className="website-brand auth-brand" aria-label="Company home">
+                                <Link
+                                    to="/"
+                                    className="website-brand auth-brand"
+                                    aria-label="Company home"
+                                >
                                     <img
                                         src="/images/company_logo.svg"
                                         alt="Company logo"
@@ -377,7 +384,11 @@ function ForgotPassword() {
                                         height="40"
                                     />
                                 </Link>
-                                <p className="website-section-label" aria-live="polite" aria-atomic="true">
+                                <p
+                                    className="website-section-label"
+                                    aria-live="polite"
+                                    aria-atomic="true"
+                                >
                                     STEP {step + 1} OF 3
                                 </p>
                                 <h1 id="recovery-title" className="website-section-title">
@@ -424,14 +435,18 @@ function ForgotPassword() {
                                     <>
                                         <div className="auth-recovery-question" role="status">
                                             <span className="auth-feature-icon">
-                                                <i className="fa-solid fa-envelope-circle-check" aria-hidden="true" />
+                                                <i
+                                                    className="fa-solid fa-envelope-circle-check"
+                                                    aria-hidden="true"
+                                                />
                                             </span>
                                             <div>
                                                 <p>Email verification</p>
                                                 <h2>Check your registered email inbox</h2>
                                                 <p>
-                                                    If an active account matches, an OTP has been requested.
-                                                    Check Inbox and Spam. Codes expire in {OTP_VALIDITY_MINUTES} minutes.
+                                                    If an active account matches, an OTP has been
+                                                    requested. Check Inbox and Spam. Codes expire in{" "}
+                                                    {OTP_VALIDITY_MINUTES} minutes.
                                                 </p>
                                             </div>
                                         </div>
@@ -448,7 +463,11 @@ function ForgotPassword() {
                                             label="6-digit verification code"
                                             value={otp}
                                             onChange={(event) => {
-                                                setOtp(event.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH));
+                                                setOtp(
+                                                    event.target.value
+                                                        .replace(/\D/g, "")
+                                                        .slice(0, OTP_LENGTH)
+                                                );
                                                 setError("");
                                             }}
                                             variant="outlined"
@@ -487,12 +506,18 @@ function ForgotPassword() {
                                         {maskedEmail && (
                                             <div className="auth-recovery-question" role="status">
                                                 <span className="auth-feature-icon">
-                                                    <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+                                                    <i
+                                                        className="fa-solid fa-shield-halved"
+                                                        aria-hidden="true"
+                                                    />
                                                 </span>
                                                 <div>
                                                     <p>OTP verified for</p>
                                                     <h2>{maskedEmail}</h2>
-                                                    <p>Your reset authorization expires in 10 minutes.</p>
+                                                    <p>
+                                                        Your reset authorization expires in 10
+                                                        minutes.
+                                                    </p>
                                                 </div>
                                             </div>
                                         )}
@@ -520,7 +545,11 @@ function ForgotPassword() {
                                                     endAdornment: (
                                                         <PasswordVisibility
                                                             visible={showPassword}
-                                                            onToggle={() => setShowPassword((previous) => !previous)}
+                                                            onToggle={() =>
+                                                                setShowPassword(
+                                                                    (previous) => !previous
+                                                                )
+                                                            }
                                                             label="new password"
                                                         />
                                                     ),
@@ -549,7 +578,11 @@ function ForgotPassword() {
                                                     endAdornment: (
                                                         <PasswordVisibility
                                                             visible={showConfirmPassword}
-                                                            onToggle={() => setShowConfirmPassword((previous) => !previous)}
+                                                            onToggle={() =>
+                                                                setShowConfirmPassword(
+                                                                    (previous) => !previous
+                                                                )
+                                                            }
                                                             label="confirm password"
                                                         />
                                                     ),
@@ -583,7 +616,10 @@ function ForgotPassword() {
                                     ) : (
                                         <>
                                             {currentContent.button}
-                                            <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+                                            <i
+                                                className="fa-solid fa-arrow-right"
+                                                aria-hidden="true"
+                                            />
                                         </>
                                     )}
                                 </Button>
@@ -602,8 +638,7 @@ function ForgotPassword() {
 
                             <div className="auth-account-row auth-account-row-center">
                                 <p className="auth-switch">
-                                    Remember your password?{" "}
-                                    <Link to="/manage">Sign in</Link>
+                                    Remember your password? <Link to="/manage">Sign in</Link>
                                 </p>
                             </div>
                         </div>

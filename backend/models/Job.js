@@ -116,10 +116,7 @@ const jobSchema = new Schema(
                 },
                 {
                     validator: function (skills) {
-                        return (
-                            !requiredForPublishedClientJob.call(this) ||
-                            skills.length > 0
-                        );
+                        return !requiredForPublishedClientJob.call(this) || skills.length > 0;
                     },
                     message: "Add at least one skill before publishing a client job.",
                 },

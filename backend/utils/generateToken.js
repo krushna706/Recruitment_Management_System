@@ -7,18 +7,11 @@ function generateToken(user) {
 
     // Prevent token generation with missing or short configuration.
     if (!secret || Buffer.byteLength(secret, "utf8") < 32) {
-        throw new Error(
-            "JWT_SECRET must contain at least 32 bytes."
-        );
+        throw new Error("JWT_SECRET must contain at least 32 bytes.");
     }
 
     // tokenVersion must be explicitly selected when loading the user.
-    if (
-        !user ||
-        !user._id ||
-        !Number.isSafeInteger(user.tokenVersion) ||
-        user.tokenVersion < 0
-    ) {
+    if (!user || !user._id || !Number.isSafeInteger(user.tokenVersion) || user.tokenVersion < 0) {
         throw new Error("Invalid user data for token generation.");
     }
 

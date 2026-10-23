@@ -5,9 +5,7 @@ const ExpressError = require("../utils/ExpressError");
 const COMPANY_NAME = process.env.COMPANY_NAME?.trim();
 
 if (!COMPANY_NAME || COMPANY_NAME.length > 150) {
-    throw new Error(
-        "COMPANY_NAME must contain 1–150 characters in environment configuration."
-    );
+    throw new Error("COMPANY_NAME must contain 1–150 characters in environment configuration.");
 }
 
 // ================== JOB CONFIGURATION ==================
@@ -61,10 +59,7 @@ function getQueryText(value, label, maxLength = 200) {
     const text = value.trim();
 
     if (text.length > maxLength) {
-        throw new ExpressError(
-            400,
-            `${label} cannot exceed ${maxLength} characters.`
-        );
+        throw new ExpressError(400, `${label} cannot exceed ${maxLength} characters.`);
     }
 
     return text;
@@ -76,19 +71,13 @@ function getPositiveInteger(value, fallback, maximum, label) {
     }
 
     if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
-        throw new ExpressError(
-            400,
-            `${label} must be a positive whole number.`
-        );
+        throw new ExpressError(400, `${label} must be a positive whole number.`);
     }
 
     const number = Number(value);
 
     if (!Number.isSafeInteger(number) || number > maximum) {
-        throw new ExpressError(
-            400,
-            `${label} cannot exceed ${maximum}.`
-        );
+        throw new ExpressError(400, `${label} cannot exceed ${maximum}.`);
     }
 
     return number;
@@ -110,10 +99,7 @@ function getExperienceFilter(value) {
     }
 
     if (!/^(?:[0-9]|[12][0-9]|30|30\+)$/.test(experience)) {
-        throw new ExpressError(
-            400,
-            "Select experience between 0 and 30 years, or 30+."
-        );
+        throw new ExpressError(400, "Select experience between 0 and 30 years, or 30+.");
     }
 
     const moreThanThirty = experience === "30+";
@@ -160,10 +146,7 @@ function getExperienceFilter(value) {
                                                 minimum: {
                                                     $convert: {
                                                         input: {
-                                                            $arrayElemAt: [
-                                                                "$$captures",
-                                                                0,
-                                                            ],
+                                                            $arrayElemAt: ["$$captures", 0],
                                                         },
                                                         to: "double",
                                                         onError: null,
@@ -173,10 +156,7 @@ function getExperienceFilter(value) {
                                                 maximum: {
                                                     $convert: {
                                                         input: {
-                                                            $arrayElemAt: [
-                                                                "$$captures",
-                                                                1,
-                                                            ],
+                                                            $arrayElemAt: ["$$captures", 1],
                                                         },
                                                         to: "double",
                                                         onError: null,
@@ -186,10 +166,7 @@ function getExperienceFilter(value) {
                                                 openEnded: {
                                                     $eq: [
                                                         {
-                                                            $arrayElemAt: [
-                                                                "$$captures",
-                                                                2,
-                                                            ],
+                                                            $arrayElemAt: ["$$captures", 2],
                                                         },
                                                         "+",
                                                     ],
@@ -199,19 +176,13 @@ function getExperienceFilter(value) {
                                                 $let: {
                                                     vars: {
                                                         upper: {
-                                                            $ifNull: [
-                                                                "$$maximum",
-                                                                "$$minimum",
-                                                            ],
+                                                            $ifNull: ["$$maximum", "$$minimum"],
                                                         },
                                                     },
                                                     in: {
                                                         $and: [
                                                             {
-                                                                $ne: [
-                                                                    "$$minimum",
-                                                                    null,
-                                                                ],
+                                                                $ne: ["$$minimum", null],
                                                             },
                                                             {
                                                                 $or: [
@@ -226,37 +197,34 @@ function getExperienceFilter(value) {
                                                             },
                                                             moreThanThirty
                                                                 ? {
-                                                                    $or: [
-                                                                        "$$openEnded",
-                                                                        {
-                                                                            $gt: [
-                                                                                "$$upper",
-                                                                                30,
-                                                                            ],
-                                                                        },
-                                                                    ],
-                                                                }
+                                                                      $or: [
+                                                                          "$$openEnded",
+                                                                          {
+                                                                              $gt: ["$$upper", 30],
+                                                                          },
+                                                                      ],
+                                                                  }
                                                                 : {
-                                                                    $and: [
-                                                                        {
-                                                                            $lte: [
-                                                                                "$$minimum",
-                                                                                years,
-                                                                            ],
-                                                                        },
-                                                                        {
-                                                                            $or: [
-                                                                                "$$openEnded",
-                                                                                {
-                                                                                    $gte: [
-                                                                                        "$$upper",
-                                                                                        years,
-                                                                                    ],
-                                                                                },
-                                                                            ],
-                                                                        },
-                                                                    ],
-                                                                },
+                                                                      $and: [
+                                                                          {
+                                                                              $lte: [
+                                                                                  "$$minimum",
+                                                                                  years,
+                                                                              ],
+                                                                          },
+                                                                          {
+                                                                              $or: [
+                                                                                  "$$openEnded",
+                                                                                  {
+                                                                                      $gte: [
+                                                                                          "$$upper",
+                                                                                          years,
+                                                                                      ],
+                                                                                  },
+                                                                              ],
+                                                                          },
+                                                                      ],
+                                                                  },
                                                         ],
                                                     },
                                                 },
@@ -324,9 +292,7 @@ function updatePublicationDates(job, previousStatus) {
 
 // ================== JOB RESPONSE ==================
 function getJobResponse(source) {
-    const job = typeof source.toObject === "function"
-        ? source.toObject()
-        : source;
+    const job = typeof source.toObject === "function" ? source.toObject() : source;
 
     const details = { ...job };
 
@@ -335,6 +301,7 @@ function getJobResponse(source) {
     return {
         ...details,
         id: String(job._id),
+        version: job.__v ?? 0,
     };
 }
 
@@ -342,10 +309,7 @@ function getJobResponse(source) {
 function handleJobError(error, next) {
     if (error.name === "VersionError") {
         return next(
-            new ExpressError(
-                409,
-                "This job was changed by another admin. Reload and try again."
-            )
+            new ExpressError(409, "This job was changed by another admin. Reload and try again.")
         );
     }
 
@@ -379,10 +343,7 @@ function getJobFilters(query, isAdmin) {
     }
 
     if (Object.keys(query).some((key) => !allowedKeys.includes(key))) {
-        throw new ExpressError(
-            400,
-            "Request contains an unsupported job filter."
-        );
+        throw new ExpressError(400, "Request contains an unsupported job filter.");
     }
 
     const filter = {
@@ -417,10 +378,7 @@ function getJobFilters(query, isAdmin) {
 
         filter.$and = [
             {
-                $or: [
-                    { location: pattern },
-                    { mode: pattern },
-                ],
+                $or: [{ location: pattern }, { mode: pattern }],
             },
         ];
     }
@@ -447,10 +405,7 @@ function getJobFilters(query, isAdmin) {
 
     if (query.featured !== undefined) {
         if (!["true", "false"].includes(query.featured)) {
-            throw new ExpressError(
-                400,
-                "Featured filter must be true or false."
-            );
+            throw new ExpressError(400, "Featured filter must be true or false.");
         }
 
         filter.featured = query.featured === "true";
@@ -523,9 +478,7 @@ async function listJobs(req, res, next, isAdmin) {
         const page = getPositiveInteger(req.query.page, 1, 100000, "Page");
         const limit = getPositiveInteger(req.query.limit, 20, 100, "Page size");
 
-        const sort = isAdmin
-            ? { createdAt: -1, _id: -1 }
-            : { publishedAt: -1, _id: -1 };
+        const sort = isAdmin ? { createdAt: -1, _id: -1 } : { publishedAt: -1, _id: -1 };
 
         const jobsQuery = Job.find(filter)
             .sort(sort)
@@ -670,6 +623,10 @@ async function updateJob(req, res, next) {
             return next(new ExpressError(404, "Job not found."));
         }
 
+        if (job.__v !== req.body.version) {
+            throw new ExpressError(409, "Job changed since you opened it. Reload before saving.");
+        }
+
         const previousStatus = job.status;
 
         job.set(getJobFields(req.body));
@@ -684,10 +641,7 @@ async function updateJob(req, res, next) {
         if (previousStatus !== job.status) {
             if (job.status === "Closed") {
                 message = "Job closed successfully.";
-            } else if (
-                previousStatus === "Closed" &&
-                job.status === "Published"
-            ) {
+            } else if (previousStatus === "Closed" && job.status === "Published") {
                 message = "Job reopened successfully.";
             } else if (job.status === "Published") {
                 message = "Job published successfully.";
@@ -752,10 +706,7 @@ function getVacancyFilters(query, isAdmin) {
     }
 
     if (Object.keys(query).some((key) => !allowedKeys.includes(key))) {
-        throw new ExpressError(
-            400,
-            "Request contains an unsupported vacancy filter."
-        );
+        throw new ExpressError(400, "Request contains an unsupported vacancy filter.");
     }
 
     const filter = {
@@ -853,9 +804,7 @@ async function listVacancies(req, res, next, isAdmin) {
         const page = getPositiveInteger(req.query.page, 1, 100000, "Page");
         const limit = getPositiveInteger(req.query.limit, 10, 100, "Page size");
 
-        const sort = isAdmin
-            ? { createdAt: -1, _id: -1 }
-            : { publishedAt: -1, _id: -1 };
+        const sort = isAdmin ? { createdAt: -1, _id: -1 } : { publishedAt: -1, _id: -1 };
 
         const query = Job.find(filter)
             .sort(sort)
@@ -996,6 +945,13 @@ async function updateVacancy(req, res, next) {
             throw new ExpressError(404, "Vacancy not found.");
         }
 
+        if (vacancy.__v !== req.body.version) {
+            throw new ExpressError(
+                409,
+                "Vacancy changed since you opened it. Reload before saving."
+            );
+        }
+
         const previousStatus = vacancy.status;
 
         vacancy.set(getVacancyFields(req.body));
@@ -1010,10 +966,7 @@ async function updateVacancy(req, res, next) {
         if (previousStatus !== vacancy.status) {
             if (vacancy.status === "Closed") {
                 message = "Vacancy closed successfully.";
-            } else if (
-                previousStatus === "Closed" &&
-                vacancy.status === "Published"
-            ) {
+            } else if (previousStatus === "Closed" && vacancy.status === "Published") {
                 message = "Vacancy reopened successfully.";
             } else if (vacancy.status === "Published") {
                 message = "Vacancy published successfully.";

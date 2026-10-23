@@ -1,8 +1,8 @@
+import { formatDate } from "../utils/dataFormat";
 import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { Button } from "@mui/material";
 import api from "../services/api";
-
 
 const statusConfig = {
     Submitted: {
@@ -36,31 +36,6 @@ const statusConfig = {
         message: "Application marked as rejected",
     },
 };
-
-const dateFormatter = new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-});
-
-const activityDateFormatter = new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-});
-
-function formatDate(value, includeTime = false) {
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return "Date unavailable";
-    }
-
-    return includeTime
-        ? activityDateFormatter.format(date)
-        : dateFormatter.format(date);
-}
 
 // ================== APPLICATION STATUS ==================
 function getStatus(status) {
@@ -236,21 +211,13 @@ function Dashboard({ user }) {
                     to="/jobs"
                     variant="outlined"
                     className="panel-button panel-button-outline"
-                    startIcon={
-                        <i
-                            className="fa-solid fa-magnifying-glass"
-                            aria-hidden="true"
-                        />
-                    }
+                    startIcon={<i className="fa-solid fa-magnifying-glass" aria-hidden="true" />}
                 >
                     Browse Jobs
                 </Button>
             </header>
 
-            <section
-                className="dashboard-welcome"
-                aria-labelledby="dashboard-welcome-title"
-            >
+            <section className="dashboard-welcome" aria-labelledby="dashboard-welcome-title">
                 <div className="dashboard-welcome-copy">
                     <h2 id="dashboard-welcome-title">
                         Welcome back{firstName ? ", " : ""}
@@ -258,19 +225,13 @@ function Dashboard({ user }) {
                     </h2>
 
                     <p>
-                        Keep your next opportunity in sight. Track your
-                        applications and stay up to date with every step.
+                        Keep your next opportunity in sight. Track your applications and stay up to
+                        date with every step.
                     </p>
 
-                    <Link
-                        to="/manage/my-applications"
-                        className="dashboard-welcome-link"
-                    >
+                    <Link to="/manage/my-applications" className="dashboard-welcome-link">
                         View my applications
-                        <i
-                            className="fa-solid fa-arrow-right"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                     </Link>
                 </div>
 
@@ -296,26 +257,18 @@ function Dashboard({ user }) {
                 </div>
             </section>
 
-            <section
-                className="dashboard-stats"
-                aria-label="Application overview"
-            >
+            <section className="dashboard-stats" aria-label="Application overview">
                 {statistics.map((statistic) => (
                     <article
                         className={`dashboard-stat dashboard-stat-${statistic.tone}`}
                         key={statistic.label}
                     >
                         <div className="dashboard-stat-top">
-                            <span
-                                className="dashboard-stat-icon"
-                                aria-hidden="true"
-                            >
+                            <span className="dashboard-stat-icon" aria-hidden="true">
                                 <i className={statistic.icon} />
                             </span>
 
-                            <span className="dashboard-stat-value">
-                                {statistic.value}
-                            </span>
+                            <span className="dashboard-stat-value">{statistic.value}</span>
                         </div>
 
                         <h2>{statistic.label}</h2>
@@ -331,10 +284,7 @@ function Dashboard({ user }) {
                 >
                     <header className="panel-card-header">
                         <div>
-                            <h2
-                                id="recent-applications-title"
-                                className="panel-card-title"
-                            >
+                            <h2 id="recent-applications-title" className="panel-card-title">
                                 Recent applications
                             </h2>
 
@@ -343,15 +293,9 @@ function Dashboard({ user }) {
                             </p>
                         </div>
 
-                        <Link
-                            to="/manage/my-applications"
-                            className="panel-text-link"
-                        >
+                        <Link to="/manage/my-applications" className="panel-text-link">
                             View all
-                            <i
-                                className="fa-solid fa-arrow-right"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                         </Link>
                     </header>
 
@@ -361,10 +305,7 @@ function Dashboard({ user }) {
                                 const status = getStatus(application.status);
 
                                 return (
-                                    <li
-                                        className="dashboard-application"
-                                        key={application.id}
-                                    >
+                                    <li className="dashboard-application" key={application.id}>
                                         <div
                                             className="dashboard-application-icon"
                                             aria-hidden="true"
@@ -380,11 +321,7 @@ function Dashboard({ user }) {
                                             )}
 
                                             <h3>
-                                                <Link
-                                                    to={getApplicationPath(
-                                                        application.id
-                                                    )}
-                                                >
+                                                <Link to={getApplicationPath(application.id)}>
                                                     {application.title}
                                                 </Link>
                                             </h3>
@@ -406,14 +343,8 @@ function Dashboard({ user }) {
                                                         aria-hidden="true"
                                                     />
                                                     Applied{" "}
-                                                    <time
-                                                        dateTime={
-                                                            application.appliedAt
-                                                        }
-                                                    >
-                                                        {formatDate(
-                                                            application.appliedAt
-                                                        )}
+                                                    <time dateTime={application.appliedAt}>
+                                                        {formatDate(application.appliedAt)}
                                                     </time>
                                                 </span>
                                             </div>
@@ -428,9 +359,7 @@ function Dashboard({ user }) {
                                             </span>
 
                                             <Link
-                                                to={getApplicationPath(
-                                                    application.id
-                                                )}
+                                                to={getApplicationPath(application.id)}
                                                 className="panel-text-link"
                                                 aria-label={`View application for ${application.title}`}
                                             >
@@ -447,16 +376,13 @@ function Dashboard({ user }) {
                         </ul>
                     ) : (
                         <div className="panel-empty-state">
-                            <i
-                                className="fa-regular fa-folder-open"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-regular fa-folder-open" aria-hidden="true" />
 
                             <h3>Your journey starts here.</h3>
 
                             <p>
-                                Apply for a role to see your applications
-                                and track their progress here.
+                                Apply for a role to see your applications and track their progress
+                                here.
                             </p>
 
                             <Button
@@ -478,10 +404,7 @@ function Dashboard({ user }) {
                 >
                     <header className="panel-card-header">
                         <div>
-                            <h2
-                                id="recent-activity-title"
-                                className="panel-card-title"
-                            >
+                            <h2 id="recent-activity-title" className="panel-card-title">
                                 Recent activity
                             </h2>
 
@@ -490,10 +413,7 @@ function Dashboard({ user }) {
                             </p>
                         </div>
 
-                        <span
-                            className="dashboard-activity-heading-icon"
-                            aria-hidden="true"
-                        >
+                        <span className="dashboard-activity-heading-icon" aria-hidden="true">
                             <i className="fa-regular fa-clock" />
                         </span>
                     </header>
@@ -504,10 +424,7 @@ function Dashboard({ user }) {
                                 const status = getStatus(event.status);
 
                                 return (
-                                    <li
-                                        className="dashboard-activity-item"
-                                        key={event.key}
-                                    >
+                                    <li className="dashboard-activity-item" key={event.key}>
                                         <span
                                             className={`dashboard-activity-icon panel-status-${status.className}`}
                                             aria-hidden="true"
@@ -518,11 +435,7 @@ function Dashboard({ user }) {
                                         <div>
                                             <h3>{status.message}</h3>
 
-                                            <Link
-                                                to={getApplicationPath(
-                                                    event.applicationId
-                                                )}
-                                            >
+                                            <Link to={getApplicationPath(event.applicationId)}>
                                                 {event.title}
                                             </Link>
 
@@ -536,17 +449,11 @@ function Dashboard({ user }) {
                         </ol>
                     ) : (
                         <div className="panel-empty-state">
-                            <i
-                                className="fa-regular fa-clock"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-regular fa-clock" aria-hidden="true" />
 
                             <h3>No updates yet.</h3>
 
-                            <p>
-                                Changes to your application status will
-                                appear here.
-                            </p>
+                            <p>Changes to your application status will appear here.</p>
                         </div>
                     )}
                 </section>

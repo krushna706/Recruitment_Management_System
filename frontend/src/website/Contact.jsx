@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, CircularProgress, TextField } from "@mui/material";
@@ -47,13 +46,9 @@ function validateForm(values) {
     // ================== EMAIL VALIDATION ==================
     if (!email) {
         errors.email = "Please enter your email address.";
-    } else if (
-        email.length > 254 ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    ) {
+    } else if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         errors.email = "Please enter a valid email address.";
     }
-
 
     // ================== PHONE VALIDATION ==================
     // Only valid 10-digit Indian mobile numbers.
@@ -62,7 +57,6 @@ function validateForm(values) {
     } else if (!/^[6-9]\d{9}$/.test(phone)) {
         errors.phone = "Enter a valid 10-digit Indian mobile number.";
     }
-
 
     // ================== SUBJECT VALIDATION ==================
     if (!subject) {
@@ -93,10 +87,7 @@ function getApiError(error) {
         return "Our service is temporarily unavailable. Please try again later.";
     }
 
-    return (
-        error.response?.data?.message ||
-        "Unable to submit your enquiry. Please try again."
-    );
+    return error.response?.data?.message || "Unable to submit your enquiry. Please try again.";
 }
 
 // ================== CONTACT PAGE ==================
@@ -147,9 +138,7 @@ export default function Contact() {
         const firstInvalidField = Object.keys(nextErrors)[0];
 
         if (firstInvalidField) {
-            event.currentTarget.elements
-                .namedItem(firstInvalidField)
-                ?.focus();
+            event.currentTarget.elements.namedItem(firstInvalidField)?.focus();
 
             return;
         }
@@ -159,15 +148,10 @@ export default function Contact() {
         try {
             // ================== SAVE ENQUIRY IN MONGODB ==================
             // Backend validates fields and generates enquiry ID.
-            const { data } = await api.post(
-                "/contact",
-                payload
-            );
+            const { data } = await api.post("/contact", payload);
 
             if (!data?.success || !data?.enquiryId) {
-                throw new Error(
-                    "The server did not confirm enquiry submission."
-                );
+                throw new Error("The server did not confirm enquiry submission.");
             }
 
             // ================== SUCCESS RESPONSE ==================
@@ -212,10 +196,7 @@ export default function Contact() {
     return (
         <div className="contact-page">
             {/* ================== CONTACT BANNER ================== */}
-            <section
-                className="about-hero"
-                aria-labelledby="contact-title"
-            >
+            <section className="about-hero" aria-labelledby="contact-title">
                 <img
                     className="about-hero-image"
                     src="/images/about-banner.jpg"
@@ -224,10 +205,7 @@ export default function Contact() {
                 />
 
                 <div className="website-shell about-hero-inner">
-                    <nav
-                        className="about-breadcrumb"
-                        aria-label="Breadcrumb"
-                    >
+                    <nav className="about-breadcrumb" aria-label="Breadcrumb">
                         <ol>
                             <li>
                                 <Link to="/">Home</Link>
@@ -238,21 +216,16 @@ export default function Contact() {
                     </nav>
 
                     <div className="about-hero-content">
-                        <p className="website-section-label">
-                            GET IN TOUCH
-                        </p>
+                        <p className="website-section-label">GET IN TOUCH</p>
 
-                        <h1
-                            id="contact-title"
-                            className="website-section-title"
-                        >
+                        <h1 id="contact-title" className="website-section-title">
                             Let’s start a conversation.
                             <span>We’re here to help.</span>
                         </h1>
 
                         <p className="website-section-description contact-banner-description">
-                            Questions about our organization or your next
-                            opportunity? Connect with our team.
+                            Questions about our organization or your next opportunity? Connect with
+                            our team.
                         </p>
                     </div>
                 </div>
@@ -270,77 +243,56 @@ export default function Contact() {
                             className="contact-information"
                             aria-labelledby="contact-information-title"
                         >
-                            <p className="website-section-label">
-                                LET’S CONNECT
-                            </p>
+                            <p className="website-section-label">LET’S CONNECT</p>
 
-                            <h2
-                                id="contact-information-title"
-                                className="website-section-title"
-                            >
+                            <h2 id="contact-information-title" className="website-section-title">
                                 A question?
                                 <span> We’re listening.</span>
                             </h2>
 
                             <p className="website-section-description">
-                                Reach us by phone, email or the enquiry
-                                form. Choose the way that works best for
-                                you.
+                                Reach us by phone, email or the enquiry form. Choose the way that
+                                works best for you.
                             </p>
 
                             <ul className="contact-details">
                                 <li>
-                                    <span
-                                        className="contact-icon"
-                                        aria-hidden="true"
-                                    >
+                                    <span className="contact-icon" aria-hidden="true">
                                         <i className="fa-solid fa-phone" />
                                     </span>
 
                                     <div>
                                         <h3>Call us</h3>
 
-                                        <a
-                                            href={`tel:+91${companyContact.phone}`}
-                                        >
+                                        <a href={`tel:+91${companyContact.phone}`}>
                                             +91 {companyContact.phone}
                                         </a>
                                     </div>
                                 </li>
 
                                 <li>
-                                    <span
-                                        className="contact-icon"
-                                        aria-hidden="true"
-                                    >
+                                    <span className="contact-icon" aria-hidden="true">
                                         <i className="fa-solid fa-envelope" />
                                     </span>
 
                                     <div>
                                         <h3>Email us</h3>
 
-                                        <a
-                                            href={`mailto:${companyContact.email}`}
-                                        >
+                                        <a href={`mailto:${companyContact.email}`}>
                                             {companyContact.email}
                                         </a>
                                     </div>
                                 </li>
 
                                 <li>
-                                    <span
-                                        className="contact-icon"
-                                        aria-hidden="true"
-                                    >
+                                    <span className="contact-icon" aria-hidden="true">
                                         <i className="fa-solid fa-location-dot" />
                                     </span>
 
                                     <div>
                                         <h3>Our location</h3>
 
-                                        <address>
-                                            {companyContact.address}
-                                        </address>
+                                        <address>{companyContact.address}</address>
 
                                         <a
                                             className="contact-map-link"
@@ -349,14 +301,13 @@ export default function Contact() {
                                             rel="noopener noreferrer"
                                         >
                                             View on Google Maps
-
                                             <i
                                                 className="fa-solid fa-arrow-up-right-from-square"
                                                 aria-hidden="true"
                                             />
-
                                             <span className="contact-sr-only">
-                                                {" "}(opens in a new tab)
+                                                {" "}
+                                                (opens in a new tab)
                                             </span>
                                         </a>
                                     </div>
@@ -365,19 +316,15 @@ export default function Contact() {
 
                             {/* ================== CAREERS LINK ================== */}
                             <div className="contact-careers">
-                                <span
-                                    className="contact-icon"
-                                    aria-hidden="true"
-                                >
+                                <span className="contact-icon" aria-hidden="true">
                                     <i className="fa-solid fa-briefcase" />
                                 </span>
 
                                 <h3>Your next opportunity awaits.</h3>
 
                                 <p>
-                                    Looking for a role? Explore current
-                                    openings and apply from the job
-                                    details page.
+                                    Looking for a role? Explore current openings and apply from the
+                                    job details page.
                                 </p>
 
                                 <Button
@@ -385,10 +332,7 @@ export default function Contact() {
                                     to="/jobs"
                                     className="website-button website-button-white"
                                     endIcon={
-                                        <i
-                                            className="fa-solid fa-arrow-right"
-                                            aria-hidden="true"
-                                        />
+                                        <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                                     }
                                 >
                                     Explore Jobs
@@ -399,27 +343,18 @@ export default function Contact() {
                         {/* ================== CONTACT FORM CARD ================== */}
                         <div className="contact-form-card">
                             <div className="contact-form-heading">
-                                <span
-                                    className="contact-icon contact-form-icon"
-                                    aria-hidden="true"
-                                >
+                                <span className="contact-icon contact-form-icon" aria-hidden="true">
                                     <i className="fa-regular fa-comments" />
                                 </span>
 
-                                <p className="website-section-label">
-                                    SEND AN ENQUIRY
-                                </p>
+                                <p className="website-section-label">SEND AN ENQUIRY</p>
 
-                                <h2
-                                    id="contact-form-title"
-                                    className="website-section-title"
-                                >
+                                <h2 id="contact-form-title" className="website-section-title">
                                     How can we help?
                                 </h2>
 
                                 <p className="website-section-description">
-                                    Tell us a little about your enquiry.
-                                    All fields are required.
+                                    Tell us a little about your enquiry. All fields are required.
                                 </p>
                             </div>
 
@@ -496,13 +431,10 @@ export default function Contact() {
 
                                     <div className="contact-message-footer">
                                         <span>
-                                            Please avoid sharing passwords
-                                            or sensitive information.
+                                            Please avoid sharing passwords or sensitive information.
                                         </span>
 
-                                        <span>
-                                            {values.message.length}/3000
-                                        </span>
+                                        <span>{values.message.length}/3000</span>
                                     </div>
                                 </div>
 
@@ -510,11 +442,7 @@ export default function Contact() {
                                 {feedback && (
                                     <div
                                         className="contact-preview-note"
-                                        role={
-                                            feedback.type === "error"
-                                                ? "alert"
-                                                : "status"
-                                        }
+                                        role={feedback.type === "error" ? "alert" : "status"}
                                         style={
                                             feedback.type === "error"
                                                 ? {
@@ -529,9 +457,7 @@ export default function Contact() {
                                                   }
                                         }
                                     >
-                                        <p style={{ margin: 0 }}>
-                                            {feedback.message}
-                                        </p>
+                                        <p style={{ margin: 0 }}>{feedback.message}</p>
 
                                         {feedback.enquiryId && (
                                             <p
@@ -556,10 +482,7 @@ export default function Contact() {
                                     className="website-button website-button-primary contact-submit"
                                     endIcon={
                                         isSubmitting ? (
-                                            <CircularProgress
-                                                size={18}
-                                                color="inherit"
-                                            />
+                                            <CircularProgress size={18} color="inherit" />
                                         ) : (
                                             <i
                                                 className="fa-solid fa-arrow-right"
@@ -568,9 +491,7 @@ export default function Contact() {
                                         )
                                     }
                                 >
-                                    {isSubmitting
-                                        ? "Submitting..."
-                                        : "Submit Enquiry"}
+                                    {isSubmitting ? "Submitting..." : "Submit Enquiry"}
                                 </Button>
                             </form>
                         </div>

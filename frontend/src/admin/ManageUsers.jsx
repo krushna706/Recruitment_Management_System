@@ -1,25 +1,8 @@
+import { formatDate, getErrorMessage } from "../utils/dataFormat";
+import { openPrivateResume } from "../utils/fileAccess";
 
 import { useEffect, useState } from "react";
-import {
-    Alert,
-    Avatar,
-    Button,
-    Chip,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    MenuItem,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TextField,
-} from "@mui/material";
+import { Alert, Avatar, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField } from "@mui/material";
 import { toast } from "react-toastify";
 
 import api from "../services/api";
@@ -45,42 +28,10 @@ const APPLICATION_COLORS = {
     Rejected: "error",
 };
 
-// ================== DATE FORMATTING ==================
-function formatDate(value, includeTime = false) {
-    const date = new Date(value);
-
-    if (!value || Number.isNaN(date.getTime())) {
-        return "Not available";
-    }
-
-    return new Intl.DateTimeFormat("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        timeZone: "Asia/Kolkata",
-        ...(includeTime
-            ? {
-                  hour: "numeric",
-                  minute: "2-digit",
-              }
-            : {}),
-    }).format(date);
-}
-
 // ================== API ERROR MESSAGE ==================
-function getErrorMessage(error, fallback) {
-    return error.response?.data?.message || fallback;
-}
 
-
- // ================== ADMIN RESUME URL ==================
- // Access private resumes through the authenticated backend API.
- function getAdminResumeUrl(userId, mode = "download") {
-     const baseURL = String(api.defaults.baseURL || "")
-         .replace(/\/+$/, "");
-
-     return `${baseURL}/admin/users/${encodeURIComponent(userId)}/resume?mode=${mode}`;
- }
+// ================== ADMIN RESUME URL ==================
+// Access private resumes through the authenticated backend API.
 
 // ================== CANDIDATE AVATAR ==================
 // Show the Cloudinary image when available.
@@ -154,6 +105,23 @@ function ManageUsers() {
     // ================== STATUS UPDATE ==================
     const [statusAction, setStatusAction] = useState(null);
     const [statusSaving, setStatusSaving] = useState(false);
+    const [resumeBusy, setResumeBusy] = useState(false);
+
+    async function handleResume(mode) {
+        if (!selectedUser?.resume || resumeBusy) return;
+        setResumeBusy(true);
+        try {
+            await openPrivateResume({
+                endpoint: `/admin/users/${encodeURIComponent(selectedUser.id)}/resume`,
+                filename: selectedUser.resume.name,
+                mode,
+            });
+        } catch (error) {
+            toast.error(error.message || "Resume could not be opened.");
+        } finally {
+            setResumeBusy(false);
+        }
+    }
 
     // ================== DEBOUNCED SEARCH ==================
     useEffect(() => {
@@ -186,13 +154,10 @@ function ManageUsers() {
                 }
 
                 // ================== MANAGE USERS API ==================
-                const { data } = await api.get(
-                    "/admin/users",
-                    {
-                        params,
-                        signal: controller.signal,
-                    }
-                );
+                const { data } = await api.get("/admin/users", {
+                    params,
+                    signal: controller.signal,
+                });
 
                 if (!active) return;
 
@@ -207,18 +172,12 @@ function ManageUsers() {
 
                 const nextTotal = Number(data.pagination.total);
 
-                if (
-                    !Number.isSafeInteger(nextTotal) ||
-                    nextTotal < 0
-                ) {
+                if (!Number.isSafeInteger(nextTotal) || nextTotal < 0) {
                     throw new Error("Invalid pagination response.");
                 }
 
                 // ================== PAGE CORRECTION ==================
-                const lastPage = Math.max(
-                    0,
-                    Math.ceil(nextTotal / rowsPerPage) - 1
-                );
+                const lastPage = Math.max(0, Math.ceil(nextTotal / rowsPerPage) - 1);
 
                 if (page > lastPage) {
                     setPage(lastPage);
@@ -242,10 +201,7 @@ function ManageUsers() {
                 setCounts(INITIAL_COUNTS);
 
                 setListError(
-                    getErrorMessage(
-                        error,
-                        "Unable to load registered users. Please try again."
-                    )
+                    getErrorMessage(error, "Unable to load registered users. Please try again.")
                 );
             } finally {
                 if (active) setLoading(false);
@@ -258,13 +214,7 @@ function ManageUsers() {
             active = false;
             controller.abort();
         };
-    }, [
-        debouncedSearch,
-        statusFilter,
-        page,
-        rowsPerPage,
-        listRevision,
-    ]);
+    }, [debouncedSearch, statusFilter, page, rowsPerPage, listRevision]);
 
     // ================== FETCH USER DETAILS ==================
     // Load the selected candidate and their application history.
@@ -279,37 +229,23 @@ function ManageUsers() {
             setDetailsError("");
 
             try {
-                const { data } = await api.get(
-                    `/admin/users/${encodeURIComponent(selectedId)}`,
-                    {
-                        params: {
-                            page: historyPage + 1,
-                            limit: HISTORY_PAGE_SIZE,
-                        },
-                        signal: controller.signal,
-                    }
-                );
+                const { data } = await api.get(`/admin/users/${encodeURIComponent(selectedId)}`, {
+                    params: {
+                        page: historyPage + 1,
+                        limit: HISTORY_PAGE_SIZE,
+                    },
+                    signal: controller.signal,
+                });
 
                 if (!active) return;
 
-                if (
-                    !data?.success ||
-                    !data.user ||
-                    !Array.isArray(data.applications)
-                ) {
+                if (!data?.success || !data.user || !Array.isArray(data.applications)) {
                     throw new Error("Invalid user details response.");
                 }
 
-                const historyTotal = Number(
-                    data.pagination?.total
-                ) || 0;
+                const historyTotal = Number(data.pagination?.total) || 0;
 
-                const lastPage = Math.max(
-                    0,
-                    Math.ceil(
-                        historyTotal / HISTORY_PAGE_SIZE
-                    ) - 1
-                );
+                const lastPage = Math.max(0, Math.ceil(historyTotal / HISTORY_PAGE_SIZE) - 1);
 
                 if (historyPage > lastPage) {
                     setHistoryPage(lastPage);
@@ -322,12 +258,7 @@ function ManageUsers() {
             } catch (error) {
                 if (!active) return;
 
-                setDetailsError(
-                    getErrorMessage(
-                        error,
-                        "Unable to load candidate details."
-                    )
-                );
+                setDetailsError(getErrorMessage(error, "Unable to load candidate details."));
             } finally {
                 if (active) setDetailsLoading(false);
             }
@@ -416,10 +347,7 @@ function ManageUsers() {
             userId: user.id,
             name: user.name,
             expectedStatus: user.status,
-            nextStatus:
-                user.status === "Active"
-                    ? "Inactive"
-                    : "Active",
+            nextStatus: user.status === "Active" ? "Inactive" : "Active",
         });
     }
 
@@ -440,9 +368,7 @@ function ManageUsers() {
             );
 
             if (!data?.success || !data.user) {
-                throw new Error(
-                    "The server did not confirm the account update."
-                );
+                throw new Error("The server did not confirm the account update.");
             }
 
             // ================== UPDATE VISIBLE ACCOUNT ==================
@@ -469,44 +395,27 @@ function ManageUsers() {
                         : previous
                 );
 
-                setDetailsRevision(
-                    (previous) => previous + 1
-                );
+                setDetailsRevision((previous) => previous + 1);
             }
 
             setStatusAction(null);
 
             // Refresh database counts and filtered records.
-            setListRevision(
-                (previous) => previous + 1
-            );
+            setListRevision((previous) => previous + 1);
 
-            toast.success(
-                data.message ||
-                "Account status updated successfully."
-            );
+            toast.success(data.message || "Account status updated successfully.");
         } catch (error) {
-            const message = getErrorMessage(
-                error,
-                "Unable to update account status."
-            );
+            const message = getErrorMessage(error, "Unable to update account status.");
 
             toast.error(message);
 
             // On conflicting status changes, reload current records.
-            if (
-                error.response?.status === 409 ||
-                error.response?.status === 404
-            ) {
+            if (error.response?.status === 409 || error.response?.status === 404) {
                 setStatusAction(null);
-                setListRevision(
-                    (previous) => previous + 1
-                );
+                setListRevision((previous) => previous + 1);
 
                 if (selectedId) {
-                    setDetailsRevision(
-                        (previous) => previous + 1
-                    );
+                    setDetailsRevision((previous) => previous + 1);
                 }
             }
         } finally {
@@ -515,9 +424,7 @@ function ManageUsers() {
     }
 
     // ================== EMPTY STATE ==================
-    const hasFilters = Boolean(
-        debouncedSearch || statusFilter !== "All"
-    );
+    const hasFilters = Boolean(debouncedSearch || statusFilter !== "All");
 
     const emptyTitle = listError
         ? "Unable to load users"
@@ -536,15 +443,11 @@ function ManageUsers() {
             {/* ================== PAGE HEADER ================== */}
             <header className="mj-heading">
                 <div>
-                    <span className="mj-eyebrow">
-                        USER MANAGEMENT
-                    </span>
+                    <span className="mj-eyebrow">USER MANAGEMENT</span>
 
                     <h1>Manage Users</h1>
 
-                    <p>
-                        Review candidate profiles and manage account access.
-                    </p>
+                    <p>Review candidate profiles and manage account access.</p>
                 </div>
 
                 <Button
@@ -552,12 +455,7 @@ function ManageUsers() {
                     variant="outlined"
                     onClick={refreshUsers}
                     disabled={loading}
-                    startIcon={
-                        <i
-                            className="fa-solid fa-arrows-rotate"
-                            aria-hidden="true"
-                        />
-                    }
+                    startIcon={<i className="fa-solid fa-arrows-rotate" aria-hidden="true" />}
                 >
                     Refresh
                 </Button>
@@ -571,24 +469,13 @@ function ManageUsers() {
             )}
 
             {/* ================== USER STATISTICS ================== */}
-            <section
-                className="mj-metrics"
-                aria-label="User overview"
-            >
+            <section className="mj-metrics" aria-label="User overview">
                 {metrics.map((metric) => (
-                    <article
-                        key={metric.label}
-                        className={`mj-metric mj-tone-${metric.tone}`}
-                    >
+                    <article key={metric.label} className={`mj-metric mj-tone-${metric.tone}`}>
                         <div className="mj-metric-top">
-                            <span className="mj-metric-label">
-                                {metric.label}
-                            </span>
+                            <span className="mj-metric-label">{metric.label}</span>
 
-                            <span
-                                className="mj-metric-icon"
-                                aria-hidden="true"
-                            >
+                            <span className="mj-metric-icon" aria-hidden="true">
                                 <i className={metric.icon} />
                             </span>
                         </div>
@@ -600,35 +487,22 @@ function ManageUsers() {
             </section>
 
             {/* ================== REGISTERED USERS ================== */}
-            <section
-                className="mj-card"
-                aria-labelledby="mu-list-title"
-            >
+            <section className="mj-card" aria-labelledby="mu-list-title">
                 <header className="mj-card-header">
                     <div className="mj-card-heading">
-                        <span
-                            className="mj-header-icon"
-                            aria-hidden="true"
-                        >
+                        <span className="mj-header-icon" aria-hidden="true">
                             <i className="fa-solid fa-users" />
                         </span>
 
                         <div>
-                            <h2 id="mu-list-title">
-                                Registered candidates
-                            </h2>
+                            <h2 id="mu-list-title">Registered candidates</h2>
 
-                            <p>
-                                View profiles, application history and
-                                account status.
-                            </p>
+                            <p>View profiles, application history and account status.</p>
                         </div>
                     </div>
 
                     <span className="mj-result-count">
-                        {loading
-                            ? "Loading users..."
-                            : `${total} of ${counts.total} users`}
+                        {loading ? "Loading users..." : `${total} of ${counts.total} users`}
                     </span>
                 </header>
 
@@ -662,34 +536,21 @@ function ManageUsers() {
                         size="small"
                         fullWidth
                     >
-                        <MenuItem value="All">
-                            All users
-                        </MenuItem>
+                        <MenuItem value="All">All users</MenuItem>
 
-                        <MenuItem value="Active">
-                            Active
-                        </MenuItem>
+                        <MenuItem value="Active">Active</MenuItem>
 
-                        <MenuItem value="Inactive">
-                            Inactive
-                        </MenuItem>
+                        <MenuItem value="Inactive">Inactive</MenuItem>
                     </TextField>
 
-                    <Button
-                        type="button"
-                        variant="outlined"
-                        onClick={resetFilters}
-                    >
+                    <Button type="button" variant="outlined" onClick={resetFilters}>
                         Reset
                     </Button>
                 </div>
 
                 {/* ================== USERS TABLE ================== */}
                 <TableContainer>
-                    <Table
-                        className="mj-table mu-table"
-                        aria-label="Registered users"
-                    >
+                    <Table className="mj-table mu-table" aria-label="Registered users">
                         <TableHead>
                             <TableRow>
                                 <TableCell>Candidate</TableCell>
@@ -697,9 +558,7 @@ function ManageUsers() {
                                 <TableCell>Applications</TableCell>
                                 <TableCell>Joined on</TableCell>
                                 <TableCell>Status</TableCell>
-                                <TableCell align="right">
-                                    Actions
-                                </TableCell>
+                                <TableCell align="right">Actions</TableCell>
                             </TableRow>
                         </TableHead>
 
@@ -707,11 +566,7 @@ function ManageUsers() {
                             {/* ================== LOADING STATE ================== */}
                             {loading && (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={6}
-                                        align="center"
-                                        sx={{ py: 6 }}
-                                    >
+                                    <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
                                         <CircularProgress size={26} />
                                         <p>Loading registered users...</p>
                                     </TableCell>
@@ -724,31 +579,21 @@ function ManageUsers() {
                                     <TableRow key={user.id} hover>
                                         <TableCell>
                                             <div className="mj-job-cell">
-                                                <CandidateAvatar
-                                                    user={user}
-                                                />
+                                                <CandidateAvatar user={user} />
 
                                                 <div>
-                                                    <strong>
-                                                        {user.name}
-                                                    </strong>
+                                                    <strong>{user.name}</strong>
 
-                                                    <p>
-                                                        {user.address ||
-                                                            "Location not provided"}
-                                                    </p>
+                                                    <p>{user.address || "Location not provided"}</p>
                                                 </div>
                                             </div>
                                         </TableCell>
 
                                         <TableCell>
-                                            <span className="mj-cell-primary">
-                                                {user.email}
-                                            </span>
+                                            <span className="mj-cell-primary">{user.email}</span>
 
                                             <span className="mj-cell-secondary">
-                                                {user.phone ||
-                                                    "Phone not provided"}
+                                                {user.phone || "Phone not provided"}
                                             </span>
                                         </TableCell>
 
@@ -759,19 +604,13 @@ function ManageUsers() {
                                         </TableCell>
 
                                         <TableCell>
-                                            <time
-                                                dateTime={user.joinedAt || ""}
-                                            >
-                                                {formatDate(
-                                                    user.joinedAt
-                                                )}
+                                            <time dateTime={user.joinedAt || ""}>
+                                                {formatDate(user.joinedAt)}
                                             </time>
                                         </TableCell>
 
                                         <TableCell>
-                                            <UserStatus
-                                                status={user.status}
-                                            />
+                                            <UserStatus status={user.status} />
                                         </TableCell>
 
                                         <TableCell align="right">
@@ -780,9 +619,7 @@ function ManageUsers() {
                                                     type="button"
                                                     variant="outlined"
                                                     size="small"
-                                                    onClick={() =>
-                                                        openProfile(user)
-                                                    }
+                                                    onClick={() => openProfile(user)}
                                                     aria-label={`View ${user.name}'s profile`}
                                                     startIcon={
                                                         <i
@@ -804,9 +641,7 @@ function ManageUsers() {
                                                             ? "error"
                                                             : "success"
                                                     }
-                                                    onClick={() =>
-                                                        requestStatusChange(user)
-                                                    }
+                                                    onClick={() => requestStatusChange(user)}
                                                 >
                                                     {user.status === "Active"
                                                         ? "Deactivate"
@@ -841,9 +676,7 @@ function ManageUsers() {
                     component="div"
                     count={total}
                     page={page}
-                    onPageChange={(_, nextPage) =>
-                        setPage(nextPage)
-                    }
+                    onPageChange={(_, nextPage) => setPage(nextPage)}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={(event) => {
                         setRowsPerPage(Number(event.target.value));
@@ -862,9 +695,7 @@ function ManageUsers() {
                 className="mu-dialog"
                 aria-labelledby="mu-profile-title"
             >
-                <DialogTitle id="mu-profile-title">
-                    Candidate profile
-                </DialogTitle>
+                <DialogTitle id="mu-profile-title">Candidate profile</DialogTitle>
 
                 <DialogContent dividers>
                     {/* ================== DETAILS LOADING ================== */}
@@ -889,11 +720,7 @@ function ManageUsers() {
                                     type="button"
                                     color="inherit"
                                     size="small"
-                                    onClick={() =>
-                                        setDetailsRevision(
-                                            (previous) => previous + 1
-                                        )
-                                    }
+                                    onClick={() => setDetailsRevision((previous) => previous + 1)}
                                 >
                                     Retry
                                 </Button>
@@ -904,314 +731,232 @@ function ManageUsers() {
                     )}
 
                     {/* ================== CANDIDATE PROFILE ================== */}
-                    {!detailsLoading &&
-                        !detailsError &&
-                        selectedUser && (
-                            <>
-                                {/* ================== PROFILE BANNER ================== */}
-                                <div className="mu-profile-banner">
-                                    <CandidateAvatar
-                                        user={selectedUser}
-                                        large
-                                    />
+                    {!detailsLoading && !detailsError && selectedUser && (
+                        <>
+                            {/* ================== PROFILE BANNER ================== */}
+                            <div className="mu-profile-banner">
+                                <CandidateAvatar user={selectedUser} large />
 
-                                    <div className="mu-profile-copy">
-                                        <h2>{selectedUser.name}</h2>
-                                        <p>{selectedUser.email}</p>
-                                        <span>{selectedUser.id}</span>
-                                    </div>
-
-                                    <UserStatus
-                                        status={selectedUser.status}
-                                    />
+                                <div className="mu-profile-copy">
+                                    <h2>{selectedUser.name}</h2>
+                                    <p>{selectedUser.email}</p>
+                                    <span>{selectedUser.id}</span>
                                 </div>
 
-                                {/* ================== PERSONAL DETAILS ================== */}
-                                <section className="mu-section">
-                                    <h3>
-                                        Personal & contact information
-                                    </h3>
+                                <UserStatus status={selectedUser.status} />
+                            </div>
 
-                                    <dl className="mu-detail-grid">
-                                        <Detail
-                                            label="Full name"
-                                            value={selectedUser.name}
-                                        />
+                            {/* ================== PERSONAL DETAILS ================== */}
+                            <section className="mu-section">
+                                <h3>Personal & contact information</h3>
 
-                                        <Detail
-                                            label="Email"
-                                            value={selectedUser.email}
-                                        />
+                                <dl className="mu-detail-grid">
+                                    <Detail label="Full name" value={selectedUser.name} />
 
-                                        <Detail
-                                            label="Phone"
-                                            value={selectedUser.phone}
-                                        />
+                                    <Detail label="Email" value={selectedUser.email} />
 
-                                        <Detail
-                                            label="Address"
-                                            value={selectedUser.address}
-                                        />
+                                    <Detail label="Phone" value={selectedUser.phone} />
 
-                                        <Detail
-                                            label="Registered on"
-                                            value={formatDate(
-                                                selectedUser.joinedAt,
-                                                true
+                                    <Detail label="Address" value={selectedUser.address} />
+
+                                    <Detail
+                                        label="Registered on"
+                                        value={formatDate(selectedUser.joinedAt, true)}
+                                    />
+
+                                    <Detail label="Account status" value={selectedUser.status} />
+                                </dl>
+                            </section>
+
+                            {/* ================== PROFESSIONAL DETAILS ================== */}
+                            <section className="mu-section">
+                                <h3>Professional profile</h3>
+
+                                <dl className="mu-detail-grid">
+                                    <Detail
+                                        label="Qualification"
+                                        value={selectedUser.qualification}
+                                    />
+
+                                    <Detail label="Experience" value={selectedUser.experience} />
+
+                                    <Detail
+                                        label="Skills"
+                                        value={toTextList(selectedUser.skills).join(", ")}
+                                    />
+
+                                    <Detail
+                                        label="Last login"
+                                        value={formatDate(selectedUser.lastLoginAt, true)}
+                                    />
+                                </dl>
+
+                                {/* ================== PROFILE RESUME ================== */}
+                                {selectedUser.resume ? (
+                                    <div className="mu-access-card">
+                                        <div>
+                                            <strong>{selectedUser.resume.name}</strong>
+
+                                            <p>Candidate profile resume · Secure access</p>
+                                        </div>
+
+                                        <div className="mu-actions">
+                                            {/* ================== VIEW PDF RESUME ================== */}
+                                            {selectedUser.resume.mimeType === "application/pdf" && (
+                                                <Button
+                                                    type="button"
+                                                    disabled={resumeBusy}
+                                                    onClick={() => handleResume("view")}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    startIcon={<i className="fa-regular fa-eye" />}
+                                                >
+                                                    View Resume
+                                                </Button>
                                             )}
+
+                                            {/* ================== DOWNLOAD RESUME ================== */}
+                                            <Button
+                                                type="button"
+                                                disabled={resumeBusy}
+                                                onClick={() => handleResume("download")}
+                                                variant="outlined"
+                                                size="small"
+                                                startIcon={<i className="fa-solid fa-download" />}
+                                            >
+                                                Download
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="mu-muted">No profile resume is available.</p>
+                                )}
+                            </section>
+
+                            {/* ================== APPLICATION HISTORY ================== */}
+                            <section className="mu-section">
+                                <div className="mu-section-heading">
+                                    <h3>Application history</h3>
+
+                                    <span className="mu-count">{applicationTotal}</span>
+                                </div>
+
+                                {userApplications.length ? (
+                                    <TableContainer className="mu-history-container">
+                                        <Table
+                                            size="small"
+                                            className="mu-history-table"
+                                            aria-label={`${selectedUser.name}'s applications`}
+                                        >
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>Position</TableCell>
+
+                                                    <TableCell>Applied on</TableCell>
+
+                                                    <TableCell>Status</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+
+                                            <TableBody>
+                                                {userApplications.map((application) => (
+                                                    <TableRow key={application.id}>
+                                                        <TableCell>
+                                                            <strong>{application.title}</strong>
+
+                                                            <span className="mu-history-company">
+                                                                {application.openingType ===
+                                                                "internal"
+                                                                    ? "Internal vacancy"
+                                                                    : application.company ||
+                                                                      "Client job"}
+                                                            </span>
+                                                        </TableCell>
+
+                                                        <TableCell>
+                                                            {formatDate(application.appliedAt)}
+                                                        </TableCell>
+
+                                                        <TableCell>
+                                                            <Chip
+                                                                label={application.status}
+                                                                color={
+                                                                    APPLICATION_COLORS[
+                                                                        application.status
+                                                                    ] || "default"
+                                                                }
+                                                                size="small"
+                                                                variant="outlined"
+                                                            />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                ) : (
+                                    <div className="mu-empty-history">
+                                        <i
+                                            className="fa-regular fa-file-lines"
+                                            aria-hidden="true"
                                         />
 
-                                        <Detail
-                                            label="Account status"
-                                            value={selectedUser.status}
-                                        />
-                                    </dl>
-                                </section>
+                                        <p>This candidate has not submitted any applications.</p>
+                                    </div>
+                                )}
 
-                                {/* ================== PROFESSIONAL DETAILS ================== */}
-                                <section className="mu-section">
-                                    <h3>Professional profile</h3>
+                                {/* ================== HISTORY PAGINATION ================== */}
+                                {applicationTotal > HISTORY_PAGE_SIZE && (
+                                    <TablePagination
+                                        component="div"
+                                        count={applicationTotal}
+                                        page={historyPage}
+                                        rowsPerPage={HISTORY_PAGE_SIZE}
+                                        rowsPerPageOptions={[HISTORY_PAGE_SIZE]}
+                                        onPageChange={(_, nextPage) => setHistoryPage(nextPage)}
+                                    />
+                                )}
+                            </section>
 
-                                    <dl className="mu-detail-grid">
-                                        <Detail
-                                            label="Qualification"
-                                            value={selectedUser.qualification}
-                                        />
+                            {/* ================== ACCOUNT ACCESS ================== */}
+                            <section className="mu-section">
+                                <h3>Account access</h3>
 
-                                        <Detail
-                                            label="Experience"
-                                            value={selectedUser.experience}
-                                        />
-
-                                        <Detail
-                                            label="Skills"
-                                            value={toTextList(
-                                                selectedUser.skills
-                                            ).join(", ")}
-                                        />
-
-                                        <Detail
-                                            label="Last login"
-                                            value={formatDate(
-                                                selectedUser.lastLoginAt,
-                                                true
-                                            )}
-                                        />
-                                    </dl>
-
-
-                            {/* ================== PROFILE RESUME ================== */}
-                            {selectedUser.resume ? (
                                 <div className="mu-access-card">
                                     <div>
-                                        <strong>{selectedUser.resume.name}</strong>
+                                        <strong>
+                                            {selectedUser.status === "Active"
+                                                ? "Account is active"
+                                                : "Account is inactive"}
+                                        </strong>
 
                                         <p>
-                                            Candidate profile resume · Secure access
+                                            Changing account access preserves the profile and
+                                            existing applications.
                                         </p>
                                     </div>
 
-                                    <div className="mu-actions">
-                                        {/* ================== VIEW PDF RESUME ================== */}
-                                        {selectedUser.resume.mimeType ===
-                                            "application/pdf" && (
-                                            <Button
-                                                component="a"
-                                                href={getAdminResumeUrl(
-                                                    selectedUser.id,
-                                                    "view"
-                                                )}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                variant="outlined"
-                                                size="small"
-                                                startIcon={
-                                                    <i className="fa-regular fa-eye" />
-                                                }
-                                            >
-                                                View Resume
-                                            </Button>
-                                        )}
-
-                                        {/* ================== DOWNLOAD RESUME ================== */}
-                                        <Button
-                                            component="a"
-                                            href={getAdminResumeUrl(
-                                                selectedUser.id,
-                                                "download"
-                                            )}
-                                            variant="outlined"
-                                            size="small"
-                                            startIcon={
-                                                <i className="fa-solid fa-download" />
-                                            }
-                                        >
-                                            Download
-                                        </Button>
-                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="outlined"
+                                        disabled={statusSaving}
+                                        color={
+                                            selectedUser.status === "Active" ? "error" : "success"
+                                        }
+                                        onClick={() => requestStatusChange(selectedUser)}
+                                    >
+                                        {selectedUser.status === "Active"
+                                            ? "Deactivate user"
+                                            : "Activate user"}
+                                    </Button>
                                 </div>
-                            ) : (
-                                <p className="mu-muted">
-                                    No profile resume is available.
-                                </p>
-                            )}
-
-                                </section>
-
-                                {/* ================== APPLICATION HISTORY ================== */}
-                                <section className="mu-section">
-                                    <div className="mu-section-heading">
-                                        <h3>Application history</h3>
-
-                                        <span className="mu-count">
-                                            {applicationTotal}
-                                        </span>
-                                    </div>
-
-                                    {userApplications.length ? (
-                                        <TableContainer className="mu-history-container">
-                                            <Table
-                                                size="small"
-                                                className="mu-history-table"
-                                                aria-label={`${selectedUser.name}'s applications`}
-                                            >
-                                                <TableHead>
-                                                    <TableRow>
-                                                        <TableCell>
-                                                            Position
-                                                        </TableCell>
-
-                                                        <TableCell>
-                                                            Applied on
-                                                        </TableCell>
-
-                                                        <TableCell>
-                                                            Status
-                                                        </TableCell>
-                                                    </TableRow>
-                                                </TableHead>
-
-                                                <TableBody>
-                                                    {userApplications.map(
-                                                        (application) => (
-                                                            <TableRow
-                                                                key={application.id}
-                                                            >
-                                                                <TableCell>
-                                                                    <strong>
-                                                                        {application.title}
-                                                                    </strong>
-
-                                                                    <span className="mu-history-company">
-                                                                        {application.openingType === "internal"
-                                                                            ? "Internal vacancy"
-                                                                            : application.company || "Client job"}
-                                                                    </span>
-                                                                </TableCell>
-
-                                                                <TableCell>
-                                                                    {formatDate(
-                                                                        application.appliedAt
-                                                                    )}
-                                                                </TableCell>
-
-                                                                <TableCell>
-                                                                    <Chip
-                                                                        label={application.status}
-                                                                        color={
-                                                                            APPLICATION_COLORS[
-                                                                                application.status
-                                                                            ] || "default"
-                                                                        }
-                                                                        size="small"
-                                                                        variant="outlined"
-                                                                    />
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        )
-                                                    )}
-                                                </TableBody>
-                                            </Table>
-                                        </TableContainer>
-                                    ) : (
-                                        <div className="mu-empty-history">
-                                            <i
-                                                className="fa-regular fa-file-lines"
-                                                aria-hidden="true"
-                                            />
-
-                                            <p>
-                                                This candidate has not submitted
-                                                any applications.
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* ================== HISTORY PAGINATION ================== */}
-                                    {applicationTotal > HISTORY_PAGE_SIZE && (
-                                        <TablePagination
-                                            component="div"
-                                            count={applicationTotal}
-                                            page={historyPage}
-                                            rowsPerPage={HISTORY_PAGE_SIZE}
-                                            rowsPerPageOptions={[
-                                                HISTORY_PAGE_SIZE,
-                                            ]}
-                                            onPageChange={(_, nextPage) =>
-                                                setHistoryPage(nextPage)
-                                            }
-                                        />
-                                    )}
-                                </section>
-
-                                {/* ================== ACCOUNT ACCESS ================== */}
-                                <section className="mu-section">
-                                    <h3>Account access</h3>
-
-                                    <div className="mu-access-card">
-                                        <div>
-                                            <strong>
-                                                {selectedUser.status === "Active"
-                                                    ? "Account is active"
-                                                    : "Account is inactive"}
-                                            </strong>
-
-                                            <p>
-                                                Changing account access
-                                                preserves the profile and
-                                                existing applications.
-                                            </p>
-                                        </div>
-
-                                        <Button
-                                            type="button"
-                                            variant="outlined"
-                                            disabled={statusSaving}
-                                            color={
-                                                selectedUser.status === "Active"
-                                                    ? "error"
-                                                    : "success"
-                                            }
-                                            onClick={() =>
-                                                requestStatusChange(selectedUser)
-                                            }
-                                        >
-                                            {selectedUser.status === "Active"
-                                                ? "Deactivate user"
-                                                : "Activate user"}
-                                        </Button>
-                                    </div>
-                                </section>
-                            </>
-                        )}
+                            </section>
+                        </>
+                    )}
                 </DialogContent>
 
                 <DialogActions>
-                    <Button
-                        variant="outlined"
-                        onClick={closeProfile}
-                        disabled={statusSaving}
-                    >
+                    <Button variant="outlined" onClick={closeProfile} disabled={statusSaving}>
                         Close
                     </Button>
                 </DialogActions>
@@ -1238,10 +983,7 @@ function ManageUsers() {
                 </DialogTitle>
 
                 <DialogContent>
-                    <p
-                        id="mu-status-description"
-                        className="mu-confirm-text"
-                    >
+                    <p id="mu-status-description" className="mu-confirm-text">
                         {statusAction?.nextStatus === "Inactive"
                             ? `Mark ${statusAction.name}'s account as inactive?`
                             : `Restore ${statusAction?.name}'s account to active status?`}
@@ -1266,19 +1008,10 @@ function ManageUsers() {
                         variant="contained"
                         disableElevation
                         disabled={statusSaving}
-                        color={
-                            statusAction?.nextStatus === "Inactive"
-                                ? "error"
-                                : "success"
-                        }
+                        color={statusAction?.nextStatus === "Inactive" ? "error" : "success"}
                         onClick={saveStatusChange}
                         startIcon={
-                            statusSaving ? (
-                                <CircularProgress
-                                    size={16}
-                                    color="inherit"
-                                />
-                            ) : null
+                            statusSaving ? <CircularProgress size={16} color="inherit" /> : null
                         }
                     >
                         {statusSaving

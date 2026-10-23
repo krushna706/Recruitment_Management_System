@@ -35,19 +35,22 @@ function getLoginDestination(user, location) {
     // Accept only approved internal user destinations.
     if (typeof returnTo === "string") {
         const safeJobPath = /^\/jobs\/[a-zA-Z0-9_-]+$/;
+        const safeCareerPath = /^\/careers\/[a-fA-F0-9]{24}\/apply$/;
         const safePanelPath =
             /^\/manage\/(?:dashboard|profile|my-applications(?:\/[a-zA-Z0-9_-]+)?)(?:[?#][^\s\\]*)?$/;
 
-        if (safeJobPath.test(returnTo) || safePanelPath.test(returnTo)) {
+        if (
+            safeJobPath.test(returnTo) ||
+            safeCareerPath.test(returnTo) ||
+            safePanelPath.test(returnTo)
+        ) {
             return returnTo;
         }
     }
 
     const searchParams = new URLSearchParams(location.search);
 
-    return searchParams.get("from") === "website"
-        ? "/"
-        : "/manage/dashboard";
+    return searchParams.get("from") === "website" ? "/" : "/manage/dashboard";
 }
 
 // ================== LOGIN ERROR MESSAGE ==================
@@ -80,10 +83,7 @@ function getLoginErrorMessage(error) {
         return "Unable to connect to the server. Please try again.";
     }
 
-    return (
-        error.response.data?.message ||
-        "Unable to login. Please try again."
-    );
+    return error.response.data?.message || "Unable to login. Please try again.";
 }
 
 // ================== LOGIN PAGE ==================
@@ -125,10 +125,7 @@ function Login() {
             return;
         }
 
-        if (
-            email.length > 254 ||
-            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-        ) {
+        if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             toast.error("Enter a valid email address.");
             return;
         }
@@ -174,10 +171,7 @@ function Login() {
 
                 <div className="auth-card">
                     {/* Introduction */}
-                    <aside
-                        className="auth-introduction"
-                        aria-labelledby="login-introduction-title"
-                    >
+                    <aside className="auth-introduction" aria-labelledby="login-introduction-title">
                         <img
                             className="auth-background"
                             src="/images/about-banner.jpg"
@@ -186,21 +180,16 @@ function Login() {
                         />
 
                         <div className="auth-introduction-content">
-                            <p className="website-section-label">
-                                PEOPLE. PURPOSE. POSSIBILITIES.
-                            </p>
+                            <p className="website-section-label">PEOPLE. PURPOSE. POSSIBILITIES.</p>
 
-                            <h2
-                                id="login-introduction-title"
-                                className="website-section-title"
-                            >
+                            <h2 id="login-introduction-title" className="website-section-title">
                                 Your next opportunity.
                                 <span> Your next chapter.</span>
                             </h2>
 
                             <p className="website-section-description">
-                                Discover opportunities, share your potential
-                                and take the next step in your career.
+                                Discover opportunities, share your potential and take the next step
+                                in your career.
                             </p>
 
                             <ul className="auth-features">
@@ -228,10 +217,7 @@ function Login() {
                     </aside>
 
                     {/* Login form */}
-                    <section
-                        className="auth-form-panel"
-                        aria-labelledby="login-title"
-                    >
+                    <section className="auth-form-panel" aria-labelledby="login-title">
                         <div className="auth-form-content">
                             <header className="auth-form-header">
                                 <Link
@@ -312,9 +298,7 @@ function Login() {
                                                         aria-pressed={showPassword}
                                                         aria-controls="login-password"
                                                         onClick={() =>
-                                                            setShowPassword(
-                                                                (current) => !current
-                                                            )
+                                                            setShowPassword((current) => !current)
                                                         }
                                                         onMouseDown={(event) =>
                                                             event.preventDefault()
@@ -361,10 +345,7 @@ function Login() {
                                           ? "Signing in..."
                                           : "Sign In"}
 
-                                    <i
-                                        className="fa-solid fa-arrow-right"
-                                        aria-hidden="true"
-                                    />
+                                    <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                                 </Button>
                             </form>
 
@@ -383,10 +364,7 @@ function Login() {
                                 </p>
 
                                 {/* Available for both User and Admin accounts. */}
-                                <Link
-                                    to="/manage/forgot-password"
-                                    className="auth-forgot-link"
-                                >
+                                <Link to="/manage/forgot-password" className="auth-forgot-link">
                                     Forgot password?
                                 </Link>
                             </div>

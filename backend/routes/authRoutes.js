@@ -1,4 +1,3 @@
-
 const express = require("express");
 const { rateLimit } = require("express-rate-limit");
 
@@ -8,19 +7,9 @@ const passwordResetController = require("../controllers/passwordResetController"
 const authMiddleware = require("../middleware/authMiddleware");
 const validateMiddleware = require("../middleware/validateMiddleware");
 
-const {
-    loginIpLimiter,
-    loginAccountLimiter,
-    signupLimiter,
-} = require("../middleware/rateLimiter");
+const { loginIpLimiter, loginAccountLimiter, signupLimiter } = require("../middleware/rateLimiter");
 
-const {
-    signupSchema,
-    loginSchema,
-    forgotPasswordRequestSchema,
-    forgotPasswordVerifySchema,
-    forgotPasswordResetSchema,
-} = require("../validations/schema");
+const { signupSchema, loginSchema, forgotPasswordRequestSchema, forgotPasswordVerifySchema, forgotPasswordResetSchema } = require("../validations/schema");
 
 // ================== ROUTER SETUP ==================
 const router = express.Router();
@@ -38,8 +27,7 @@ const forgotPasswordRequestLimiter = rateLimit({
 
     message: {
         success: false,
-        message:
-            "Too many password reset requests. Please try again later.",
+        message: "Too many password reset requests. Please try again later.",
     },
 });
 
@@ -54,8 +42,7 @@ const forgotPasswordVerifyLimiter = rateLimit({
 
     message: {
         success: false,
-        message:
-            "Too many OTP verification attempts. Please try again later.",
+        message: "Too many OTP verification attempts. Please try again later.",
     },
 });
 
@@ -69,80 +56,45 @@ const forgotPasswordResetLimiter = rateLimit({
 
     message: {
         success: false,
-        message:
-            "Too many password reset attempts. Please try again later.",
+        message: "Too many password reset attempts. Please try again later.",
     },
 });
 
 // ================== SIGNUP ==================
 // POST /api/auth/signup
 // Public registration creates normal user accounts only.
-router.post(
-    "/signup",
-    signupLimiter,
-    validateMiddleware(signupSchema),
-    authController.signup
-);
+router.post("/signup", signupLimiter, validateMiddleware(signupSchema), authController.signup);
 
 // ================== LOGIN ==================
 // POST /api/auth/login
 // Validate and normalize the email before account-based limiting.
-router.post(
-    "/login",
-    loginIpLimiter,
-    validateMiddleware(loginSchema),
-    loginAccountLimiter,
-    authController.login
-);
+router.post("/login", loginIpLimiter, validateMiddleware(loginSchema), loginAccountLimiter, authController.login);
 
 // ================== FORGOT PASSWORD - REQUEST OTP ==================
 // POST /api/auth/forgot-password/request
 // Public route for User and Admin.
 // Send 6-digit OTP to the registered email address.
-router.post(
-    "/forgot-password/request",
-    forgotPasswordRequestLimiter,
-    validateMiddleware(forgotPasswordRequestSchema),
-    passwordResetController.requestPasswordResetOtp
-);
+router.post("/forgot-password/request", forgotPasswordRequestLimiter, validateMiddleware(forgotPasswordRequestSchema), passwordResetController.requestPasswordResetOtp);
 
 // ================== FORGOT PASSWORD - VERIFY OTP ==================
 // POST /api/auth/forgot-password/verify
 // Verify OTP and generate short-lived password reset authorization.
-router.post(
-    "/forgot-password/verify",
-    forgotPasswordVerifyLimiter,
-    validateMiddleware(forgotPasswordVerifySchema),
-    passwordResetController.verifyPasswordResetOtp
-);
+router.post("/forgot-password/verify", forgotPasswordVerifyLimiter, validateMiddleware(forgotPasswordVerifySchema), passwordResetController.verifyPasswordResetOtp);
 
 // ================== FORGOT PASSWORD - RESET PASSWORD ==================
 // POST /api/auth/forgot-password/reset
 // Change password using a verified single-use reset token.
-router.post(
-    "/forgot-password/reset",
-    forgotPasswordResetLimiter,
-    validateMiddleware(forgotPasswordResetSchema),
-    passwordResetController.resetPassword
-);
+router.post("/forgot-password/reset", forgotPasswordResetLimiter, validateMiddleware(forgotPasswordResetSchema), passwordResetController.resetPassword);
 
 // ================== LOGOUT ==================
 // POST /api/auth/logout
 // Require authentication before revoking the account's sessions.
-router.post(
-    "/logout",
-    authMiddleware,
-    authController.logout
-);
+router.post("/logout", authMiddleware, authController.logout);
 
 // ================== CURRENT USER ==================
 // GET /api/auth/me
 // Restore frontend authentication state after a page refresh.
-router.get(
-    "/me",
-    authMiddleware,
-    authController.getCurrentUser
-);
+router.get("/me", authMiddleware, authController.getCurrentUser);
 
 // ================== EXPORT ==================
 module.exports = router;

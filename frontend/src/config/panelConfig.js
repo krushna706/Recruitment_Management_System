@@ -30,9 +30,7 @@ export const panelRoles = {
 };
 
 export function getPanelRole(role) {
-    return Object.prototype.hasOwnProperty.call(panelRoles, role)
-        ? panelRoles[role]
-        : null;
+    return Object.prototype.hasOwnProperty.call(panelRoles, role) ? panelRoles[role] : null;
 }
 
 /* ===== PANEL PAGES AND PERMISSIONS ===== */
@@ -131,11 +129,7 @@ export function getPanelNavigation(role) {
     }
 
     const pageLinks = panelPages
-        .filter(
-            (page) =>
-                page.navigation &&
-                page.allowedRoles.includes(role)
-        )
+        .filter((page) => page.navigation && page.allowedRoles.includes(role))
         .map((page) => ({
             path: `/manage/${page.path}`,
             ...page.navigation,

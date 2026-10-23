@@ -61,10 +61,7 @@ function WebsiteNavbar() {
             closeMenu();
             toast.success("Logged out successfully.");
         } catch (error) {
-            toast.error(
-                error.response?.data?.message ||
-                "Unable to log out. Please try again."
-            );
+            toast.error(error.response?.data?.message || "Unable to log out. Please try again.");
         } finally {
             logoutLock.current = false;
             setLoggingOut(false);
@@ -104,18 +101,14 @@ function WebsiteNavbar() {
                     onClick={toggleMenu}
                 >
                     <i
-                        className={`fa-solid ${
-                            isMenuOpen ? "fa-xmark" : "fa-bars"
-                        }`}
+                        className={`fa-solid ${isMenuOpen ? "fa-xmark" : "fa-bars"}`}
                         aria-hidden="true"
                     />
                 </button>
 
                 <div
                     id="website-navigation"
-                    className={`website-navigation ${
-                        isMenuOpen ? "is-open" : ""
-                    }`}
+                    className={`website-navigation ${isMenuOpen ? "is-open" : ""}`}
                 >
                     <ul className="website-nav-list">
                         {navigationLinks.map((item) => (
@@ -125,9 +118,7 @@ function WebsiteNavbar() {
                                     end={item.path === "/"}
                                     onClick={closeMenu}
                                     className={({ isActive }) =>
-                                        `website-nav-link ${
-                                            isActive ? "is-active" : ""
-                                        }`
+                                        `website-nav-link ${isActive ? "is-active" : ""}`
                                     }
                                 >
                                     {item.label}
@@ -203,10 +194,7 @@ function WebsiteNavbar() {
                                     onClick={closeMenu}
                                 >
                                     Create Account
-                                    <i
-                                        className="fa-solid fa-arrow-right"
-                                        aria-hidden="true"
-                                    />
+                                    <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                                 </Button>
                             </>
                         )}

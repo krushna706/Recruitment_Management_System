@@ -1,20 +1,10 @@
-
 const bcrypt = require("bcrypt");
-const {
-    createHash,
-    createHmac,
-    randomBytes,
-    randomInt,
-    timingSafeEqual,
-} = require("node:crypto");
+const { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } = require("node:crypto");
 
 const User = require("../models/User");
 const ExpressError = require("../utils/ExpressError");
 
-const {
-    sendPasswordResetOtpEmail,
-    OTP_VALIDITY_MINUTES,
-} = require("../config/email");
+const { sendPasswordResetOtpEmail, OTP_VALIDITY_MINUTES } = require("../config/email");
 
 // ================== PASSWORD RESET CONFIGURATION ==================
 const OTP_COOLDOWN_MS = 60 * 1000;
@@ -27,8 +17,7 @@ const BCRYPT_ROUNDS = 12;
 const GENERIC_REQUEST_MESSAGE =
     "If an active account matches these details, a verification code will be sent to its registered email.";
 
-const INVALID_OTP_MESSAGE =
-    "Invalid or expired verification code.";
+const INVALID_OTP_MESSAGE = "Invalid or expired verification code.";
 
 // ================== NO-CACHE RESPONSE ==================
 function sendNoCache(res, status, payload) {
@@ -75,26 +64,17 @@ function otpDigest(userId, otp) {
 
 // ================== RESET TOKEN HASH ==================
 function tokenDigest(resetToken) {
-    return createHash("sha256")
-        .update(resetToken)
-        .digest("hex");
+    return createHash("sha256").update(resetToken).digest("hex");
 }
 
 // ================== CONSTANT-TIME HASH COMPARISON ==================
 function sameHash(first, second) {
-    if (
-        !/^[a-f0-9]{64}$/.test(first || "") ||
-        !/^[a-f0-9]{64}$/.test(second || "")
-    ) {
+    if (!/^[a-f0-9]{64}$/.test(first || "") || !/^[a-f0-9]{64}$/.test(second || "")) {
         return false;
     }
 
-    return timingSafeEqual(
-        Buffer.from(first, "hex"),
-        Buffer.from(second, "hex")
-    );
+    return timingSafeEqual(Buffer.from(first, "hex"), Buffer.from(second, "hex"));
 }
-
 
 // ================== MASK REGISTERED EMAIL ==================
 // Show first 2 and last 2 characters for longer email names.
@@ -116,14 +96,11 @@ function maskedEmail(email) {
     return `${local.slice(0, 2)}****${local.slice(-2)}@${domain}`;
 }
 
-
 // ================== REQUEST / RESEND EMAIL OTP ==================
 // POST /api/auth/forgot-password/request
 async function requestPasswordResetOtp(req, res, next) {
     try {
-        const account = await findRecoveryAccount(
-            req.body.identifier
-        );
+        const account = await findRecoveryAccount(req.body.identifier);
 
         // ================== ACCOUNT PRIVACY ==================
         // Do not disclose whether an account exists.
@@ -139,21 +116,16 @@ async function requestPasswordResetOtp(req, res, next) {
         const nowMs = Date.now();
         const previous = account.passwordReset || {};
 
-        const previousStartMs =
-            previous.requestWindowStartedAt
-                ? new Date(
-                    previous.requestWindowStartedAt
-                ).getTime()
-                : NaN;
+        const previousStartMs = previous.requestWindowStartedAt
+            ? new Date(previous.requestWindowStartedAt).getTime()
+            : NaN;
 
         const inCurrentWindow =
             Number.isFinite(previousStartMs) &&
             previousStartMs <= nowMs &&
             nowMs - previousStartMs < OTP_WINDOW_MS;
 
-        const previousRequests = inCurrentWindow
-            ? Number(previous.requestsInWindow) || 0
-            : 0;
+        const previousRequests = inCurrentWindow ? Number(previous.requestsInWindow) || 0 : 0;
 
         const cooldownUntil = previous.resendAvailableAt
             ? new Date(previous.resendAvailableAt).getTime()
@@ -161,10 +133,7 @@ async function requestPasswordResetOtp(req, res, next) {
 
         // ================== MAXIMUM 10 REQUESTS / HOUR ==================
         // ================== 60-SECOND RESEND COOLDOWN ==================
-        if (
-            previousRequests >= MAX_OTP_REQUESTS_PER_HOUR ||
-            cooldownUntil > nowMs
-        ) {
+        if (previousRequests >= MAX_OTP_REQUESTS_PER_HOUR || cooldownUntil > nowMs) {
             return sendNoCache(res, 200, {
                 success: true,
                 message: GENERIC_REQUEST_MESSAGE,
@@ -173,9 +142,7 @@ async function requestPasswordResetOtp(req, res, next) {
         }
 
         // ================== GENERATE SECURE 6-DIGIT OTP ==================
-        const otp = String(
-            randomInt(0, 1_000_000)
-        ).padStart(6, "0");
+        const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
 
         const hash = otpDigest(account._id, otp);
 
@@ -183,15 +150,11 @@ async function requestPasswordResetOtp(req, res, next) {
         const resetState = {
             otpHash: hash,
 
-            otpExpiresAt: new Date(
-                nowMs + OTP_VALIDITY_MINUTES * 60 * 1000
-            ),
+            otpExpiresAt: new Date(nowMs + OTP_VALIDITY_MINUTES * 60 * 1000),
 
             failedAttempts: 0,
 
-            resendAvailableAt: new Date(
-                nowMs + OTP_COOLDOWN_MS
-            ),
+            resendAvailableAt: new Date(nowMs + OTP_COOLDOWN_MS),
 
             requestWindowStartedAt: inCurrentWindow
                 ? previous.requestWindowStartedAt
@@ -284,9 +247,7 @@ async function verifyPasswordResetOtp(req, res, next) {
         const account = await findRecoveryAccount(identifier);
 
         if (!account) {
-            return next(
-                new ExpressError(400, INVALID_OTP_MESSAGE)
-            );
+            return next(new ExpressError(400, INVALID_OTP_MESSAGE));
         }
 
         const stored = account.passwordReset;
@@ -299,19 +260,13 @@ async function verifyPasswordResetOtp(req, res, next) {
             !currentHash ||
             !stored?.otpExpiresAt ||
             new Date(stored.otpExpiresAt) <= now ||
-            (stored.failedAttempts || 0) >=
-                MAX_WRONG_OTP_ATTEMPTS
+            (stored.failedAttempts || 0) >= MAX_WRONG_OTP_ATTEMPTS
         ) {
-            return next(
-                new ExpressError(400, INVALID_OTP_MESSAGE)
-            );
+            return next(new ExpressError(400, INVALID_OTP_MESSAGE));
         }
 
         // ================== VERIFY OTP HASH ==================
-        const incomingHash = otpDigest(
-            account._id,
-            otp
-        );
+        const incomingHash = otpDigest(account._id, otp);
 
         // ================== INCORRECT OTP ==================
         if (!sameHash(currentHash, incomingHash)) {
@@ -333,13 +288,12 @@ async function verifyPasswordResetOtp(req, res, next) {
                 {
                     $inc: {
                         "passwordReset.failedAttempts": 1,
+                        __v: 1,
                     },
                 }
             );
 
-            return next(
-                new ExpressError(400, INVALID_OTP_MESSAGE)
-            );
+            return next(new ExpressError(400, INVALID_OTP_MESSAGE));
         }
 
         // ================== GENERATE RESET AUTHORIZATION ==================
@@ -372,14 +326,11 @@ async function verifyPasswordResetOtp(req, res, next) {
                     "passwordReset.otpExpiresAt": null,
 
                     // Store only a hash of the reset token.
-                    "passwordReset.verificationTokenHash":
-                        verificationHash,
+                    "passwordReset.verificationTokenHash": verificationHash,
 
-                    "passwordReset.verificationExpiresAt":
-                        new Date(
-                            now.getTime() +
-                                RESET_TOKEN_VALIDITY_MS
-                        ),
+                    "passwordReset.verificationExpiresAt": new Date(
+                        now.getTime() + RESET_TOKEN_VALIDITY_MS
+                    ),
                 },
 
                 $inc: {
@@ -392,22 +343,18 @@ async function verifyPasswordResetOtp(req, res, next) {
         );
 
         if (verified.modifiedCount !== 1) {
-            return next(
-                new ExpressError(400, INVALID_OTP_MESSAGE)
-            );
+            return next(new ExpressError(400, INVALID_OTP_MESSAGE));
         }
 
         // ================== SUCCESSFUL OTP VERIFICATION ==================
         return sendNoCache(res, 200, {
             success: true,
 
-            message:
-                "Verification successful. Set your new password.",
+            message: "Verification successful. Set your new password.",
 
             resetToken,
 
-            resetExpiresInSeconds:
-                RESET_TOKEN_VALIDITY_MS / 1000,
+            resetExpiresInSeconds: RESET_TOKEN_VALIDITY_MS / 1000,
 
             // Reveal only after successful OTP verification.
             maskedEmail: maskedEmail(account.email),
@@ -427,10 +374,7 @@ async function resetPassword(req, res, next) {
         const now = new Date();
 
         // ================== HASH NEW PASSWORD ==================
-        const passwordHash = await bcrypt.hash(
-            newPassword,
-            BCRYPT_ROUNDS
-        );
+        const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
         // ================== ATOMIC PASSWORD RESET ==================
         // Only a valid, unexpired, unused reset token works.
@@ -476,10 +420,7 @@ async function resetPassword(req, res, next) {
 
         if (updated.modifiedCount !== 1) {
             return next(
-                new ExpressError(
-                    400,
-                    "Password reset session has expired or was already used."
-                )
+                new ExpressError(400, "Password reset session has expired or was already used.")
             );
         }
 
@@ -495,8 +436,7 @@ async function resetPassword(req, res, next) {
         return sendNoCache(res, 200, {
             success: true,
 
-            message:
-                "Password reset successful. Please log in again.",
+            message: "Password reset successful. Please log in again.",
 
             requiresLogin: true,
         });

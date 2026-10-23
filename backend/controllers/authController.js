@@ -28,14 +28,14 @@ function getUserResponse(user) {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        qualification: user.qualification || "",
+        experience: user.experience || "",
+        skills: user.skills || [],
         role: user.role,
         status: user.status,
         createdAt: user.createdAt,
-        avatar: {
-            url: user.avatar?.url || "",
-        mustChangePassword:
-            user.role === "admin" && Boolean(user.mustChangePassword),
-        },
+        avatar: { url: user.avatar?.url || "" },
+        mustChangePassword: user.role === "admin" && Boolean(user.mustChangePassword),
     };
 }
 
@@ -68,19 +68,11 @@ async function signup(req, res, next) {
         const existingUser = await User.exists({ email });
 
         if (existingUser) {
-            return next(
-                new ExpressError(
-                    409,
-                    "An account with this email already exists."
-                )
-            );
+            return next(new ExpressError(409, "An account with this email already exists."));
         }
 
         // Hash the password before creating the database document.
-        const passwordHash = await bcrypt.hash(
-            password,
-            PASSWORD_SALT_ROUNDS
-        );
+        const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
 
         // Explicitly select allowed fields.
         // Never accept account permissions from the request body.
@@ -95,21 +87,11 @@ async function signup(req, res, next) {
             lastLoginAt: new Date(),
         });
 
-        return sendAuthResponse(
-            res,
-            user,
-            201,
-            "Account created successfully."
-        );
+        return sendAuthResponse(res, user, 201, "Account created successfully.");
     } catch (error) {
         // Handle concurrent signup requests using the same email.
         if (error.code === 11000 && error.keyPattern?.email) {
-            return next(
-                new ExpressError(
-                    409,
-                    "An account with this email already exists."
-                )
-            );
+            return next(new ExpressError(409, "An account with this email already exists."));
         }
 
         return next(error);
@@ -123,34 +105,21 @@ async function login(req, res, next) {
     try {
         const { email, password } = req.body;
 
-        const user = await User.findOne({ email })
-            .select("+passwordHash +tokenVersion");
+        const user = await User.findOne({ email }).select("+passwordHash +tokenVersion");
 
         if (!user) {
-            return next(
-                new ExpressError(401, "Invalid email or password.")
-            );
+            return next(new ExpressError(401, "Invalid email or password."));
         }
 
         // Compare the entered password with the stored password hash.
-        const passwordMatches = await bcrypt.compare(
-            password,
-            user.passwordHash
-        );
+        const passwordMatches = await bcrypt.compare(password, user.passwordHash);
 
         if (!passwordMatches) {
-            return next(
-                new ExpressError(401, "Invalid email or password.")
-            );
+            return next(new ExpressError(401, "Invalid email or password."));
         }
 
         if (user.status !== "Active") {
-            return next(
-                new ExpressError(
-                    403,
-                    "Your account is inactive. Please contact support."
-                )
-            );
+            return next(new ExpressError(403, "Your account is inactive. Please contact support."));
         }
 
         // Recheck account state before completing the login.
@@ -174,20 +143,10 @@ async function login(req, res, next) {
         ).select("+tokenVersion +mustChangePassword");
 
         if (!currentUser) {
-            return next(
-                new ExpressError(
-                    401,
-                    "Your account details changed. Please login again."
-                )
-            );
+            return next(new ExpressError(401, "Your account details changed. Please login again."));
         }
 
-        return sendAuthResponse(
-            res,
-            currentUser,
-            200,
-            "Login successful."
-        );
+        return sendAuthResponse(res, currentUser, 200, "Login successful.");
     } catch (error) {
         return next(error);
     }
@@ -227,22 +186,17 @@ async function logout(req, res, next) {
 async function getCurrentUser(req, res, next) {
     try {
         const user = await User.findById(req.user._id)
-            .select("name email phone role status createdAt avatar.url +mustChangePassword")
+            .select(
+                "name email phone qualification experience skills role status createdAt avatar.url +mustChangePassword"
+            )
             .lean();
 
         if (!user) {
-            return next(
-                new ExpressError(401, "Please login again.")
-            );
+            return next(new ExpressError(401, "Please login again."));
         }
 
         if (user.status !== "Active") {
-            return next(
-                new ExpressError(
-                    403,
-                    "Your account is inactive. Please contact support."
-                )
-            );
+            return next(new ExpressError(403, "Your account is inactive. Please contact support."));
         }
 
         res.set("Cache-Control", "no-store");

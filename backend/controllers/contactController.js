@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 const Contact = require("../models/Contact");
@@ -26,24 +25,16 @@ function requireAdmin(req) {
     }
 
     if (req.user.role !== "admin") {
-        throw new ExpressError(
-            403,
-            "You do not have permission to manage enquiries."
-        );
+        throw new ExpressError(403, "You do not have permission to manage enquiries.");
     }
 }
 
 // ================== QUERY VALIDATION ==================
 function validateQueryFields(query, allowedFields) {
-    const unknownFields = Object.keys(query).filter(
-        (field) => !allowedFields.includes(field)
-    );
+    const unknownFields = Object.keys(query).filter((field) => !allowedFields.includes(field));
 
     if (unknownFields.length) {
-        throw new ExpressError(
-            400,
-            "Unsupported enquiry filter."
-        );
+        throw new ExpressError(400, "Unsupported enquiry filter.");
     }
 }
 
@@ -51,23 +42,14 @@ function validateQueryFields(query, allowedFields) {
 function getPositiveInteger(value, fallback, maximum, label) {
     if (value === undefined) return fallback;
 
-    if (
-        typeof value !== "string" ||
-        !/^[1-9]\d*$/.test(value)
-    ) {
-        throw new ExpressError(
-            400,
-            `${label} must be a positive whole number.`
-        );
+    if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
+        throw new ExpressError(400, `${label} must be a positive whole number.`);
     }
 
     const number = Number(value);
 
     if (!Number.isSafeInteger(number) || number > maximum) {
-        throw new ExpressError(
-            400,
-            `${label} cannot exceed ${maximum}.`
-        );
+        throw new ExpressError(400, `${label} cannot exceed ${maximum}.`);
     }
 
     return number;
@@ -85,22 +67,13 @@ function getDateFilter(value, label) {
         return null;
     }
 
-    if (
-        typeof value !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(value)
-    ) {
-        throw new ExpressError(
-            400,
-            `${label} must use YYYY-MM-DD format.`
-        );
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        throw new ExpressError(400, `${label} must use YYYY-MM-DD format.`);
     }
 
     const parsed = new Date(`${value}T00:00:00Z`);
 
-    if (
-        Number.isNaN(parsed.getTime()) ||
-        parsed.toISOString().slice(0, 10) !== value
-    ) {
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
         throw new ExpressError(400, `Invalid ${label}.`);
     }
 
@@ -122,22 +95,14 @@ function getIndiaToday() {
         day: "2-digit",
     }).formatToParts(new Date());
 
-    const values = Object.fromEntries(
-        parts.map((part) => [part.type, part.value])
-    );
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
 
     return `${values.year}-${values.month}-${values.day}`;
 }
 
 // ================== ADMIN ENQUIRY FILTERS ==================
 function getEnquiryFilters(query) {
-    validateQueryFields(query, [
-        "page",
-        "limit",
-        "search",
-        "fromDate",
-        "toDate",
-    ]);
+    validateQueryFields(query, ["page", "limit", "search", "fromDate", "toDate"]);
 
     const filter = {};
 
@@ -150,10 +115,7 @@ function getEnquiryFilters(query) {
         const search = query.search.trim();
 
         if (search.length > 100) {
-            throw new ExpressError(
-                400,
-                "Search cannot exceed 100 characters."
-            );
+            throw new ExpressError(400, "Search cannot exceed 100 characters.");
         }
 
         if (search) {
@@ -171,36 +133,23 @@ function getEnquiryFilters(query) {
     }
 
     // ================== DATE RANGE FILTER ==================
-    const fromDate = getDateFilter(
-        query.fromDate,
-        "From date"
-    );
+    const fromDate = getDateFilter(query.fromDate, "From date");
 
-    const toDate = getDateFilter(
-        query.toDate,
-        "To date"
-    );
+    const toDate = getDateFilter(query.toDate, "To date");
 
     if (fromDate && toDate && fromDate > toDate) {
-        throw new ExpressError(
-            400,
-            "To date must be on or after From date."
-        );
+        throw new ExpressError(400, "To date must be on or after From date.");
     }
 
     if (fromDate || toDate) {
         filter.submittedAt = {};
 
         if (fromDate) {
-            filter.submittedAt.$gte =
-                getIndiaDayStart(fromDate);
+            filter.submittedAt.$gte = getIndiaDayStart(fromDate);
         }
 
         if (toDate) {
-            const nextDay = new Date(
-                getIndiaDayStart(toDate).getTime() +
-                24 * 60 * 60 * 1000
-            );
+            const nextDay = new Date(getIndiaDayStart(toDate).getTime() + 24 * 60 * 60 * 1000);
 
             filter.submittedAt.$lt = nextDay;
         }
@@ -259,18 +208,11 @@ async function getEnquiryCounts() {
     const monthStart = `${today.slice(0, 7)}-01`;
 
     const todayStart = getIndiaDayStart(today);
-    const tomorrowStart = new Date(
-        todayStart.getTime() + 24 * 60 * 60 * 1000
-    );
+    const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
     const monthStartDate = getIndiaDayStart(monthStart);
 
-    const [
-        total,
-        todayCount,
-        monthCount,
-        uniqueSenderResult,
-    ] = await Promise.all([
+    const [total, todayCount, monthCount, uniqueSenderResult] = await Promise.all([
         Contact.countDocuments(),
 
         Contact.countDocuments({
@@ -316,19 +258,9 @@ async function getAdminEnquiries(req, res, next) {
 
         const filter = getEnquiryFilters(req.query);
 
-        const page = getPositiveInteger(
-            req.query.page,
-            1,
-            MAX_PAGE,
-            "Page"
-        );
+        const page = getPositiveInteger(req.query.page, 1, MAX_PAGE, "Page");
 
-        const limit = getPositiveInteger(
-            req.query.limit,
-            10,
-            MAX_LIMIT,
-            "Page size"
-        );
+        const limit = getPositiveInteger(req.query.limit, 10, MAX_LIMIT, "Page size");
 
         const [enquiries, total, counts] = await Promise.all([
             Contact.find(filter)
@@ -377,10 +309,7 @@ async function getAdminEnquiry(req, res, next) {
         const id = req.params.id;
 
         if (typeof id !== "string") {
-            throw new ExpressError(
-                400,
-                "Invalid enquiry ID."
-            );
+            throw new ExpressError(400, "Invalid enquiry ID.");
         }
 
         let filter;
@@ -394,21 +323,13 @@ async function getAdminEnquiry(req, res, next) {
                 enquiryId: id,
             };
         } else {
-            throw new ExpressError(
-                400,
-                "Invalid enquiry ID."
-            );
+            throw new ExpressError(400, "Invalid enquiry ID.");
         }
 
-        const enquiry = await Contact.findOne(filter)
-            .select(ENQUIRY_FIELDS)
-            .lean();
+        const enquiry = await Contact.findOne(filter).select(ENQUIRY_FIELDS).lean();
 
         if (!enquiry) {
-            throw new ExpressError(
-                404,
-                "Enquiry not found."
-            );
+            throw new ExpressError(404, "Enquiry not found.");
         }
 
         res.set("Cache-Control", "no-store");

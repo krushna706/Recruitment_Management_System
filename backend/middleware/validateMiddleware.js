@@ -14,23 +14,13 @@ function validateMiddleware(schema, { jsonFields = [] } = {}) {
             }
 
             if (typeof fieldValue !== "string") {
-                return next(
-                    new ExpressError(
-                        400,
-                        `${field} must be sent as JSON text.`
-                    )
-                );
+                return next(new ExpressError(400, `${field} must be sent as JSON text.`));
             }
 
             try {
                 req.body[field] = JSON.parse(fieldValue);
             } catch {
-                return next(
-                    new ExpressError(
-                        400,
-                        `${field} contains invalid JSON.`
-                    )
-                );
+                return next(new ExpressError(400, `${field} contains invalid JSON.`));
             }
         }
 
@@ -42,9 +32,7 @@ function validateMiddleware(schema, { jsonFields = [] } = {}) {
         });
 
         if (error) {
-            const message = error.details
-                .map((detail) => detail.message)
-                .join(" ");
+            const message = error.details.map((detail) => detail.message).join(" ");
 
             return next(new ExpressError(400, message));
         }

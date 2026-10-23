@@ -1,3 +1,4 @@
+const { accountActionLimiter } = require("../middleware/rateLimiter");
 
 const express = require("express");
 const { rateLimit } = require("express-rate-limit");
@@ -41,11 +42,7 @@ router.use(authMiddleware, roleMiddleware("user"));
 router.get("/me/profile", userController.getMyProfile);
 
 // PATCH /api/users/me/profile
-router.patch(
-    "/me/profile",
-    validateMiddleware(profileUpdateSchema),
-    userController.updateMyProfile
-);
+router.patch("/me/profile", accountActionLimiter, validateMiddleware(profileUpdateSchema), userController.updateMyProfile);
 
 // ================== MY RESUME ==================
 // GET /api/users/me/resume?mode=view|download
@@ -59,12 +56,7 @@ router.post(
     (req, res, next) => {
         // Profile resume uploads must not contain extra form fields.
         if (Object.keys(req.body || {}).length > 0) {
-            return next(
-                new ExpressError(
-                    400,
-                    "Submit only the resume file."
-                )
-            );
+            return next(new ExpressError(400, "Submit only the resume file."));
         }
 
         return next();
@@ -74,12 +66,7 @@ router.post(
 
 // ================== MY PROFILE IMAGE ==================
 // POST /api/users/me/avatar
-router.post(
-    "/me/avatar",
-    profileUploadLimiter,
-    uploadAvatar,
-    userController.uploadMyAvatar
-);
+router.post("/me/avatar", profileUploadLimiter, uploadAvatar, userController.uploadMyAvatar);
 
 // ================== EXPORT ==================
 module.exports = router;

@@ -11,9 +11,7 @@ async function authMiddleware(req, res, next) {
 
         // Reject requests without a valid cookie value.
         if (typeof token !== "string" || !token) {
-            return next(
-                new ExpressError(401, "Please login to continue.")
-            );
+            return next(new ExpressError(401, "Please login to continue."));
         }
 
         const secret = process.env.JWT_SECRET;
@@ -39,10 +37,7 @@ async function authMiddleware(req, res, next) {
                 error.name === "NotBeforeError"
             ) {
                 return next(
-                    new ExpressError(
-                        401,
-                        "Your session is invalid or expired. Please login again."
-                    )
+                    new ExpressError(401, "Your session is invalid or expired. Please login again.")
                 );
             }
 
@@ -59,12 +54,7 @@ async function authMiddleware(req, res, next) {
             decoded.tokenVersion < 0 ||
             !Number.isInteger(decoded.exp)
         ) {
-            return next(
-                new ExpressError(
-                    401,
-                    "Your session is invalid. Please login again."
-                )
-            );
+            return next(new ExpressError(401, "Your session is invalid. Please login again."));
         }
 
         // Use current database values for account permissions.
@@ -74,35 +64,19 @@ async function authMiddleware(req, res, next) {
 
         // Deleted accounts cannot continue using existing tokens.
         if (!user) {
-            return next(
-                new ExpressError(
-                    401,
-                    "Your session is invalid. Please login again."
-                )
-            );
+            return next(new ExpressError(401, "Your session is invalid. Please login again."));
         }
 
         // Reject access for inactive accounts.
         if (user.status !== "Active") {
-            return next(
-                new ExpressError(
-                    403,
-                    "Your account is inactive. Please contact support."
-                )
-            );
+            return next(new ExpressError(403, "Your account is inactive. Please contact support."));
         }
 
         // Reject tokens issued before a session revocation.
         if (user.tokenVersion !== decoded.tokenVersion) {
-            return next(
-                new ExpressError(
-                    401,
-                    "Your session has ended. Please login again."
-                )
-            );
+            return next(new ExpressError(401, "Your session has ended. Please login again."));
         }
 
-        
         // ================== INITIAL ADMIN PASSWORD ENFORCEMENT ==================
         // Block protected APIs until the initial password is changed.
         if (user.role === "admin" && user.mustChangePassword) {
@@ -111,25 +85,16 @@ async function authMiddleware(req, res, next) {
             // Allow only session checks, logout and password change.
             const allowedRequest =
                 (req.method === "GET" &&
-                    (
-                        requestPath === "/api/auth/me" ||
-                        requestPath === "/api/admin/me/profile"
-                    )) ||
-                (req.method === "POST" &&
-                    requestPath === "/api/auth/logout") ||
-                (req.method === "PATCH" &&
-                    requestPath === "/api/admin/me/password");
+                    (requestPath === "/api/auth/me" || requestPath === "/api/admin/me/profile")) ||
+                (req.method === "POST" && requestPath === "/api/auth/logout") ||
+                (req.method === "PATCH" && requestPath === "/api/admin/me/password");
 
             if (!allowedRequest) {
                 return next(
-                    new ExpressError(
-                        403,
-                        "Please change your initial password before continuing."
-                    )
+                    new ExpressError(403, "Please change your initial password before continuing.")
                 );
             }
         }
-
 
         // Pass trusted account details to later middleware/controllers.
         req.user = {

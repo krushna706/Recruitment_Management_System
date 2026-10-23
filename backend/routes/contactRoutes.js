@@ -1,4 +1,3 @@
-
 const express = require("express");
 const { rateLimit } = require("express-rate-limit");
 
@@ -30,36 +29,21 @@ const contactLimiter = rateLimit({
 // ================== PUBLIC CONTACT FORM ==================
 // POST /api/contact
 // Validate and save enquiries in MongoDB.
-router.post(
-    "/",
-    contactLimiter,
-    validateMiddleware(contactEnquirySchema),
-    contactController.submitEnquiry
-);
+router.post("/", contactLimiter, validateMiddleware(contactEnquirySchema), contactController.submitEnquiry);
 
 // ================== ADMIN ACCESS PROTECTION ==================
 // All admin enquiry routes require an active admin account.
-router.use(
-    "/admin",
-    authMiddleware,
-    roleMiddleware("admin")
-);
+router.use("/admin", authMiddleware, roleMiddleware("admin"));
 
 // ================== MANAGE ENQUIRIES ==================
 // GET /api/contact/admin
 // Supports search, date filters and pagination.
-router.get(
-    "/admin",
-    contactController.getAdminEnquiries
-);
+router.get("/admin", contactController.getAdminEnquiries);
 
 // ================== SINGLE ENQUIRY DETAILS ==================
 // GET /api/contact/admin/:id
 // Retrieve an enquiry using MongoDB ID or enquiry reference.
-router.get(
-    "/admin/:id",
-    contactController.getAdminEnquiry
-);
+router.get("/admin/:id", contactController.getAdminEnquiry);
 
 // ================== EXPORT ==================
 module.exports = router;

@@ -1,15 +1,9 @@
+import { formatFileSize, normalizeSkills, getErrorMessage as getApiError } from "../utils/dataFormat";
+import { openPrivateResume } from "../utils/fileAccess";
 
 import { useEffect, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import {
-    Alert,
-    Autocomplete,
-    Avatar,
-    Button,
-    CircularProgress,
-    MenuItem,
-    TextField,
-} from "@mui/material";
+import { Alert, Autocomplete, Avatar, Button, CircularProgress, MenuItem, TextField } from "@mui/material";
 import { toast } from "react-toastify";
 
 import api from "../services/api";
@@ -40,49 +34,109 @@ const experienceOptions = [
 
 const skillGroups = {
     "Frontend Development": [
-        "HTML", "CSS", "JavaScript", "TypeScript", "React.js",
-        "Next.js", "Vue.js", "Angular", "Redux", "React Router",
-        "Material UI", "Bootstrap", "Tailwind CSS", "Sass",
-        "Responsive Web Design", "Web Accessibility",
+        "HTML",
+        "CSS",
+        "JavaScript",
+        "TypeScript",
+        "React.js",
+        "Next.js",
+        "Vue.js",
+        "Angular",
+        "Redux",
+        "React Router",
+        "Material UI",
+        "Bootstrap",
+        "Tailwind CSS",
+        "Sass",
+        "Responsive Web Design",
+        "Web Accessibility",
     ],
     "Backend Development": [
-        "Node.js", "Express.js", "REST API Development", "GraphQL",
-        "Socket.IO", "Java", "Spring Boot", "Python", "Django",
-        "FastAPI", "PHP", "Laravel", "C#", "ASP.NET Core", "Go",
+        "Node.js",
+        "Express.js",
+        "REST API Development",
+        "GraphQL",
+        "Socket.IO",
+        "Java",
+        "Spring Boot",
+        "Python",
+        "Django",
+        "FastAPI",
+        "PHP",
+        "Laravel",
+        "C#",
+        "ASP.NET Core",
+        "Go",
     ],
     Databases: [
-        "MongoDB", "Mongoose", "MySQL", "PostgreSQL", "SQLite",
-        "Redis", "Firebase", "SQL", "Database Design",
+        "MongoDB",
+        "Mongoose",
+        "MySQL",
+        "PostgreSQL",
+        "SQLite",
+        "Redis",
+        "Firebase",
+        "SQL",
+        "Database Design",
     ],
     "Cloud & DevOps": [
-        "Git", "GitHub", "GitLab", "Docker", "Kubernetes", "AWS",
-        "Microsoft Azure", "Google Cloud", "Linux", "Nginx",
-        "CI/CD", "VPS Deployment",
+        "Git",
+        "GitHub",
+        "GitLab",
+        "Docker",
+        "Kubernetes",
+        "AWS",
+        "Microsoft Azure",
+        "Google Cloud",
+        "Linux",
+        "Nginx",
+        "CI/CD",
+        "VPS Deployment",
     ],
     "Testing & Tools": [
-        "Postman", "Jest", "Vitest", "React Testing Library",
-        "Cypress", "Playwright", "Selenium", "Manual Testing",
-        "API Testing", "Vite", "Webpack", "npm", "phpMyAdmin",
+        "Postman",
+        "Jest",
+        "Vitest",
+        "React Testing Library",
+        "Cypress",
+        "Playwright",
+        "Selenium",
+        "Manual Testing",
+        "API Testing",
+        "Vite",
+        "Webpack",
+        "npm",
+        "phpMyAdmin",
     ],
     "Design & Product": [
-        "Figma", "UI/UX Design", "Wireframing", "Prototyping",
-        "User Research", "Adobe Photoshop",
-        "Adobe Illustrator", "Product Management",
+        "Figma",
+        "UI/UX Design",
+        "Wireframing",
+        "Prototyping",
+        "User Research",
+        "Adobe Photoshop",
+        "Adobe Illustrator",
+        "Product Management",
     ],
     "Business & Communication": [
-        "Communication", "Problem Solving", "Team Leadership",
-        "Client Handling", "Project Coordination", "Recruitment",
-        "Customer Support", "Digital Marketing", "SEO",
-        "Content Writing", "Microsoft Excel",
+        "Communication",
+        "Problem Solving",
+        "Team Leadership",
+        "Client Handling",
+        "Project Coordination",
+        "Recruitment",
+        "Customer Support",
+        "Digital Marketing",
+        "SEO",
+        "Content Writing",
+        "Microsoft Excel",
     ],
 };
 
 const skillOptions = Object.values(skillGroups).flat();
 
 const skillCategory = Object.fromEntries(
-    Object.entries(skillGroups).flatMap(([group, skills]) =>
-        skills.map((skill) => [skill, group])
-    )
+    Object.entries(skillGroups).flatMap(([group, skills]) => skills.map((skill) => [skill, group]))
 );
 
 const MAX_AVATAR_SIZE = 3 * 1024 * 1024;
@@ -100,17 +154,6 @@ const PROFILE_FIELDS = [
 ];
 
 // ================== PROFILE HELPERS ==================
-function normalizeSkills(skills = []) {
-    return [
-        ...new Map(
-            skills
-                .filter((skill) => typeof skill === "string")
-                .map((skill) => skill.trim())
-                .filter(Boolean)
-                .map((skill) => [skill.toLowerCase(), skill])
-        ).values(),
-    ];
-}
 
 function createProfile(user = {}) {
     return {
@@ -120,24 +163,8 @@ function createProfile(user = {}) {
         address: user.address || "",
         qualification: user.qualification || "",
         experience: user.experience || "",
-        skills: normalizeSkills(
-            Array.isArray(user.skills) ? user.skills : []
-        ),
+        skills: normalizeSkills(Array.isArray(user.skills) ? user.skills : []),
     };
-}
-
-function formatFileSize(bytes) {
-    if (!Number.isFinite(bytes) || bytes <= 0) return "";
-
-    if (bytes >= 1024 * 1024) {
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    }
-
-    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}
-
-function getApiError(error, fallback) {
-    return error.response?.data?.message || fallback;
 }
 
 function validateResume(file) {
@@ -189,34 +216,13 @@ function useFileUrl(file) {
     return preview?.file === file ? preview.url : null;
 }
 
-// ================== AUTHORIZED RESUME URL ==================
-// Resume access stays behind the authenticated backend route.
-function getResumeUrl(resume) {
-    if (!resume) return null;
-
-    const mode =
-        resume.mimeType === "application/pdf"
-            ? "view"
-            : "download";
-
-    const baseURL = String(
-        api.defaults.baseURL || ""
-    ).replace(/\/+$/, "");
-
-    return `${baseURL}/users/me/resume?mode=${mode}`;
-}
-
 // ================== CHANGED PROFILE FIELDS ==================
 // Send only modified fields to the backend.
 function getChangedFields(values, original) {
     return Object.fromEntries(
-        PROFILE_FIELDS
-            .filter(
-                (field) =>
-                    JSON.stringify(values[field]) !==
-                    JSON.stringify(original[field])
-            )
-            .map((field) => [field, values[field]])
+        PROFILE_FIELDS.filter(
+            (field) => JSON.stringify(values[field]) !== JSON.stringify(original[field])
+        ).map((field) => [field, values[field]])
     );
 }
 
@@ -235,19 +241,30 @@ function ProfileForm({ user }) {
     const [feedback, setFeedback] = useState(null);
     const [errors, setErrors] = useState({});
 
-    const [savedProfile, setSavedProfile] = useState(() =>
-        createProfile(user)
-    );
+    const [savedProfile, setSavedProfile] = useState(() => createProfile(user));
 
-    const [values, setValues] = useState(() =>
-        createProfile(user)
-    );
+    const [values, setValues] = useState(() => createProfile(user));
 
     const [currentResume, setCurrentResume] = useState(null);
+    const [resumeBusy, setResumeBusy] = useState(false);
 
-    const [avatarUrl, setAvatarUrl] = useState(
-        user.avatarUrl || user.avatar?.url || ""
-    );
+    async function handleResume() {
+        if (!currentResume || resumeBusy) return;
+        setResumeBusy(true);
+        try {
+            await openPrivateResume({
+                endpoint: "/users/me/resume",
+                filename: currentResume.name,
+                mode: currentResume.mimeType === "application/pdf" ? "view" : "download",
+            });
+        } catch (error) {
+            toast.error(error.message || "Resume could not be opened.");
+        } finally {
+            setResumeBusy(false);
+        }
+    }
+
+    const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || user.avatar?.url || "");
 
     const [selectedAvatar, setSelectedAvatar] = useState(null);
     const [replacementFile, setReplacementFile] = useState(null);
@@ -258,18 +275,11 @@ function ProfileForm({ user }) {
     const avatarPreview = useFileUrl(selectedAvatar);
     const replacementUrl = useFileUrl(replacementFile);
 
-    const emailChanged =
-        values.email.trim().toLowerCase() !== savedProfile.email;
+    const emailChanged = values.email.trim().toLowerCase() !== savedProfile.email;
 
     const hasChanges =
-        Object.keys(
-            getChangedFields(values, savedProfile)
-        ).length > 0 ||
-        Boolean(
-            skillInput.trim() ||
-            replacementFile ||
-            selectedAvatar
-        );
+        Object.keys(getChangedFields(values, savedProfile)).length > 0 ||
+        Boolean(skillInput.trim() || replacementFile || selectedAvatar);
 
     const displayName = savedProfile.name || "Your account";
 
@@ -282,9 +292,7 @@ function ProfileForm({ user }) {
             setLoadError("");
 
             try {
-                const { data } = await api.get(
-                    "/users/me/profile"
-                );
+                const { data } = await api.get("/users/me/profile");
 
                 if (!active) return;
 
@@ -298,12 +306,7 @@ function ProfileForm({ user }) {
                 updateUserProfile(data.profile);
             } catch (error) {
                 if (active) {
-                    setLoadError(
-                        getApiError(
-                            error,
-                            "Unable to load your profile. Please retry."
-                        )
-                    );
+                    setLoadError(getApiError(error, "Unable to load your profile. Please retry."));
                 }
             } finally {
                 if (active) setLoading(false);
@@ -396,12 +399,8 @@ function ProfileForm({ user }) {
     function validateProfile(cleanedValues) {
         const nextErrors = {};
 
-        if (
-            cleanedValues.name.length < 2 ||
-            cleanedValues.name.length > 100
-        ) {
-            nextErrors.name =
-                "Enter your name using 2–100 characters.";
+        if (cleanedValues.name.length < 2 || cleanedValues.name.length > 100) {
+            nextErrors.name = "Enter your name using 2–100 characters.";
         }
 
         if (
@@ -413,52 +412,31 @@ function ProfileForm({ user }) {
 
         // Match the Signup form's 10-digit Indian mobile rule.
         if (!/^[6-9]\d{9}$/.test(cleanedValues.phone)) {
-            nextErrors.phone =
-                "Enter a valid 10-digit Indian mobile number.";
+            nextErrors.phone = "Enter a valid 10-digit Indian mobile number.";
         }
 
         if (cleanedValues.address.length > 500) {
-            nextErrors.address =
-                "Use no more than 500 characters.";
+            nextErrors.address = "Use no more than 500 characters.";
+        }
+
+        if (cleanedValues.qualification && !qualifications.includes(cleanedValues.qualification)) {
+            nextErrors.qualification = "Select a valid qualification.";
+        }
+
+        if (cleanedValues.experience && !experienceOptions.includes(cleanedValues.experience)) {
+            nextErrors.experience = "Select a valid experience option.";
         }
 
         if (
-            cleanedValues.qualification &&
-            !qualifications.includes(
-                cleanedValues.qualification
-            )
+            cleanedValues.skills.length > 15 ||
+            cleanedValues.skills.some((skill) => skill.length > 60)
         ) {
-            nextErrors.qualification =
-                "Select a valid qualification.";
-        }
-
-        if (
-            cleanedValues.experience &&
-            !experienceOptions.includes(
-                cleanedValues.experience
-            )
-        ) {
-            nextErrors.experience =
-                "Select a valid experience option.";
-        }
-
-        if (
-            cleanedValues.skills.length > 20 ||
-            cleanedValues.skills.some(
-                (skill) => skill.length > 60
-            )
-        ) {
-            nextErrors.skills =
-                "Add up to 20 skills, using no more than 60 characters each.";
+            nextErrors.skills = "Add up to 15 skills, using no more than 60 characters each.";
         }
 
         // Sensitive email changes require reauthentication.
-        if (
-            cleanedValues.email !== savedProfile.email &&
-            !currentPassword
-        ) {
-            nextErrors.currentPassword =
-                "Enter your current password to change email.";
+        if (cleanedValues.email !== savedProfile.email && !currentPassword) {
+            nextErrors.currentPassword = "Enter your current password to change email.";
         }
 
         if (selectedAvatar) {
@@ -466,16 +444,10 @@ function ProfileForm({ user }) {
         }
 
         if (replacementFile) {
-            nextErrors.resume = validateResume(
-                replacementFile
-            );
+            nextErrors.resume = validateResume(replacementFile);
         }
 
-        return Object.fromEntries(
-            Object.entries(nextErrors).filter(
-                ([, message]) => message
-            )
-        );
+        return Object.fromEntries(Object.entries(nextErrors).filter(([, message]) => message));
     }
 
     // ================== SAVE PROFILE + FILES ==================
@@ -492,10 +464,7 @@ function ProfileForm({ user }) {
             email: values.email.trim().toLowerCase(),
             phone: values.phone.trim(),
             address: values.address.trim(),
-            skills: normalizeSkills([
-                ...values.skills,
-                skillInput,
-            ]),
+            skills: normalizeSkills([...values.skills, skillInput]),
         };
 
         const nextErrors = validateProfile(cleanedValues);
@@ -512,8 +481,8 @@ function ProfileForm({ user }) {
                 formRef.current
                     ?.querySelector(
                         `[data-field="${firstError}"] input, ` +
-                        `[data-field="${firstError}"] button, ` +
-                        `[data-field="${firstError}"] [role="combobox"]`
+                            `[data-field="${firstError}"] button, ` +
+                            `[data-field="${firstError}"] [role="combobox"]`
                     )
                     ?.focus();
             });
@@ -526,24 +495,16 @@ function ProfileForm({ user }) {
 
         try {
             // ================== UPDATE PROFILE DETAILS ==================
-            const changes = getChangedFields(
-                cleanedValues,
-                savedProfile
-            );
+            const changes = getChangedFields(cleanedValues, savedProfile);
 
             if (Object.keys(changes).length > 0) {
                 if (changes.email !== undefined) {
                     changes.currentPassword = currentPassword;
                 }
 
-                const { data } = await api.patch(
-                    "/users/me/profile",
-                    changes
-                );
+                const { data } = await api.patch("/users/me/profile", changes);
 
-                const profile = createProfile(
-                    data.profile
-                );
+                const profile = createProfile(data.profile);
 
                 setSavedProfile(profile);
                 setValues(profile);
@@ -558,22 +519,13 @@ function ProfileForm({ user }) {
             if (replacementFile) {
                 const formData = new FormData();
 
-                formData.append(
-                    "resume",
-                    replacementFile
-                );
+                formData.append("resume", replacementFile);
 
-                const { data } = await api.post(
-                    "/users/me/resume",
-                    formData,
-                    {
-                        timeout: 60000,
-                    }
-                );
+                const { data } = await api.post("/users/me/resume", formData, {
+                    timeout: 60000,
+                });
 
-                setCurrentResume(
-                    data.profile.resume || null
-                );
+                setCurrentResume(data.profile.resume || null);
 
                 setReplacementFile(null);
                 updateUserProfile(data.profile);
@@ -586,22 +538,13 @@ function ProfileForm({ user }) {
             if (selectedAvatar) {
                 const formData = new FormData();
 
-                formData.append(
-                    "avatar",
-                    selectedAvatar
-                );
+                formData.append("avatar", selectedAvatar);
 
-                const { data } = await api.post(
-                    "/users/me/avatar",
-                    formData,
-                    {
-                        timeout: 60000,
-                    }
-                );
+                const { data } = await api.post("/users/me/avatar", formData, {
+                    timeout: 60000,
+                });
 
-                setAvatarUrl(
-                    data.profile.avatar?.url || ""
-                );
+                setAvatarUrl(data.profile.avatar?.url || "");
 
                 setSelectedAvatar(null);
 
@@ -612,15 +555,10 @@ function ProfileForm({ user }) {
             }
 
             if (completedSteps) {
-                toast.success(
-                    "Profile updated successfully."
-                );
+                toast.success("Profile updated successfully.");
             }
         } catch (error) {
-            const message = getApiError(
-                error,
-                "Unable to save your changes. Please try again."
-            );
+            const message = getApiError(error, "Unable to save your changes. Please try again.");
 
             setFeedback({
                 type: "error",
@@ -651,14 +589,7 @@ function ProfileForm({ user }) {
     // ================== LOADING STATE ==================
     if (loading) {
         return (
-            <div
-                className="profile-page"
-                role="status"
-                style={{
-                    padding: 32,
-                    textAlign: "center",
-                }}
-            >
+            <div className="profile-page panel-loading-state" role="status">
                 <CircularProgress size={28} />
 
                 <p>Loading your profile...</p>
@@ -670,14 +601,12 @@ function ProfileForm({ user }) {
     if (loadError) {
         return (
             <div className="profile-page">
-                <Alert severity="error">
-                    {loadError}
-                </Alert>
+                <Alert severity="error">{loadError}</Alert>
 
                 <Button
                     variant="outlined"
                     onClick={() => window.location.reload()}
-                    sx={{ mt: 2 }}
+                    className="panel-space-top"
                 >
                     Retry
                 </Button>
@@ -690,20 +619,13 @@ function ProfileForm({ user }) {
             {/* ================== PAGE HEADER ================== */}
             <header className="panel-page-heading">
                 <div>
-                    <h1 className="panel-page-title">
-                        My Profile
-                    </h1>
+                    <h1 className="panel-page-title">My Profile</h1>
 
-                    <p className="panel-page-description">
-                        Your details, skills and career story.
-                    </p>
+                    <p className="panel-page-description">Your details, skills and career story.</p>
                 </div>
 
                 {hasChanges && (
-                    <span
-                        className="profile-unsaved"
-                        role="status"
-                    >
+                    <span className="profile-unsaved" role="status">
                         <span aria-hidden="true" />
                         Unsaved changes
                     </span>
@@ -713,37 +635,20 @@ function ProfileForm({ user }) {
             <div className="profile-grid">
                 {/* ================== PROFILE SUMMARY ================== */}
                 <aside className="profile-sidebar">
-                    <section
-                        className="panel-card profile-summary"
-                        aria-labelledby="profile-name"
-                    >
-                        <div
-                            className="profile-summary-cover"
-                            aria-hidden="true"
-                        />
+                    <section className="panel-card profile-summary" aria-labelledby="profile-name">
+                        <div className="profile-summary-cover" aria-hidden="true" />
 
                         <div className="profile-summary-body">
                             <Avatar
-                                src={
-                                    avatarPreview ||
-                                    avatarUrl ||
-                                    DEFAULT_AVATAR
-                                }
+                                src={avatarPreview || avatarUrl || DEFAULT_AVATAR}
                                 alt={displayName}
                                 className="profile-avatar"
                             >
-                                {displayName
-                                    .charAt(0)
-                                    .toUpperCase()}
+                                {displayName.charAt(0).toUpperCase()}
                             </Avatar>
 
                             {/* ================== PROFILE PHOTO CONTROL ================== */}
-                            <div
-                                data-field="avatar"
-                                style={{
-                                    marginBottom: 12,
-                                }}
-                            >
+                            <div data-field="avatar" className="profile-upload-control">
                                 <input
                                     ref={avatarInputRef}
                                     type="file"
@@ -758,29 +663,17 @@ function ProfileForm({ user }) {
                                     size="small"
                                     className="profile-text-button"
                                     disabled={saving}
-                                    onClick={() =>
-                                        avatarInputRef.current?.click()
-                                    }
+                                    onClick={() => avatarInputRef.current?.click()}
                                     startIcon={
-                                        <i
-                                            className="fa-solid fa-camera"
-                                            aria-hidden="true"
-                                        />
+                                        <i className="fa-solid fa-camera" aria-hidden="true" />
                                     }
                                 >
-                                    {avatarUrl
-                                        ? "Change photo"
-                                        : "Upload photo"}
+                                    {avatarUrl ? "Change photo" : "Upload photo"}
                                 </Button>
 
                                 {selectedAvatar && (
                                     <div>
-                                        <p
-                                            style={{
-                                                fontSize: 12,
-                                                margin: "4px 0",
-                                            }}
-                                        >
+                                        <p className="profile-upload-note">
                                             {selectedAvatar.name}
                                             {" · "}
                                             Save Changes to upload
@@ -801,46 +694,23 @@ function ProfileForm({ user }) {
                                     </div>
                                 )}
 
-                                <p
-                                    style={{
-                                        fontSize: 11,
-                                        margin: "4px 0",
-                                        color: "#718096",
-                                    }}
-                                >
-                                    JPG, PNG or WebP · Max 3 MB
-                                </p>
+                                <p className="profile-upload-hint">JPG, PNG or WebP · Max 3 MB</p>
 
                                 {errors.avatar && (
-                                    <p
-                                        className="profile-error"
-                                        role="alert"
-                                    >
+                                    <p className="profile-error" role="alert">
                                         {errors.avatar}
                                     </p>
                                 )}
                             </div>
 
-                            <h2 id="profile-name">
-                                {displayName}
-                            </h2>
+                            <h2 id="profile-name">{displayName}</h2>
 
-                            <span className="profile-role">
-                                User
-                            </span>
+                            <span className="profile-role">User</span>
 
                             <dl className="profile-summary-details">
                                 {[
-                                    [
-                                        "Email address",
-                                        savedProfile.email,
-                                        "fa-regular fa-envelope",
-                                    ],
-                                    [
-                                        "Phone number",
-                                        savedProfile.phone,
-                                        "fa-solid fa-phone",
-                                    ],
+                                    ["Email address", savedProfile.email, "fa-regular fa-envelope"],
+                                    ["Phone number", savedProfile.phone, "fa-solid fa-phone"],
                                     [
                                         "Qualification",
                                         savedProfile.qualification,
@@ -854,16 +724,11 @@ function ProfileForm({ user }) {
                                 ].map(([label, value, icon]) => (
                                     <div key={label}>
                                         <dt>
-                                            <i
-                                                className={icon}
-                                                aria-hidden="true"
-                                            />
+                                            <i className={icon} aria-hidden="true" />
                                             {label}
                                         </dt>
 
-                                        <dd>
-                                            {value || "Not provided"}
-                                        </dd>
+                                        <dd>{value || "Not provided"}</dd>
                                     </div>
                                 ))}
                             </dl>
@@ -871,44 +736,26 @@ function ProfileForm({ user }) {
                     </section>
 
                     <div className="profile-note">
-                        <i
-                            className="fa-regular fa-lightbulb"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-regular fa-lightbulb" aria-hidden="true" />
 
                         <div>
-                            <h3>
-                                Keep your next step in focus.
-                            </h3>
+                            <h3>Keep your next step in focus.</h3>
 
                             <p>
-                                Highlight relevant skills and maintain
-                                an up-to-date resume. Existing
-                                applications retain their original
-                                submitted details.
+                                Highlight relevant skills and maintain an up-to-date resume.
+                                Existing applications retain their original submitted details.
                             </p>
                         </div>
                     </div>
                 </aside>
 
                 {/* ================== PROFILE FORM ================== */}
-                <form
-                    ref={formRef}
-                    className="profile-form"
-                    onSubmit={handleSubmit}
-                    noValidate
-                >
+                <form ref={formRef} className="profile-form" onSubmit={handleSubmit} noValidate>
                     {/* ================== PERSONAL INFORMATION ================== */}
-                    <section
-                        className="panel-card"
-                        aria-labelledby="profile-personal-title"
-                    >
+                    <section className="panel-card" aria-labelledby="profile-personal-title">
                         <header className="panel-card-header">
                             <div>
-                                <h2
-                                    id="profile-personal-title"
-                                    className="panel-card-title"
-                                >
+                                <h2 id="profile-personal-title" className="panel-card-title">
                                     Personal information
                                 </h2>
 
@@ -917,10 +764,7 @@ function ProfileForm({ user }) {
                                 </p>
                             </div>
 
-                            <span
-                                className="profile-section-icon"
-                                aria-hidden="true"
-                            >
+                            <span className="profile-section-icon" aria-hidden="true">
                                 <i className="fa-regular fa-user" />
                             </span>
                         </header>
@@ -974,20 +818,12 @@ function ProfileForm({ user }) {
                                         type="password"
                                         value={currentPassword}
                                         onChange={(event) => {
-                                            setCurrentPassword(
-                                                event.target.value
-                                            );
+                                            setCurrentPassword(event.target.value);
 
-                                            clearFeedback(
-                                                "currentPassword"
-                                            );
+                                            clearFeedback("currentPassword");
                                         }}
-                                        error={Boolean(
-                                            errors.currentPassword
-                                        )}
-                                        helperText={
-                                            errors.currentPassword
-                                        }
+                                        error={Boolean(errors.currentPassword)}
+                                        helperText={errors.currentPassword}
                                         required
                                         fullWidth
                                         size="small"
@@ -1017,29 +853,19 @@ function ProfileForm({ user }) {
                     </section>
 
                     {/* ================== PROFESSIONAL BACKGROUND ================== */}
-                    <section
-                        className="panel-card"
-                        aria-labelledby="profile-professional-title"
-                    >
+                    <section className="panel-card" aria-labelledby="profile-professional-title">
                         <header className="panel-card-header">
                             <div>
-                                <h2
-                                    id="profile-professional-title"
-                                    className="panel-card-title"
-                                >
+                                <h2 id="profile-professional-title" className="panel-card-title">
                                     Professional background
                                 </h2>
 
                                 <p className="panel-card-description">
-                                    Education, experience and the skills
-                                    you bring.
+                                    Education, experience and the skills you bring.
                                 </p>
                             </div>
 
-                            <span
-                                className="profile-section-icon"
-                                aria-hidden="true"
-                            >
+                            <span className="profile-section-icon" aria-hidden="true">
                                 <i className="fa-solid fa-briefcase" />
                             </span>
                         </header>
@@ -1051,15 +877,10 @@ function ProfileForm({ user }) {
                                     label="Highest qualification"
                                     select
                                 >
-                                    <MenuItem value="">
-                                        Not specified
-                                    </MenuItem>
+                                    <MenuItem value="">Not specified</MenuItem>
 
                                     {qualifications.map((item) => (
-                                        <MenuItem
-                                            key={item}
-                                            value={item}
-                                        >
+                                        <MenuItem key={item} value={item}>
                                             {item}
                                         </MenuItem>
                                     ))}
@@ -1070,15 +891,10 @@ function ProfileForm({ user }) {
                                     label="Total experience"
                                     select
                                 >
-                                    <MenuItem value="">
-                                        Not specified
-                                    </MenuItem>
+                                    <MenuItem value="">Not specified</MenuItem>
 
                                     {experienceOptions.map((item) => (
-                                        <MenuItem
-                                            key={item}
-                                            value={item}
-                                        >
+                                        <MenuItem key={item} value={item}>
                                             {item}
                                         </MenuItem>
                                     ))}
@@ -1090,10 +906,7 @@ function ProfileForm({ user }) {
                                     filterSelectedOptions
                                     size="small"
                                     options={skillOptions}
-                                    groupBy={(option) =>
-                                        skillCategory[option] ||
-                                        "Other"
-                                    }
+                                    groupBy={(option) => skillCategory[option] || "Other"}
                                     value={values.skills}
                                     inputValue={skillInput}
                                     disabled={saving}
@@ -1101,8 +914,7 @@ function ProfileForm({ user }) {
                                     data-field="skills"
                                     slotProps={{
                                         paper: {
-                                            className:
-                                                "profile-skills-menu",
+                                            className: "profile-skills-menu",
                                         },
                                     }}
                                     onInputChange={(_, input) => {
@@ -1112,9 +924,7 @@ function ProfileForm({ user }) {
                                     onChange={(_, skills) => {
                                         setValues((previous) => ({
                                             ...previous,
-                                            skills: normalizeSkills(
-                                                skills
-                                            ),
+                                            skills: normalizeSkills(skills),
                                         }));
 
                                         clearFeedback("skills");
@@ -1124,12 +934,10 @@ function ProfileForm({ user }) {
                                             {...params}
                                             label="Relevant skills"
                                             className="panel-field"
-                                            error={Boolean(
-                                                errors.skills
-                                            )}
+                                            error={Boolean(errors.skills)}
                                             helperText={
                                                 errors.skills ||
-                                                "Choose up to 20 skills, or type a custom skill and press Enter."
+                                                "Choose up to 15 skills, or type a custom skill and press Enter."
                                             }
                                         />
                                     )}
@@ -1146,23 +954,16 @@ function ProfileForm({ user }) {
                     >
                         <header className="panel-card-header">
                             <div>
-                                <h2
-                                    id="profile-resume-title"
-                                    className="panel-card-title"
-                                >
+                                <h2 id="profile-resume-title" className="panel-card-title">
                                     My resume
                                 </h2>
 
                                 <p className="panel-card-description">
-                                    Review your current resume or
-                                    choose a replacement.
+                                    Review your current resume or choose a replacement.
                                 </p>
                             </div>
 
-                            <span
-                                className="profile-section-icon"
-                                aria-hidden="true"
-                            >
+                            <span className="profile-section-icon" aria-hidden="true">
                                 <i className="fa-regular fa-file-lines" />
                             </span>
                         </header>
@@ -1171,50 +972,34 @@ function ProfileForm({ user }) {
                             {currentResume && (
                                 <div className="profile-current-resume">
                                     <div className="profile-resume-topline">
-                                        <span>
-                                            Current resume
-                                        </span>
+                                        <span>Current resume</span>
 
-                                        <span className="profile-resume-badge">
-                                            On profile
-                                        </span>
+                                        <span className="profile-resume-badge">On profile</span>
                                     </div>
 
                                     <div className="profile-resume-file">
-                                        <span
-                                            className="profile-file-icon"
-                                            aria-hidden="true"
-                                        >
+                                        <span className="profile-file-icon" aria-hidden="true">
                                             <i className="fa-regular fa-file-lines" />
                                         </span>
 
                                         <div className="profile-file-copy">
-                                            <h3>
-                                                {currentResume.name ||
-                                                    "Resume"}
-                                            </h3>
+                                            <h3>{currentResume.name || "Resume"}</h3>
 
                                             <p>
-                                                {formatFileSize(
-                                                    currentResume.size
-                                                )}
+                                                {formatFileSize(currentResume.size)}
                                                 {" · "}
                                                 Ready to open
                                             </p>
                                         </div>
 
                                         <Button
-                                            component="a"
-                                            href={getResumeUrl(
-                                                currentResume
-                                            )}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                            type="button"
+                                            disabled={resumeBusy}
+                                            onClick={handleResume}
                                             variant="outlined"
                                             className="panel-button panel-button-outline"
                                         >
-                                            {currentResume.mimeType ===
-                                            "application/pdf"
+                                            {currentResume.mimeType === "application/pdf"
                                                 ? "Open resume"
                                                 : "Download resume"}
                                         </Button>
@@ -1222,15 +1007,8 @@ function ProfileForm({ user }) {
                                 </div>
                             )}
 
-                            <div
-                                className={`profile-upload ${
-                                    errors.resume ? "is-error" : ""
-                                }`}
-                            >
-                                <span
-                                    className="profile-upload-icon"
-                                    aria-hidden="true"
-                                >
+                            <div className={`profile-upload ${errors.resume ? "is-error" : ""}`}>
+                                <span className="profile-upload-icon" aria-hidden="true">
                                     <i className="fa-solid fa-arrow-up-from-bracket" />
                                 </span>
 
@@ -1241,9 +1019,7 @@ function ProfileForm({ user }) {
                                             : "Upload your resume"}
                                     </h3>
 
-                                    <p id="profile-resume-help">
-                                        PDF, DOC or DOCX · Maximum 5 MB
-                                    </p>
+                                    <p id="profile-resume-help">PDF, DOC or DOCX · Maximum 5 MB</p>
                                 </div>
 
                                 <input
@@ -1259,28 +1035,20 @@ function ProfileForm({ user }) {
                                     variant="outlined"
                                     disabled={saving}
                                     className="panel-button panel-button-outline"
-                                    onClick={() =>
-                                        resumeInputRef.current?.click()
-                                    }
+                                    onClick={() => resumeInputRef.current?.click()}
                                 >
                                     Choose file
                                 </Button>
                             </div>
 
                             {errors.resume && (
-                                <p
-                                    className="profile-error"
-                                    role="alert"
-                                >
+                                <p className="profile-error" role="alert">
                                     {errors.resume}
                                 </p>
                             )}
 
                             {replacementFile && (
-                                <div
-                                    className="profile-replacement"
-                                    role="status"
-                                >
+                                <div className="profile-replacement" role="status">
                                     <div className="profile-file-copy">
                                         <span className="profile-replacement-label">
                                             {currentResume
@@ -1288,14 +1056,10 @@ function ProfileForm({ user }) {
                                                 : "Selected resume"}
                                         </span>
 
-                                        <h3>
-                                            {replacementFile.name}
-                                        </h3>
+                                        <h3>{replacementFile.name}</h3>
 
                                         <p>
-                                            {formatFileSize(
-                                                replacementFile.size
-                                            )}
+                                            {formatFileSize(replacementFile.size)}
                                             {" · "}
                                             Save Changes to upload
                                         </p>
@@ -1333,20 +1097,14 @@ function ProfileForm({ user }) {
 
                     {/* ================== FORM FEEDBACK ================== */}
                     {feedback && (
-                        <Alert
-                            severity={feedback.type}
-                            role="alert"
-                            className="profile-feedback"
-                        >
+                        <Alert severity={feedback.type} role="alert" className="profile-feedback">
                             {feedback.message}
                         </Alert>
                     )}
 
                     {/* ================== SAVE ACTIONS ================== */}
                     <div className="profile-save-bar">
-                        <p>
-                            Review your information before saving changes.
-                        </p>
+                        <p>Review your information before saving changes.</p>
 
                         <div className="profile-save-actions">
                             <Button
@@ -1366,10 +1124,7 @@ function ProfileForm({ user }) {
                                 className="panel-button panel-button-primary"
                                 startIcon={
                                     saving ? (
-                                        <CircularProgress
-                                            size={16}
-                                            color="inherit"
-                                        />
+                                        <CircularProgress size={16} color="inherit" />
                                     ) : (
                                         <i
                                             className="fa-regular fa-floppy-disk"
@@ -1378,9 +1133,7 @@ function ProfileForm({ user }) {
                                     )
                                 }
                             >
-                                {saving
-                                    ? "Saving..."
-                                    : "Save Changes"}
+                                {saving ? "Saving..." : "Save Changes"}
                             </Button>
                         </div>
                     </div>
@@ -1395,23 +1148,13 @@ function Profile({ user: propUser }) {
     const { user: authUser } = useAuth();
     const outletContext = useOutletContext();
 
-    const currentUser =
-        authUser ?? propUser ?? outletContext?.user;
+    const currentUser = authUser ?? propUser ?? outletContext?.user;
 
     if (!currentUser?._id) {
-        return (
-            <Alert severity="error">
-                Please sign in to view your profile.
-            </Alert>
-        );
+        return <Alert severity="error">Please sign in to view your profile.</Alert>;
     }
 
-    return (
-        <ProfileForm
-            key={currentUser._id}
-            user={currentUser}
-        />
-    );
+    return <ProfileForm key={currentUser._id} user={currentUser} />;
 }
 
 export default Profile;

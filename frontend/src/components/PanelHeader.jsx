@@ -1,40 +1,16 @@
+import { getInitials } from "../utils/dataFormat";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-    Avatar,
-    Button,
-    Divider,
-    IconButton,
-    Menu,
-    MenuItem,
-} from "@mui/material";
+import { Avatar, Button, Divider, IconButton, Menu, MenuItem } from "@mui/material";
 
-function getInitials(name) {
-    return name
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((part) => part.charAt(0))
-        .join("")
-        .toUpperCase();
-}
-
-function PanelHeader({
-    user,
-    isSidebarOpen,
-    onToggleSidebar,
-    onLogout,
-    isLoggingOut,
-}) {
+function PanelHeader({ user, isSidebarOpen, onToggleSidebar, onLogout, isLoggingOut }) {
     const [profileAnchor, setProfileAnchor] = useState(null);
 
     const profileOpen = Boolean(profileAnchor);
 
     const displayName = user?.name?.trim() || "Your Name";
     const roleLabel = user?.roleLabel || "User";
-    const initials = user?.name?.trim()
-        ? getInitials(user.name)
-        : "U";
+    const initials = user?.name?.trim() ? getInitials(user.name) : "U";
 
     const closeProfile = () => {
         setProfileAnchor(null);
@@ -48,11 +24,7 @@ function PanelHeader({
     return (
         <header className="panel-header">
             <div className="panel-header-left">
-                <Link
-                    to="/manage/dashboard"
-                    className="panel-brand"
-                    aria-label="Go to dashboard"
-                >
+                <Link to="/manage/dashboard" className="panel-brand" aria-label="Go to dashboard">
                     <img
                         src="/images/company_logo.svg"
                         alt="Company logo"
@@ -65,39 +37,28 @@ function PanelHeader({
                     type="button"
                     className="panel-menu-toggle"
                     onClick={onToggleSidebar}
-                    aria-label={
-                        isSidebarOpen
-                            ? "Close navigation"
-                            : "Open navigation"
-                    }
+                    aria-label={isSidebarOpen ? "Close navigation" : "Open navigation"}
                     aria-expanded={isSidebarOpen}
                     aria-controls="panel-sidebar"
                 >
-                    <i
-                        className="fa-solid fa-bars-staggered"
-                        aria-hidden="true"
-                    />
+                    <i className="fa-solid fa-bars-staggered" aria-hidden="true" />
                 </IconButton>
             </div>
 
             <div className="panel-header-right">
                 <Button
                     id="panel-profile-button"
-                    className={`panel-profile-button ${
-                        profileOpen ? "is-open" : ""
-                    }`}
+                    className={`panel-profile-button ${profileOpen ? "is-open" : ""}`}
                     onClick={(event) => {
                         setProfileAnchor(event.currentTarget);
                     }}
-                    aria-controls={
-                        profileOpen ? "panel-profile-menu" : undefined
-                    }
+                    aria-controls={profileOpen ? "panel-profile-menu" : undefined}
                     aria-haspopup="menu"
                     aria-expanded={profileOpen ? "true" : undefined}
                     aria-label={`Open account menu for ${displayName}`}
                     disableRipple
                 >
-                   <Avatar
+                    <Avatar
                         src={user?.avatarUrl || "/images/default-avatar.svg"}
                         alt={displayName}
                         className="panel-avatar"
@@ -138,10 +99,7 @@ function PanelHeader({
                         },
                     }}
                 >
-                    <li
-                        className="panel-profile-menu-summary"
-                        role="none"
-                    >
+                    <li className="panel-profile-menu-summary" role="none">
                         <Avatar
                             src={user?.avatarUrl || "/images/default-avatar.svg"}
                             alt={displayName}
@@ -158,15 +116,8 @@ function PanelHeader({
 
                     <Divider />
 
-                    <MenuItem
-                        component={Link}
-                        to="/manage/profile"
-                        onClick={closeProfile}
-                    >
-                        <span
-                            className="panel-dropdown-icon"
-                            aria-hidden="true"
-                        >
+                    <MenuItem component={Link} to="/manage/profile" onClick={closeProfile}>
+                        <span className="panel-dropdown-icon" aria-hidden="true">
                             <i className="fa-regular fa-user" />
                         </span>
 
@@ -183,16 +134,11 @@ function PanelHeader({
                         onClick={handleLogout}
                         disabled={isLoggingOut}
                     >
-                        <span
-                            className="panel-dropdown-icon"
-                            aria-hidden="true"
-                        >
+                        <span className="panel-dropdown-icon" aria-hidden="true">
                             <i className="fa-solid fa-arrow-right-from-bracket" />
                         </span>
 
-                        <span>
-                            {isLoggingOut ? "Logging out…" : "Logout"}
-                        </span>
+                        <span>{isLoggingOut ? "Logging out…" : "Logout"}</span>
                     </MenuItem>
                 </Menu>
             </div>

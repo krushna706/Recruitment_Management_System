@@ -1,3 +1,4 @@
+import { formatDate, formatFileSize } from "../utils/dataFormat";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Alert, Button, Chip, Step, StepContent, StepLabel, Stepper } from "@mui/material";
@@ -13,43 +14,6 @@ const STATUS_CLASSES = {
     Selected: "selected",
     Rejected: "rejected",
 };
-
-// ================== DATE FORMAT ==================
-function formatDate(value, includeTime = false) {
-    if (!value) return "—";
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) return "—";
-
-    return date.toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        timeZone: "Asia/Kolkata",
-        ...(includeTime
-            ? {
-                  hour: "2-digit",
-                  minute: "2-digit",
-              }
-            : {}),
-    });
-}
-
-// ================== FILE SIZE ==================
-function formatFileSize(value) {
-    const bytes = Number(value);
-
-    if (!Number.isFinite(bytes) || bytes <= 0) {
-        return "Size unavailable";
-    }
-
-    if (bytes < 1024 * 1024) {
-        return `${Math.ceil(bytes / 1024)} KB`;
-    }
-
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
 
 // ================== APPLICATION PAGE ==================
 function ApplicationStatus() {
@@ -81,10 +45,9 @@ function ApplicationDetails({ id }) {
             }
 
             try {
-                const { data } = await api.get(
-                    `/applications/my/${encodeURIComponent(id)}`,
-                    { signal: controller.signal }
-                );
+                const { data } = await api.get(`/applications/my/${encodeURIComponent(id)}`, {
+                    signal: controller.signal,
+                });
 
                 if (controller.signal.aborted) return;
 
@@ -195,18 +158,11 @@ function ApplicationDetails({ id }) {
           ? "View job"
           : "Browse Jobs";
 
-    const history = (
-        Array.isArray(application.history)
-            ? [...application.history]
-            : []
-    ).sort(
-        (first, second) =>
-            new Date(first.createdAt) - new Date(second.createdAt)
+    const history = (Array.isArray(application.history) ? [...application.history] : []).sort(
+        (first, second) => new Date(first.createdAt) - new Date(second.createdAt)
     );
 
-    const skills = Array.isArray(applicant.skills)
-        ? applicant.skills
-        : [];
+    const skills = Array.isArray(applicant.skills) ? applicant.skills : [];
 
     const latestIndex = history.length - 1;
     const latestEvent = history[latestIndex];
@@ -249,10 +205,7 @@ function ApplicationDetails({ id }) {
             </header>
 
             {/* ================== OPENING OVERVIEW ================== */}
-            <section
-                className="application-overview"
-                aria-labelledby="application-job-heading"
-            >
+            <section className="application-overview" aria-labelledby="application-job-heading">
                 <div className="application-overview-top">
                     <div className="application-job-heading">
                         <span className="application-overview-icon" aria-hidden="true">
@@ -267,9 +220,7 @@ function ApplicationDetails({ id }) {
                             </h2>
 
                             {opening.company && (
-                                <p className="application-company">
-                                    {opening.company}
-                                </p>
+                                <p className="application-company">{opening.company}</p>
                             )}
                         </div>
                     </div>
@@ -324,10 +275,7 @@ function ApplicationDetails({ id }) {
                     {opening.salary && (
                         <div>
                             <dt>
-                                <i
-                                    className="fa-solid fa-indian-rupee-sign"
-                                    aria-hidden="true"
-                                />
+                                <i className="fa-solid fa-indian-rupee-sign" aria-hidden="true" />
                                 Salary
                             </dt>
                             <dd>{opening.salary}</dd>
@@ -378,9 +326,7 @@ function ApplicationDetails({ id }) {
                                     </div>
                                 </dl>
 
-                                {application.interview.note && (
-                                    <p>{application.interview.note}</p>
-                                )}
+                                {application.interview.note && <p>{application.interview.note}</p>}
                             </div>
                         </section>
                     )}
@@ -400,17 +346,14 @@ function ApplicationDetails({ id }) {
                         <Alert severity="info" className="application-feedback">
                             <strong>Application update</strong>
                             <p>
-                                This application is no longer moving forward.
-                                You can continue exploring other opportunities.
+                                This application is no longer moving forward. You can continue
+                                exploring other opportunities.
                             </p>
                         </Alert>
                     )}
 
                     {/* ================== SUBMITTED DETAILS ================== */}
-                    <section
-                        className="panel-card"
-                        aria-labelledby="applicant-details-title"
-                    >
+                    <section className="panel-card" aria-labelledby="applicant-details-title">
                         <header className="panel-card-header">
                             <div>
                                 <h2 id="applicant-details-title" className="panel-card-title">
@@ -502,9 +445,7 @@ function ApplicationDetails({ id }) {
                                                 : "No document information is available."}
                                         </p>
 
-                                        {resume?.size > 0 && (
-                                            <p>{formatFileSize(resume.size)}</p>
-                                        )}
+                                        {resume?.size > 0 && <p>{formatFileSize(resume.size)}</p>}
                                     </div>
                                 </div>
                             </section>
@@ -548,8 +489,7 @@ function ApplicationDetails({ id }) {
                                         key={`${event.status}-${event.createdAt}-${index}`}
                                         expanded
                                         completed={
-                                            index < latestIndex &&
-                                            event.status !== "Rejected"
+                                            index < latestIndex && event.status !== "Rejected"
                                         }
                                     >
                                         <StepLabel error={event.status === "Rejected"}>
@@ -564,7 +504,7 @@ function ApplicationDetails({ id }) {
 
                                         <StepContent>
                                             <time dateTime={event.createdAt}>
-                                                {formatDate(event.createdAt, true)} IST
+                                                {formatDate(event.createdAt, true)}
                                             </time>
 
                                             {event.message && <p>{event.message}</p>}

@@ -55,10 +55,7 @@ function getSignupErrorMessage(error) {
         return "Unable to confirm account creation. Check your connection and try signing in before submitting again.";
     }
 
-    return (
-        error.response.data?.message ||
-        "Unable to create your account. Please try again."
-    );
+    return error.response.data?.message || "Unable to create your account. Please try again.";
 }
 
 // ================== SIGNUP PAGE ==================
@@ -101,19 +98,13 @@ function Signup() {
             return;
         }
 
-        if (
-            !email ||
-            email.length > 254 ||
-            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-        ) {
+        if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             toast.error("Enter a valid email address.");
             return;
         }
 
         if (!/^[6-9]\d{9}$/.test(phone)) {
-            toast.error(
-                "Enter a valid 10-digit Indian mobile number without +91."
-            );
+            toast.error("Enter a valid 10-digit Indian mobile number without +91.");
             return;
         }
 
@@ -183,21 +174,16 @@ function Signup() {
                         />
 
                         <div className="auth-introduction-content">
-                            <p className="website-section-label">
-                                PEOPLE. PURPOSE. POSSIBILITIES.
-                            </p>
+                            <p className="website-section-label">PEOPLE. PURPOSE. POSSIBILITIES.</p>
 
-                            <h2
-                                id="signup-introduction-title"
-                                className="website-section-title"
-                            >
+                            <h2 id="signup-introduction-title" className="website-section-title">
                                 Your next opportunity.
                                 <span> Your next chapter.</span>
                             </h2>
 
                             <p className="website-section-description">
-                                Discover opportunities, share your potential
-                                and take the next step in your career.
+                                Discover opportunities, share your potential and take the next step
+                                in your career.
                             </p>
 
                             <ul className="auth-features">
@@ -225,10 +211,7 @@ function Signup() {
                     </aside>
 
                     {/* Signup form */}
-                    <section
-                        className="auth-form-panel"
-                        aria-labelledby="signup-title"
-                    >
+                    <section className="auth-form-panel" aria-labelledby="signup-title">
                         <div className="auth-form-content">
                             <header className="auth-form-header">
                                 <Link
@@ -250,8 +233,7 @@ function Signup() {
                                 </h1>
 
                                 <p className="website-section-description">
-                                    Join us to apply for roles and
-                                    follow your progress.
+                                    Join us to apply for roles and follow your progress.
                                 </p>
                             </header>
 
@@ -315,8 +297,7 @@ function Signup() {
                                             inputMode: "numeric",
                                             maxLength: 10,
                                             pattern: "[6-9][0-9]{9}",
-                                            title:
-                                                "Enter a valid 10-digit Indian mobile number.",
+                                            title: "Enter a valid 10-digit Indian mobile number.",
                                         },
                                     }}
                                 />
@@ -352,9 +333,7 @@ function Signup() {
                                                         aria-pressed={showPassword}
                                                         aria-controls="signup-password"
                                                         onClick={() =>
-                                                            setShowPassword(
-                                                                (current) => !current
-                                                            )
+                                                            setShowPassword((current) => !current)
                                                         }
                                                         onMouseDown={(event) =>
                                                             event.preventDefault()
@@ -401,10 +380,7 @@ function Signup() {
                                           ? "Creating account..."
                                           : "Create Account"}
 
-                                    <i
-                                        className="fa-solid fa-arrow-right"
-                                        aria-hidden="true"
-                                    />
+                                    <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                                 </Button>
                             </form>
 

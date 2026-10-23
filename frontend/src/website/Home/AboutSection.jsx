@@ -20,10 +20,7 @@ const features = [
 
 export default function AboutSection() {
     return (
-        <section
-            className="website-section rms-about"
-            aria-labelledby="rms-about-title"
-        >
+        <section className="website-section rms-about" aria-labelledby="rms-about-title">
             <div className="website-shell rms-about-grid">
                 <div className="rms-about-visual">
                     <div className="rms-about-image-box">
@@ -39,10 +36,7 @@ export default function AboutSection() {
 
                     <div className="rms-about-caption">
                         <span className="rms-about-caption-icon">
-                            <i
-                                className="fa-solid fa-users"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-solid fa-users" aria-hidden="true" />
                         </span>
 
                         <div>
@@ -55,37 +49,26 @@ export default function AboutSection() {
                 <div className="rms-about-content">
                     <p className="website-section-label">WHO WE ARE</p>
 
-                    <h2
-                        id="rms-about-title"
-                        className="website-section-title"
-                    >
+                    <h2 id="rms-about-title" className="website-section-title">
                         Connecting talent.
                         <span> Creating possibilities.</span>
                     </h2>
 
                     <p className="rms-about-intro">
-                        The right opportunity can change the direction of a
-                        career. We help candidates explore their options and
-                        take their next step with confidence.
+                        The right opportunity can change the direction of a career. We help
+                        candidates explore their options and take their next step with confidence.
                     </p>
 
                     <p className="website-section-description">
-                        Clear job information, a straightforward application
-                        process and a focus on people make the journey towards
-                        your next role simpler.
+                        Clear job information, a straightforward application process and a focus on
+                        people make the journey towards your next role simpler.
                     </p>
 
                     <ul className="rms-about-features">
                         {features.map((feature) => (
-                            <li
-                                key={feature.title}
-                                className="rms-about-feature"
-                            >
+                            <li key={feature.title} className="rms-about-feature">
                                 <span className="rms-about-feature-icon">
-                                    <i
-                                        className={`fa-solid ${feature.icon}`}
-                                        aria-hidden="true"
-                                    />
+                                    <i className={`fa-solid ${feature.icon}`} aria-hidden="true" />
                                 </span>
 
                                 <div>
@@ -96,15 +79,9 @@ export default function AboutSection() {
                         ))}
                     </ul>
 
-                    <Link
-                        to="/about"
-                        className="website-button website-button-primary"
-                    >
+                    <Link to="/about" className="website-button website-button-primary">
                         More About Us
-                        <i
-                            className="fa-solid fa-arrow-right"
-                            aria-hidden="true"
-                        />
+                        <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                     </Link>
                 </div>
             </div>

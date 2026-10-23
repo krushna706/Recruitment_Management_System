@@ -137,14 +137,7 @@ const jobSnapshotSchema = new Schema(
 
         type: {
             type: String,
-            enum: [
-                "",
-                "Full Time",
-                "Part Time",
-                "Contract",
-                "Internship",
-                "Freelance",
-            ],
+            enum: ["", "Full Time", "Part Time", "Contract", "Internship", "Freelance"],
             default: "",
         },
 

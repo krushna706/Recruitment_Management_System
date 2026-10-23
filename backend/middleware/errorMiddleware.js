@@ -12,12 +12,12 @@ function errorMiddleware(error, req, res, next) {
     let message = "Something went wrong. Please try again later.";
 
     // Handle intentionally created application errors.
-    // Only expose messages for valid client error status codes.
+    // Expose only deliberately created application errors, never raw provider errors.
     if (
         error instanceof ExpressError &&
         Number.isInteger(error.statusCode) &&
         error.statusCode >= 400 &&
-        error.statusCode < 500
+        error.statusCode <= 599
     ) {
         statusCode = error.statusCode;
         message = error.message;

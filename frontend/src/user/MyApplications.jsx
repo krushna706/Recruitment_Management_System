@@ -49,11 +49,7 @@ function getDetailsPath(id) {
 // ================== STATUS BADGE ==================
 function ApplicationStatusBadge({ status }) {
     return (
-        <span
-            className={`panel-status panel-status-${
-                STATUS_CLASSES[status] || "submitted"
-            }`}
-        >
+        <span className={`panel-status panel-status-${STATUS_CLASSES[status] || "submitted"}`}>
             <span aria-hidden="true" />
             {status}
         </span>
@@ -89,13 +85,9 @@ function ApplicationOpening({ application }) {
                         </span>
                     )}
 
-                    {opening.type && (
-                        <span className="applications-mode">{opening.type}</span>
-                    )}
+                    {opening.type && <span className="applications-mode">{opening.type}</span>}
 
-                    {opening.mode && (
-                        <span className="applications-mode">{opening.mode}</span>
-                    )}
+                    {opening.mode && <span className="applications-mode">{opening.mode}</span>}
                 </div>
             </div>
         </div>
@@ -189,10 +181,7 @@ function MyApplications() {
 
                 if (controller.signal.aborted) return;
 
-                const lastPage = Math.max(
-                    1,
-                    data.pagination.totalPages
-                );
+                const lastPage = Math.max(1, data.pagination.totalPages);
 
                 if (filters.page > lastPage) {
                     setFilters((previous) => ({
@@ -284,10 +273,7 @@ function MyApplications() {
             </header>
 
             {/* ================== FILTERS ================== */}
-            <section
-                className="panel-card applications-toolbar"
-                aria-label="Filter applications"
-            >
+            <section className="panel-card applications-toolbar" aria-label="Filter applications">
                 <TextField
                     label="Search applications"
                     placeholder="Position title or company"
@@ -333,7 +319,9 @@ function MyApplications() {
                     <MenuItem value="">All statuses</MenuItem>
 
                     {APPLICATION_STATUSES.map((item) => (
-                        <MenuItem value={item} key={item}>{item}</MenuItem>
+                        <MenuItem value={item} key={item}>
+                            {item}
+                        </MenuItem>
                     ))}
                 </TextField>
 
@@ -359,33 +347,20 @@ function MyApplications() {
                             Your applications
                         </h2>
 
-                        <p
-                            className="panel-card-description"
-                            role="status"
-                            aria-live="polite"
-                        >
+                        <p className="panel-card-description" role="status" aria-live="polite">
                             {loading
                                 ? "Loading your applications..."
                                 : error
                                   ? "Application list is unavailable."
                                   : `${pagination.total} ${
-                                        pagination.total === 1
-                                            ? "application"
-                                            : "applications"
-                                    } ${
-                                        appliedFilters
-                                            ? "match your filters."
-                                            : "in total."
-                                    }`}
+                                        pagination.total === 1 ? "application" : "applications"
+                                    } ${appliedFilters ? "match your filters." : "in total."}`}
                         </p>
                     </div>
 
                     <div className="d-flex flex-wrap align-items-center gap-2">
                         <span className="applications-sort-note">
-                            <i
-                                className="fa-solid fa-arrow-down-wide-short"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-solid fa-arrow-down-wide-short" aria-hidden="true" />
                             Newest first
                         </span>
 
@@ -457,14 +432,20 @@ function MyApplications() {
                                                         className="applications-date"
                                                         dateTime={application.createdAt}
                                                     >
-                                                        {formatApplicationDate(application.createdAt)}
+                                                        {formatApplicationDate(
+                                                            application.createdAt
+                                                        )}
                                                     </time>
                                                 </TableCell>
 
                                                 <TableCell align="right">
                                                     <div className="applications-row-action">
-                                                        <ApplicationStatusBadge status={application.status} />
-                                                        <ApplicationDetailsLink application={application} />
+                                                        <ApplicationStatusBadge
+                                                            status={application.status}
+                                                        />
+                                                        <ApplicationDetailsLink
+                                                            application={application}
+                                                        />
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -506,7 +487,9 @@ function MyApplications() {
                                                     Current status
                                                 </span>
 
-                                                <ApplicationStatusBadge status={application.status} />
+                                                <ApplicationStatusBadge
+                                                    status={application.status}
+                                                />
                                             </div>
                                         </div>
 
@@ -519,8 +502,8 @@ function MyApplications() {
                         {/* ================== PAGINATION ================== */}
                         <footer className="applications-pagination">
                             <p>
-                                Showing {startIndex + 1}–
-                                {startIndex + applications.length} of {pagination.total}
+                                Showing {startIndex + 1}–{startIndex + applications.length} of{" "}
+                                {pagination.total}
                             </p>
 
                             {pagination.totalPages > 1 && (
@@ -546,9 +529,7 @@ function MyApplications() {
                         <i className="fa-regular fa-folder-open" aria-hidden="true" />
 
                         <h3>
-                            {appliedFilters
-                                ? "No matching applications."
-                                : "No applications yet."}
+                            {appliedFilters ? "No matching applications." : "No applications yet."}
                         </h3>
 
                         <p>

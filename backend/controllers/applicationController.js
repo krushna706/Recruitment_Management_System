@@ -3,11 +3,10 @@ const path = require("node:path");
 
 const Application = require("../models/Application");
 const Job = require("../models/Job");
-const cloudinary = require("../config/cloudinary");
+const { uploadPrivateResume: uploadResumeToCloudinary, deletePrivateResume, sendPrivateResume } = require("../utils/fileStorage");
 const ExpressError = require("../utils/ExpressError");
 
 // ================== APPLICATION CONFIGURATION ==================
-const RESUME_LINK_SECONDS = 60;
 
 const APPLICATION_STATUSES = [
     "Submitted",
@@ -54,30 +53,20 @@ function requireAccount(req, role) {
     }
 
     if (req.user.role !== role) {
-        throw new ExpressError(
-            403,
-            "Your account does not have permission to use this feature."
-        );
+        throw new ExpressError(403, "Your account does not have permission to use this feature.");
     }
 }
 
 // ================== ID VALIDATION ==================
 function validateObjectId(value, label) {
-    if (
-        typeof value !== "string" ||
-        !/^[a-fA-F0-9]{24}$/.test(value)
-    ) {
+    if (typeof value !== "string" || !/^[a-fA-F0-9]{24}$/.test(value)) {
         throw new ExpressError(400, `Invalid ${label} ID.`);
     }
 }
 
 // ================== QUERY VALIDATION ==================
 function validateQueryFields(query, allowedFields) {
-    if (
-        Object.keys(query).some(
-            (field) => !allowedFields.includes(field)
-        )
-    ) {
+    if (Object.keys(query).some((field) => !allowedFields.includes(field))) {
         throw new ExpressError(400, "Unsupported application filter.");
     }
 }
@@ -96,10 +85,7 @@ function getQueryText(value, label, maximum = 200) {
 function getPositiveInteger(value, fallback, maximum, label) {
     if (value === undefined) return fallback;
 
-    if (
-        typeof value !== "string" ||
-        !/^[1-9]\d*$/.test(value)
-    ) {
+    if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
         throw new ExpressError(400, `Invalid ${label}.`);
     }
 
@@ -160,23 +146,14 @@ function applySearchFilter(filter, value, isAdmin = false) {
     if (!search) return;
 
     // Escape special characters so search remains a literal text search.
-    const escapedSearch = search.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        "\\$&"
-    );
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
     const expression = new RegExp(escapedSearch, "i");
 
-    filter.$or = [
-        { "jobSnapshot.title": expression },
-        { "jobSnapshot.company": expression },
-    ];
+    filter.$or = [{ "jobSnapshot.title": expression }, { "jobSnapshot.company": expression }];
 
     if (isAdmin) {
-        filter.$or.push(
-            { "applicant.name": expression },
-            { "applicant.email": expression }
-        );
+        filter.$or.push({ "applicant.name": expression }, { "applicant.email": expression });
 
         if (/^[a-fA-F0-9]{24}$/.test(search)) {
             filter.$or.push({
@@ -268,9 +245,7 @@ async function getApplicationCounts() {
         },
     ]);
 
-    const byStatus = Object.fromEntries(
-        APPLICATION_STATUSES.map((status) => [status, 0])
-    );
+    const byStatus = Object.fromEntries(APPLICATION_STATUSES.map((status) => [status, 0]));
 
     let total = 0;
 
@@ -291,39 +266,6 @@ async function getApplicationCounts() {
     };
 }
 
-// ================== PRIVATE RESUME UPLOAD ==================
-// Store each application's original document privately in Cloudinary.
-function uploadResumeToCloudinary(file, storageKey) {
-    return new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-            {
-                resource_type: "raw",
-                type: "private",
-                asset_folder: "recruitment_management",
-                public_id: storageKey,
-                overwrite: false,
-                timeout: 60000,
-            },
-            (error, result) => {
-                if (error) {
-                    return reject(error);
-                }
-
-                if (!result?.public_id) {
-                    return reject(
-                        new Error("Cloudinary did not return a file identifier.")
-                    );
-                }
-
-                return resolve(result);
-            }
-        );
-
-        uploadStream.on("error", reject);
-        uploadStream.end(file.buffer);
-    });
-}
-
 // ================== FAILED SUBMISSION CLEANUP ==================
 // Retain the resume if the database cannot confirm the submission result.
 async function cleanupUnusedResume(applicationId, storageKey) {
@@ -334,14 +276,9 @@ async function cleanupUnusedResume(applicationId, storageKey) {
 
         if (savedApplication) return;
 
-        await cloudinary.uploader.destroy(storageKey, {
-            resource_type: "raw",
-            type: "private",
-        });
+        await deletePrivateResume(storageKey);
     } catch {
-        console.error(
-            `Resume cleanup needs review for application ${applicationId}.`
-        );
+        console.error(`Resume cleanup needs review for application ${applicationId}.`);
     }
 }
 
@@ -377,10 +314,7 @@ async function createApplication(req, res, next) {
         const availableOpening = await Job.exists(openingFilter);
 
         if (!availableOpening) {
-            throw new ExpressError(
-                409,
-                "This opening is unavailable or applications are closed."
-            );
+            throw new ExpressError(409, "This opening is unavailable or applications are closed.");
         }
 
         // ================== DUPLICATE APPLICATION CHECK ==================
@@ -391,10 +325,7 @@ async function createApplication(req, res, next) {
         });
 
         if (existingApplication) {
-            throw new ExpressError(
-                409,
-                "You have already applied for this opening."
-            );
+            throw new ExpressError(409, "You have already applied for this opening.");
         }
 
         // ================== UPLOAD VERIFIED RESUME ==================
@@ -402,10 +333,7 @@ async function createApplication(req, res, next) {
         const storageKey = `recruitment/resumes/${applicationId}${extension}`;
 
         try {
-            uploadedResume = await uploadResumeToCloudinary(
-                req.file,
-                storageKey
-            );
+            uploadedResume = await uploadResumeToCloudinary(req.file, storageKey);
         } catch (error) {
             if (process.env.NODE_ENV !== "production") {
                 console.error("Cloudinary upload failed:", {
@@ -527,33 +455,19 @@ async function createApplication(req, res, next) {
         });
     } catch (error) {
         // An uncertain transaction commit may already have succeeded.
-        const uncertainCommit =
-            error.hasErrorLabel?.("UnknownTransactionCommitResult");
+        const uncertainCommit = error.hasErrorLabel?.("UnknownTransactionCommitResult");
 
         if (uploadedResume && !applicationSaved && !uncertainCommit) {
-            await cleanupUnusedResume(
-                applicationId,
-                uploadedResume.public_id
-            );
+            await cleanupUnusedResume(applicationId, uploadedResume.public_id);
         }
 
         // The unique database index also blocks concurrent duplicates.
         if (error.code === 11000) {
-            return next(
-                new ExpressError(
-                    409,
-                    "You have already applied for this opening."
-                )
-            );
+            return next(new ExpressError(409, "You have already applied for this opening."));
         }
 
         if (error.name === "ValidationError") {
-            return next(
-                new ExpressError(
-                    400,
-                    "Application details are invalid or incomplete."
-                )
-            );
+            return next(new ExpressError(400, "Application details are invalid or incomplete."));
         }
 
         return next(error);
@@ -589,7 +503,9 @@ async function getMyDashboard(req, res, next) {
             ]),
 
             Application.find({ userId })
-                .select("_id jobSnapshot.title jobSnapshot.company jobSnapshot.location status createdAt")
+                .select(
+                    "_id jobSnapshot.title jobSnapshot.company jobSnapshot.location status createdAt"
+                )
                 .sort({ createdAt: -1, _id: -1 })
                 .limit(5)
                 .lean(),
@@ -619,9 +535,7 @@ async function getMyDashboard(req, res, next) {
         ]);
 
         // ================== APPLICATION COUNTS ==================
-        const byStatus = Object.fromEntries(
-            APPLICATION_STATUSES.map((status) => [status, 0])
-        );
+        const byStatus = Object.fromEntries(APPLICATION_STATUSES.map((status) => [status, 0]));
 
         let total = 0;
 
@@ -678,12 +592,7 @@ async function getMyApplications(req, res, next) {
     try {
         requireAccount(req, "user");
 
-        validateQueryFields(req.query, [
-            "page",
-            "limit",
-            "status",
-            "search",
-        ]);
+        validateQueryFields(req.query, ["page", "limit", "status", "search"]);
 
         const { page, limit } = getPagination(req.query);
 
@@ -880,8 +789,7 @@ async function updateApplicationStatus(req, res, next) {
 
         // Load the full document for model validation and version checking.
         // The storage key is never included in the response.
-        const application = await Application.findById(req.params.id)
-            .select("+resume.storageKey");
+        const application = await Application.findById(req.params.id).select("+resume.storageKey");
 
         if (!application) {
             throw new ExpressError(404, "Application not found.");
@@ -897,10 +805,7 @@ async function updateApplicationStatus(req, res, next) {
         const allowedStatuses = STATUS_TRANSITIONS[application.status] || [];
 
         if (!allowedStatuses.includes(status)) {
-            throw new ExpressError(
-                409,
-                "This status change is not allowed."
-            );
+            throw new ExpressError(409, "This status change is not allowed.");
         }
 
         // ================== INTERVIEW DETAILS ==================
@@ -911,10 +816,7 @@ async function updateApplicationStatus(req, res, next) {
                 !Number.isFinite(interviewDate.getTime()) ||
                 interviewDate.getTime() <= Date.now()
             ) {
-                throw new ExpressError(
-                    400,
-                    "Please select a future interview date and time."
-                );
+                throw new ExpressError(400, "Please select a future interview date and time.");
             }
 
             if (!["Online", "In-person", "Phone"].includes(interview?.mode)) {
@@ -967,10 +869,7 @@ async function updateApplicationStatus(req, res, next) {
 
         if (error.name === "ValidationError") {
             return next(
-                new ExpressError(
-                    400,
-                    "Application update contains invalid or incomplete details."
-                )
+                new ExpressError(400, "Application update contains invalid or incomplete details.")
             );
         }
 
@@ -991,14 +890,8 @@ async function getResumeAccess(req, res, next) {
 
         const mode = req.query.mode ?? "download";
 
-        if (
-            typeof mode !== "string" ||
-            !["view", "download"].includes(mode)
-        ) {
-            throw new ExpressError(
-                400,
-                "Resume mode must be view or download."
-            );
+        if (typeof mode !== "string" || !["view", "download"].includes(mode)) {
+            throw new ExpressError(400, "Resume mode must be view or download.");
         }
 
         const application = await Application.findById(req.params.id)
@@ -1015,110 +908,7 @@ async function getResumeAccess(req, res, next) {
             throw new ExpressError(404, "Resume not found.");
         }
 
-        if (mode === "view" && resume.mimeType !== "application/pdf") {
-            throw new ExpressError(
-                400,
-                "Preview is available only for PDF resumes. Please download this file."
-            );
-        }
-
-        // ================== PRIVATE CLOUDINARY LINK ==================
-        // Use the signed link internally; do not send it to the frontend.
-        const expiresAt =
-            Math.floor(Date.now() / 1000) + RESUME_LINK_SECONDS;
-
-        const url = cloudinary.utils.private_download_url(
-            resume.storageKey,
-            undefined,
-            {
-                resource_type: "raw",
-                type: "private",
-                attachment: false,
-                expires_at: expiresAt,
-                secure: true,
-            }
-        );
-
-        // ================== FETCH RESUME ==================
-        // Resume uploads are limited to 5 MB.
-        const maximumSize = 5 * 1024 * 1024;
-        let fileBuffer;
-
-        try {
-            const response = await fetch(url, {
-                signal: AbortSignal.timeout(60000),
-            });
-
-            if (!response.ok || !response.body) {
-                await response.body?.cancel();
-                throw new Error("Resume storage returned an unsuccessful response.");
-            }
-
-            const contentLength = Number(
-                response.headers.get("content-length")
-            );
-
-            if (contentLength > maximumSize) {
-                await response.body.cancel();
-                throw new Error("Resume exceeds the permitted size.");
-            }
-
-            const reader = response.body.getReader();
-            const chunks = [];
-            let receivedSize = 0;
-
-            try {
-                while (true) {
-                    const { done, value } = await reader.read();
-
-                    if (done) break;
-
-                    receivedSize += value.byteLength;
-
-                    if (receivedSize > maximumSize) {
-                        await reader.cancel();
-                        throw new Error("Resume exceeds the permitted size.");
-                    }
-
-                    chunks.push(Buffer.from(value));
-                }
-            } finally {
-                reader.releaseLock();
-            }
-
-            if (!receivedSize || receivedSize !== resume.size) {
-                throw new Error("The complete resume could not be retrieved.");
-            }
-
-            fileBuffer = Buffer.concat(chunks, receivedSize);
-        } catch {
-            throw new ExpressError(
-                502,
-                "Resume could not be retrieved. Please try again later."
-            );
-        }
-
-        // ================== ORIGINAL FILE NAME ==================
-        // Express safely formats the filename in Content-Disposition.
-        res.attachment(resume.name);
-
-        if (mode === "view") {
-            res.set(
-                "Content-Disposition",
-                res.get("Content-Disposition").replace(
-                    /^attachment/i,
-                    "inline"
-                )
-            );
-        }
-
-        res.set("Content-Type", resume.mimeType);
-        res.set("Content-Length", String(fileBuffer.length));
-        res.set("Cache-Control", "private, no-store");
-        res.set("X-Content-Type-Options", "nosniff");
-        res.set("Referrer-Policy", "no-referrer");
-
-        return res.status(200).send(fileBuffer);
+        return await sendPrivateResume(res, resume, mode, resume.storageKey);
     } catch (error) {
         return next(error);
     }

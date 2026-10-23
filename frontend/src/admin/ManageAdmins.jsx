@@ -1,26 +1,8 @@
+import { formatDate, getErrorMessage as getApiError } from "../utils/dataFormat";
 
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import {
-    Alert,
-    Avatar,
-    Button,
-    Chip,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    MenuItem,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TextField,
-} from "@mui/material";
+import { Alert, Avatar, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField } from "@mui/material";
 import { toast } from "react-toastify";
 
 import api from "../services/api";
@@ -42,32 +24,6 @@ const INITIAL_COUNTS = {
     active: 0,
     inactive: 0,
 };
-
-// ================== DATE FORMATTING ==================
-function formatDate(value, includeTime = false) {
-    if (!value) return "Not available";
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return "Not available";
-    }
-
-    return new Intl.DateTimeFormat("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        timeZone: "Asia/Kolkata",
-        ...(includeTime
-            ? { hour: "numeric", minute: "2-digit" }
-            : {}),
-    }).format(date);
-}
-
-// ================== API ERROR MESSAGE ==================
-function getApiError(error, fallback) {
-    return error.response?.data?.message || fallback;
-}
 
 // ================== ADMIN AVATAR ==================
 // Show Cloudinary image or existing default profile image.
@@ -106,27 +62,18 @@ function validateAdmin(form, isEditing, emailChanged) {
         errors.name = "Enter a name containing 2–100 characters.";
     }
 
-    if (
-        email.length > 254 ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    ) {
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         errors.email = "Enter a valid email address.";
     }
 
     // Same Indian mobile rule as Signup and User Profile.
-    if (
-        (!isEditing || phone) &&
-        !/^[6-9]\d{9}$/.test(phone)
-    ) {
+    if (!/^[6-9]\d{9}$/.test(phone)) {
         errors.phone = "Enter a valid 10-digit Indian mobile number.";
     }
 
     // ================== ADMIN PASSWORD VALIDATION ==================
     if (!isEditing) {
-        if (
-            form.password.length < 6 ||
-            new TextEncoder().encode(form.password).length > 72
-        ) {
+        if (form.password.length < 6 || new TextEncoder().encode(form.password).length > 72) {
             errors.password =
                 "Password must have at least 6 characters and not exceed 72 UTF-8 bytes.";
         }
@@ -135,8 +82,7 @@ function validateAdmin(form, isEditing, emailChanged) {
     // Creation and sensitive email changes require reauthentication.
     if (!isEditing || emailChanged) {
         if (!form.currentPassword) {
-            errors.currentPassword =
-                "Enter your current admin password.";
+            errors.currentPassword = "Enter your current admin password.";
         }
     }
 
@@ -158,18 +104,11 @@ function ManageAdmins({ user: propUser }) {
     const navigate = useNavigate();
     const outletContext = useOutletContext();
 
-    const {
-        user: authUser,
-        updateUserProfile,
-        refreshUser,
-    } = useAuth();
+    const { user: authUser, updateUserProfile, refreshUser } = useAuth();
 
-    const currentUser =
-        authUser ?? propUser ?? outletContext?.user;
+    const currentUser = authUser ?? propUser ?? outletContext?.user;
 
-    const currentUserId = String(
-        currentUser?._id || currentUser?.id || ""
-    );
+    const currentUserId = String(currentUser?._id || currentUser?.id || "");
 
     const isAuthorized = currentUser?.role === "admin";
 
@@ -218,20 +157,15 @@ function ManageAdmins({ user: propUser }) {
     const emailChanged = Boolean(
         isEditing &&
         editingOriginal &&
-        form.email.trim().toLowerCase() !==
-            editingOriginal.email.toLowerCase()
+        form.email.trim().toLowerCase() !== editingOriginal.email.toLowerCase()
     );
 
     const hasFormChanges = isEditing
         ? Boolean(
               editingOriginal &&
-              (
-                  form.name.trim() !== editingOriginal.name ||
-                  form.email.trim().toLowerCase() !==
-                      editingOriginal.email.toLowerCase() ||
-                  form.phone.trim() !==
-                      (editingOriginal.phone || "")
-              )
+              (form.name.trim() !== editingOriginal.name ||
+                  form.email.trim().toLowerCase() !== editingOriginal.email.toLowerCase() ||
+                  form.phone.trim() !== (editingOriginal.phone || ""))
           )
         : true;
 
@@ -266,13 +200,10 @@ function ManageAdmins({ user: propUser }) {
                     params.search = debouncedSearch;
                 }
 
-                const { data } = await api.get(
-                    "/admin/admins",
-                    {
-                        params,
-                        signal: controller.signal,
-                    }
-                );
+                const { data } = await api.get("/admin/admins", {
+                    params,
+                    signal: controller.signal,
+                });
 
                 if (!active) return;
 
@@ -285,22 +216,14 @@ function ManageAdmins({ user: propUser }) {
                     throw new Error("Invalid admin API response.");
                 }
 
-                const nextTotal = Number(
-                    data.pagination.total
-                );
+                const nextTotal = Number(data.pagination.total);
 
-                if (
-                    !Number.isSafeInteger(nextTotal) ||
-                    nextTotal < 0
-                ) {
+                if (!Number.isSafeInteger(nextTotal) || nextTotal < 0) {
                     throw new Error("Invalid pagination data.");
                 }
 
                 // ================== PAGE CORRECTION ==================
-                const lastPage = Math.max(
-                    0,
-                    Math.ceil(nextTotal / rowsPerPage) - 1
-                );
+                const lastPage = Math.max(0, Math.ceil(nextTotal / rowsPerPage) - 1);
 
                 if (page > lastPage) {
                     setPage(lastPage);
@@ -320,12 +243,7 @@ function ManageAdmins({ user: propUser }) {
 
                 setAdmins([]);
                 setTotal(0);
-                setListError(
-                    getApiError(
-                        error,
-                        "Unable to load admin accounts."
-                    )
-                );
+                setListError(getApiError(error, "Unable to load admin accounts."));
             } finally {
                 if (active) setLoading(false);
             }
@@ -337,14 +255,7 @@ function ManageAdmins({ user: propUser }) {
             active = false;
             controller.abort();
         };
-    }, [
-        isAuthorized,
-        page,
-        rowsPerPage,
-        debouncedSearch,
-        statusFilter,
-        listRevision,
-    ]);
+    }, [isAuthorized, page, rowsPerPage, debouncedSearch, statusFilter, listRevision]);
 
     // ================== FETCH SINGLE ADMIN ==================
     useEffect(() => {
@@ -359,12 +270,9 @@ function ManageAdmins({ user: propUser }) {
             setSelectedAdmin(null);
 
             try {
-                const { data } = await api.get(
-                    `/admin/admins/${encodeURIComponent(selectedId)}`,
-                    {
-                        signal: controller.signal,
-                    }
-                );
+                const { data } = await api.get(`/admin/admins/${encodeURIComponent(selectedId)}`, {
+                    signal: controller.signal,
+                });
 
                 if (!active) return;
 
@@ -376,12 +284,7 @@ function ManageAdmins({ user: propUser }) {
             } catch (error) {
                 if (!active) return;
 
-                setDetailsError(
-                    getApiError(
-                        error,
-                        "Unable to load admin details."
-                    )
-                );
+                setDetailsError(getApiError(error, "Unable to load admin details."));
             } finally {
                 if (active) setDetailsLoading(false);
             }
@@ -493,11 +396,7 @@ function ManageAdmins({ user: propUser }) {
             return;
         }
 
-        const nextErrors = validateAdmin(
-            form,
-            isEditing,
-            emailChanged
-        );
+        const nextErrors = validateAdmin(form, isEditing, emailChanged);
 
         setErrors(nextErrors);
 
@@ -526,10 +425,7 @@ function ManageAdmins({ user: propUser }) {
                     changes.name = normalized.name;
                 }
 
-                if (
-                    normalized.phone !==
-                    (editingOriginal.phone || "")
-                ) {
+                if (normalized.phone !== (editingOriginal.phone || "")) {
                     changes.phone = normalized.phone;
                 }
 
@@ -545,27 +441,20 @@ function ManageAdmins({ user: propUser }) {
             } else {
                 // ================== CREATE NEW ADMIN ==================
                 // Initial password must be changed after first login.
-                response = await api.post(
-                    "/admin/admins",
-                    {
-                        ...normalized,
-                        password: form.password,
-                        currentPassword: form.currentPassword,
-                    }
-                );
+                response = await api.post("/admin/admins", {
+                    ...normalized,
+                    password: form.password,
+                    currentPassword: form.currentPassword,
+                });
             }
 
             const data = response.data;
 
             if (!data?.success || !data.admin) {
-                throw new Error(
-                    "Server did not confirm the admin update."
-                );
+                throw new Error("Server did not confirm the admin update.");
             }
 
-            const editedSelf =
-                isEditing &&
-                String(data.admin.id) === currentUserId;
+            const editedSelf = isEditing && String(data.admin.id) === currentUserId;
 
             // ================== SYNC CURRENT ADMIN PROFILE ==================
             if (editedSelf && !emailChanged) {
@@ -574,9 +463,7 @@ function ManageAdmins({ user: propUser }) {
 
             toast.success(
                 data.message ||
-                (isEditing
-                    ? "Admin updated successfully."
-                    : "Admin created successfully.")
+                    (isEditing ? "Admin updated successfully." : "Admin created successfully.")
             );
 
             resetForm();
@@ -595,12 +482,7 @@ function ManageAdmins({ user: propUser }) {
                 });
             }
         } catch (error) {
-            toast.error(
-                getApiError(
-                    error,
-                    "Unable to save admin details."
-                )
-            );
+            toast.error(getApiError(error, "Unable to save admin details."));
         } finally {
             setSaving(false);
         }
@@ -623,23 +505,13 @@ function ManageAdmins({ user: propUser }) {
     function requestStatusChange(admin) {
         if (statusSaving) return;
 
-        if (
-            admin.status === "Active" &&
-            String(admin.id) === currentUserId
-        ) {
-            toast.info(
-                "You cannot deactivate your own account here."
-            );
+        if (admin.status === "Active" && String(admin.id) === currentUserId) {
+            toast.info("You cannot deactivate your own account here.");
             return;
         }
 
-        if (
-            admin.status === "Active" &&
-            counts.active <= 1
-        ) {
-            toast.info(
-                "The last active admin cannot be deactivated."
-            );
+        if (admin.status === "Active" && counts.active <= 1) {
+            toast.info("The last active admin cannot be deactivated.");
             return;
         }
 
@@ -649,10 +521,7 @@ function ManageAdmins({ user: propUser }) {
             id: admin.id,
             name: admin.name,
             expectedStatus: admin.status,
-            nextStatus:
-                admin.status === "Active"
-                    ? "Inactive"
-                    : "Active",
+            nextStatus: admin.status === "Active" ? "Inactive" : "Active",
         });
     }
 
@@ -679,36 +548,22 @@ function ManageAdmins({ user: propUser }) {
             );
 
             if (!data?.success || !data.admin) {
-                throw new Error(
-                    "Server did not confirm account status."
-                );
+                throw new Error("Server did not confirm account status.");
             }
 
-            toast.success(
-                data.message ||
-                "Admin status updated successfully."
-            );
+            toast.success(data.message || "Admin status updated successfully.");
 
             setStatusAction(null);
             setStatusPassword("");
             setPage(0);
             setListRevision((previous) => previous + 1);
         } catch (error) {
-            toast.error(
-                getApiError(
-                    error,
-                    "Unable to change admin account status."
-                )
-            );
+            toast.error(getApiError(error, "Unable to change admin account status."));
 
-            if (
-                [404, 409].includes(error.response?.status)
-            ) {
+            if ([404, 409].includes(error.response?.status)) {
                 setStatusAction(null);
                 setStatusPassword("");
-                setListRevision(
-                    (previous) => previous + 1
-                );
+                setListRevision((previous) => previous + 1);
             }
         } finally {
             setStatusSaving(false);
@@ -745,30 +600,19 @@ function ManageAdmins({ user: propUser }) {
             {/* ================== PAGE HEADER ================== */}
             <header className="mj-heading">
                 <div>
-                    <span className="mj-eyebrow">
-                        ADMINISTRATION
-                    </span>
+                    <span className="mj-eyebrow">ADMINISTRATION</span>
 
                     <h1>Manage Admins</h1>
 
-                    <p>
-                        Manage your administration team and account access.
-                    </p>
+                    <p>Manage your administration team and account access.</p>
                 </div>
 
                 <Button
                     type="button"
                     variant="outlined"
-                    onClick={() =>
-                        setListRevision((previous) => previous + 1)
-                    }
+                    onClick={() => setListRevision((previous) => previous + 1)}
                     disabled={loading}
-                    startIcon={
-                        <i
-                            className="fa-solid fa-arrows-rotate"
-                            aria-hidden="true"
-                        />
-                    }
+                    startIcon={<i className="fa-solid fa-arrows-rotate" aria-hidden="true" />}
                 >
                     Refresh
                 </Button>
@@ -782,24 +626,13 @@ function ManageAdmins({ user: propUser }) {
             )}
 
             {/* ================== ADMIN STATISTICS ================== */}
-            <section
-                className="mj-metrics"
-                aria-label="Admin overview"
-            >
+            <section className="mj-metrics" aria-label="Admin overview">
                 {metrics.map((metric) => (
-                    <article
-                        key={metric.label}
-                        className={`mj-metric mj-tone-${metric.tone}`}
-                    >
+                    <article key={metric.label} className={`mj-metric mj-tone-${metric.tone}`}>
                         <div className="mj-metric-top">
-                            <span className="mj-metric-label">
-                                {metric.label}
-                            </span>
+                            <span className="mj-metric-label">{metric.label}</span>
 
-                            <span
-                                className="mj-metric-icon"
-                                aria-hidden="true"
-                            >
+                            <span className="mj-metric-icon" aria-hidden="true">
                                 <i className={metric.icon} />
                             </span>
                         </div>
@@ -811,25 +644,16 @@ function ManageAdmins({ user: propUser }) {
             </section>
 
             {/* ================== ADMIN FORM ================== */}
-            <section
-                ref={formRef}
-                className="mj-card mj-form-card"
-                aria-labelledby="ma-form-title"
-            >
+            <section ref={formRef} className="mj-card mj-form-card" aria-labelledby="ma-form-title">
                 <header className="mj-card-header">
                     <div className="mj-card-heading">
-                        <span
-                            className="mj-header-icon"
-                            aria-hidden="true"
-                        >
+                        <span className="mj-header-icon" aria-hidden="true">
                             <i className="fa-solid fa-user-shield" />
                         </span>
 
                         <div>
                             <h2 id="ma-form-title">
-                                {isEditing
-                                    ? "Edit admin details"
-                                    : "Add an administrator"}
+                                {isEditing ? "Edit admin details" : "Add an administrator"}
                             </h2>
 
                             <p>
@@ -887,8 +711,7 @@ function ManageAdmins({ user: propUser }) {
                                     required: !isEditing,
                                     type: "tel",
                                     autoComplete: "tel",
-                                    helperText:
-                                        "10-digit Indian mobile number.",
+                                    helperText: "10-digit Indian mobile number.",
                                     slotProps: {
                                         htmlInput: {
                                             maxLength: 10,
@@ -911,50 +734,37 @@ function ManageAdmins({ user: propUser }) {
                             {/* ================== INITIAL PASSWORD ================== */}
                             {!isEditing && (
                                 <TextField
-                                    {...field(
-                                        "password",
-                                        "Initial password",
-                                        {
-                                            type: "password",
-                                            required: true,
-                                            autoComplete: "new-password",
-                                            helperText:
-                                                "Minimum 6 characters. Admin must change it after first login.",
-                                        }
-                                    )}
+                                    {...field("password", "Initial password", {
+                                        type: "password",
+                                        required: true,
+                                        autoComplete: "new-password",
+                                        helperText:
+                                            "Minimum 6 characters. Admin must change it after first login.",
+                                    })}
                                 />
                             )}
 
                             {/* ================== CURRENT ADMIN PASSWORD ================== */}
                             {(!isEditing || emailChanged) && (
                                 <TextField
-                                    {...field(
-                                        "currentPassword",
-                                        "Your current password",
-                                        {
-                                            type: "password",
-                                            required: true,
-                                            autoComplete: "current-password",
-                                            helperText:
-                                                "Verify your identity before this action.",
-                                        }
-                                    )}
+                                    {...field("currentPassword", "Your current password", {
+                                        type: "password",
+                                        required: true,
+                                        autoComplete: "current-password",
+                                        helperText: "Verify your identity before this action.",
+                                    })}
                                 />
                             )}
                         </div>
 
                         {/* ================== SECURITY INFORMATION ================== */}
                         <div className="mj-status-note">
-                            <i
-                                className="fa-solid fa-circle-info"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-solid fa-circle-info" aria-hidden="true" />
 
                             <p>
-                                New administrators must change their initial
-                                password and successfully log in before
-                                replacing the initial admin. Their profile
-                                photo can be uploaded from Admin Profile.
+                                New administrators must change their initial password and
+                                successfully log in before replacing the initial admin. Their
+                                profile photo can be uploaded from Admin Profile.
                             </p>
                         </div>
                     </div>
@@ -993,10 +803,7 @@ function ManageAdmins({ user: propUser }) {
                                 disabled={saving || !hasFormChanges}
                                 startIcon={
                                     saving ? (
-                                        <CircularProgress
-                                            size={16}
-                                            color="inherit"
-                                        />
+                                        <CircularProgress size={16} color="inherit" />
                                     ) : (
                                         <i
                                             className="fa-regular fa-floppy-disk"
@@ -1005,11 +812,7 @@ function ManageAdmins({ user: propUser }) {
                                     )
                                 }
                             >
-                                {saving
-                                    ? "Saving..."
-                                    : isEditing
-                                      ? "Save changes"
-                                      : "Add admin"}
+                                {saving ? "Saving..." : isEditing ? "Save changes" : "Add admin"}
                             </Button>
                         </div>
                     </footer>
@@ -1017,16 +820,10 @@ function ManageAdmins({ user: propUser }) {
             </section>
 
             {/* ================== ADMIN ACCOUNTS ================== */}
-            <section
-                className="mj-card"
-                aria-labelledby="ma-list-title"
-            >
+            <section className="mj-card" aria-labelledby="ma-list-title">
                 <header className="mj-card-header">
                     <div className="mj-card-heading">
-                        <span
-                            className="mj-header-icon"
-                            aria-hidden="true"
-                        >
+                        <span className="mj-header-icon" aria-hidden="true">
                             <i className="fa-solid fa-users-gear" />
                         </span>
 
@@ -1034,16 +831,13 @@ function ManageAdmins({ user: propUser }) {
                             <h2 id="ma-list-title">Admin accounts</h2>
 
                             <p>
-                                Review administrators, login verification
-                                and account availability.
+                                Review administrators, login verification and account availability.
                             </p>
                         </div>
                     </div>
 
                     <span className="mj-result-count">
-                        {loading
-                            ? "Loading admins..."
-                            : `${total} of ${counts.total} admins`}
+                        {loading ? "Loading admins..." : `${total} of ${counts.total} admins`}
                     </span>
                 </header>
 
@@ -1098,10 +892,7 @@ function ManageAdmins({ user: propUser }) {
 
                 {/* ================== ADMIN TABLE ================== */}
                 <TableContainer>
-                    <Table
-                        className="mj-table ma-table"
-                        aria-label="Administrator accounts"
-                    >
+                    <Table className="mj-table ma-table" aria-label="Administrator accounts">
                         <TableHead>
                             <TableRow>
                                 <TableCell>Administrator</TableCell>
@@ -1109,9 +900,7 @@ function ManageAdmins({ user: propUser }) {
                                 <TableCell>Access verification</TableCell>
                                 <TableCell>Created on</TableCell>
                                 <TableCell>Status</TableCell>
-                                <TableCell align="right">
-                                    Actions
-                                </TableCell>
+                                <TableCell align="right">Actions</TableCell>
                             </TableRow>
                         </TableHead>
 
@@ -1119,11 +908,7 @@ function ManageAdmins({ user: propUser }) {
                             {/* ================== LOADING ================== */}
                             {loading && (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={6}
-                                        align="center"
-                                        sx={{ py: 6 }}
-                                    >
+                                    <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
                                         <CircularProgress size={26} />
                                         <p>Loading admin accounts...</p>
                                     </TableCell>
@@ -1133,48 +918,30 @@ function ManageAdmins({ user: propUser }) {
                             {/* ================== ADMIN RECORDS ================== */}
                             {!loading &&
                                 admins.map((admin) => {
-                                    const isSelf =
-                                        String(admin.id) === currentUserId;
+                                    const isSelf = String(admin.id) === currentUserId;
 
-                                    const isInitial =
-                                        !admin.createdBy;
+                                    const isInitial = !admin.createdBy;
 
                                     const cannotDeactivate =
-                                        admin.status === "Active" &&
-                                        (isSelf || counts.active <= 1);
+                                        admin.status === "Active" && (isSelf || counts.active <= 1);
 
                                     return (
-                                        <TableRow
-                                            key={admin.id}
-                                            hover
-                                        >
+                                        <TableRow key={admin.id} hover>
                                             <TableCell>
                                                 <div className="mj-job-cell">
-                                                    <AdminAvatar
-                                                        admin={admin}
-                                                    />
+                                                    <AdminAvatar admin={admin} />
 
                                                     <div>
-                                                        <strong>
-                                                            {admin.name}
-                                                        </strong>
+                                                        <strong>{admin.name}</strong>
 
                                                         <div className="mj-job-tags">
-                                                            <span>
-                                                                Admin
-                                                            </span>
+                                                            <span>Admin</span>
 
                                                             {isInitial && (
-                                                                <span>
-                                                                    Initial admin
-                                                                </span>
+                                                                <span>Initial admin</span>
                                                             )}
 
-                                                            {isSelf && (
-                                                                <span>
-                                                                    You
-                                                                </span>
-                                                            )}
+                                                            {isSelf && <span>You</span>}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1186,8 +953,7 @@ function ManageAdmins({ user: propUser }) {
                                                 </span>
 
                                                 <span className="mj-cell-secondary">
-                                                    {admin.phone ||
-                                                        "Phone not provided"}
+                                                    {admin.phone || "Phone not provided"}
                                                 </span>
                                             </TableCell>
 
@@ -1199,9 +965,7 @@ function ManageAdmins({ user: propUser }) {
                                                             : "Pending login"
                                                     }
                                                     color={
-                                                        admin.lastLoginAt
-                                                            ? "success"
-                                                            : "warning"
+                                                        admin.lastLoginAt ? "success" : "warning"
                                                     }
                                                     variant="outlined"
                                                     size="small"
@@ -1209,21 +973,13 @@ function ManageAdmins({ user: propUser }) {
                                             </TableCell>
 
                                             <TableCell>
-                                                <time
-                                                    dateTime={
-                                                        admin.createdAt || ""
-                                                    }
-                                                >
-                                                    {formatDate(
-                                                        admin.createdAt
-                                                    )}
+                                                <time dateTime={admin.createdAt || ""}>
+                                                    {formatDate(admin.createdAt)}
                                                 </time>
                                             </TableCell>
 
                                             <TableCell>
-                                                <AdminStatus
-                                                    status={admin.status}
-                                                />
+                                                <AdminStatus status={admin.status} />
                                             </TableCell>
 
                                             <TableCell align="right">
@@ -1232,9 +988,7 @@ function ManageAdmins({ user: propUser }) {
                                                         type="button"
                                                         size="small"
                                                         variant="outlined"
-                                                        onClick={() =>
-                                                            openAdminDetails(admin)
-                                                        }
+                                                        onClick={() => openAdminDetails(admin)}
                                                     >
                                                         View
                                                     </Button>
@@ -1243,9 +997,7 @@ function ManageAdmins({ user: propUser }) {
                                                         type="button"
                                                         size="small"
                                                         variant="outlined"
-                                                        onClick={() =>
-                                                            handleEdit(admin)
-                                                        }
+                                                        onClick={() => handleEdit(admin)}
                                                     >
                                                         Edit
                                                     </Button>
@@ -1254,18 +1006,13 @@ function ManageAdmins({ user: propUser }) {
                                                         type="button"
                                                         size="small"
                                                         variant="outlined"
-                                                        disabled={
-                                                            statusSaving ||
-                                                            cannotDeactivate
-                                                        }
+                                                        disabled={statusSaving || cannotDeactivate}
                                                         color={
                                                             admin.status === "Active"
                                                                 ? "error"
                                                                 : "success"
                                                         }
-                                                        onClick={() =>
-                                                            requestStatusChange(admin)
-                                                        }
+                                                        onClick={() => requestStatusChange(admin)}
                                                     >
                                                         {admin.status === "Active"
                                                             ? "Deactivate"
@@ -1318,9 +1065,7 @@ function ManageAdmins({ user: propUser }) {
                     component="div"
                     count={total}
                     page={page}
-                    onPageChange={(_, nextPage) =>
-                        setPage(nextPage)
-                    }
+                    onPageChange={(_, nextPage) => setPage(nextPage)}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={(event) => {
                         setRowsPerPage(Number(event.target.value));
@@ -1338,9 +1083,7 @@ function ManageAdmins({ user: propUser }) {
                 fullWidth
                 className="ma-dialog"
             >
-                <DialogTitle>
-                    Administrator details
-                </DialogTitle>
+                <DialogTitle>Administrator details</DialogTitle>
 
                 <DialogContent dividers>
                     {detailsLoading && (
@@ -1356,81 +1099,52 @@ function ManageAdmins({ user: propUser }) {
                     )}
 
                     {!detailsLoading && detailsError && (
-                        <Alert severity="error">
-                            {detailsError}
-                        </Alert>
+                        <Alert severity="error">{detailsError}</Alert>
                     )}
 
-                    {!detailsLoading &&
-                        !detailsError &&
-                        selectedAdmin && (
-                            <>
-                                <div
-                                    className="mj-job-cell"
-                                    style={{
-                                        marginBottom: 24,
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <AdminAvatar
-                                        admin={selectedAdmin}
-                                    />
+                    {!detailsLoading && !detailsError && selectedAdmin && (
+                        <>
+                            <div
+                                className="mj-job-cell"
+                                style={{
+                                    marginBottom: 24,
+                                    alignItems: "center",
+                                }}
+                            >
+                                <AdminAvatar admin={selectedAdmin} />
 
-                                    <div>
-                                        <strong>
-                                            {selectedAdmin.name}
-                                        </strong>
+                                <div>
+                                    <strong>{selectedAdmin.name}</strong>
 
-                                        <p>{selectedAdmin.email}</p>
-                                    </div>
+                                    <p>{selectedAdmin.email}</p>
                                 </div>
+                            </div>
 
-                                <dl className="mu-detail-grid">
-                                    <AdminDetail
-                                        label="Phone"
-                                        value={selectedAdmin.phone}
-                                    />
+                            <dl className="mu-detail-grid">
+                                <AdminDetail label="Phone" value={selectedAdmin.phone} />
 
-                                    <AdminDetail
-                                        label="Role"
-                                        value="Administrator"
-                                    />
+                                <AdminDetail label="Role" value="Administrator" />
 
-                                    <AdminDetail
-                                        label="Status"
-                                        value={selectedAdmin.status}
-                                    />
+                                <AdminDetail label="Status" value={selectedAdmin.status} />
 
-                                    <AdminDetail
-                                        label="Created on"
-                                        value={formatDate(
-                                            selectedAdmin.createdAt
-                                        )}
-                                    />
+                                <AdminDetail
+                                    label="Created on"
+                                    value={formatDate(selectedAdmin.createdAt)}
+                                />
 
-                                    <AdminDetail
-                                        label="Last login"
-                                        value={formatDate(
-                                            selectedAdmin.lastLoginAt,
-                                            true
-                                        )}
-                                    />
+                                <AdminDetail
+                                    label="Last login"
+                                    value={formatDate(selectedAdmin.lastLoginAt, true)}
+                                />
 
-                                    <AdminDetail
-                                        label="Account ID"
-                                        value={selectedAdmin.id}
-                                    />
-                                </dl>
-                            </>
-                        )}
+                                <AdminDetail label="Account ID" value={selectedAdmin.id} />
+                            </dl>
+                        </>
+                    )}
                 </DialogContent>
 
                 <DialogActions>
-                    <Button
-                        type="button"
-                        variant="outlined"
-                        onClick={closeAdminDetails}
-                    >
+                    <Button type="button" variant="outlined" onClick={closeAdminDetails}>
                         Close
                     </Button>
                 </DialogActions>
@@ -1463,17 +1177,14 @@ function ManageAdmins({ user: propUser }) {
                     </p>
 
                     <p className="ma-dialog-note">
-                        Existing account records will be retained.
-                        Current sessions will be revoked.
+                        Existing account records will be retained. Current sessions will be revoked.
                     </p>
 
                     <TextField
                         label="Your current password"
                         type="password"
                         value={statusPassword}
-                        onChange={(event) =>
-                            setStatusPassword(event.target.value)
-                        }
+                        onChange={(event) => setStatusPassword(event.target.value)}
                         required
                         fullWidth
                         size="small"
@@ -1499,22 +1210,11 @@ function ManageAdmins({ user: propUser }) {
                         type="button"
                         variant="contained"
                         disableElevation
-                        disabled={
-                            statusSaving || !statusPassword
-                        }
-                        color={
-                            statusAction?.nextStatus === "Inactive"
-                                ? "error"
-                                : "success"
-                        }
+                        disabled={statusSaving || !statusPassword}
+                        color={statusAction?.nextStatus === "Inactive" ? "error" : "success"}
                         onClick={confirmStatusChange}
                         startIcon={
-                            statusSaving ? (
-                                <CircularProgress
-                                    size={16}
-                                    color="inherit"
-                                />
-                            ) : null
+                            statusSaving ? <CircularProgress size={16} color="inherit" /> : null
                         }
                     >
                         {statusSaving

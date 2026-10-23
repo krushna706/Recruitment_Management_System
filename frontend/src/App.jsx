@@ -41,15 +41,13 @@ function SessionFeedback() {
                 <>
                     <p role="alert">{authError}</p>
 
-                    <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={refreshUser}
-                    >
+                    <button type="button" className="btn btn-primary" onClick={refreshUser}>
                         Try again
                     </button>
 
-                    <Link to="/" className="btn btn-link">Back to website</Link>
+                    <Link to="/" className="btn btn-link">
+                        Back to website
+                    </Link>
                 </>
             )}
         </section>
@@ -62,7 +60,9 @@ function AccessDenied() {
         <section className="container-fluid py-5 text-center">
             <h1>Access denied</h1>
             <p>Your account does not have permission to open this page.</p>
-            <Link to="/" className="btn btn-primary">Back to website</Link>
+            <Link to="/" className="btn btn-primary">
+                Back to website
+            </Link>
         </section>
     );
 }
@@ -93,12 +93,7 @@ function PanelAccess() {
         user.mustChangePassword &&
         location.pathname !== "/manage/profile"
     ) {
-        return (
-            <Navigate
-                to="/manage/profile"
-                replace
-            />
-        );
+        return <Navigate to="/manage/profile" replace />;
     }
 
     return <Outlet />;
@@ -118,9 +113,8 @@ function JobApplicationAccess({ openingType = "client" }) {
         const encodedId = encodeURIComponent(id);
 
         // Client jobs return to details; Careers returns to its application form.
-        const returnTo = openingType === "internal"
-            ? `/careers/${encodedId}/apply`
-            : `/jobs/${encodedId}`;
+        const returnTo =
+            openingType === "internal" ? `/careers/${encodedId}/apply` : `/jobs/${encodedId}`;
 
         return <Navigate to="/manage" replace state={{ returnTo }} />;
     }
@@ -129,13 +123,7 @@ function JobApplicationAccess({ openingType = "client" }) {
         return <AccessDenied />;
     }
 
-    return (
-        <JobApply
-            key={`${openingType}:${id}`}
-            user={user}
-            openingType={openingType}
-        />
-    );
+    return <JobApply key={`${openingType}:${id}`} user={user} openingType={openingType} />;
 }
 
 // ================== ROLE-BASED DASHBOARD AND PROFILE ==================
@@ -161,7 +149,6 @@ function PanelPage({ user, page }) {
     return <PageComponent user={user} />;
 }
 
-
 // ================== SCROLL TO TOP ==================
 // Reset window scroll whenever the page route changes.
 function ScrollToTop() {
@@ -178,7 +165,6 @@ function ScrollToTop() {
     return null;
 }
 
-
 // ================== APPLICATION ROUTES ==================
 function App() {
     const { user, logout } = useAuth();
@@ -193,9 +179,8 @@ function App() {
 
     return (
         <BrowserRouter>
-
-             {/* ================== GLOBAL SCROLL RESET ================== */}
-              <ScrollToTop />
+            {/* ================== GLOBAL SCROLL RESET ================== */}
+            <ScrollToTop />
 
             <ToastContainer position="top-right" autoClose={3000} />
 
@@ -203,7 +188,7 @@ function App() {
                 {/* Authentication */}
                 <Route path="/manage" element={<Login />} />
                 <Route path="/manage/signup" element={<Signup />} />
-                
+
                 {/* Public password recovery for User and Admin. */}
                 <Route path="/manage/forgot-password" element={<ForgotPassword />} />
 
@@ -222,7 +207,10 @@ function App() {
 
                 {/* Shared user/admin panel */}
                 <Route element={<PanelAccess />}>
-                    <Route path="/manage" element={<PanelLayout user={panelUser} onLogout={logout} />}>
+                    <Route
+                        path="/manage"
+                        element={<PanelLayout user={panelUser} onLogout={logout} />}
+                    >
                         <Route path="dashboard" element={<RolePage user={panelUser} page="dashboard" />} />
                         <Route path="profile" element={<RolePage user={panelUser} page="profile" />} />
 

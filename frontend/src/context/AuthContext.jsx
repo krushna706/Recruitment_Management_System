@@ -1,231 +1,195 @@
-
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-
 import api from "../services/api";
 
-// ================== AUTHENTICATION CONTEXT ==================
 const AuthContext = createContext(null);
+const SESSION_EVENT = "hiresetu-session-change";
 
-// ================== NORMALIZE USER DATA ==================
-// Keep the avatar URL compatible with the existing PanelHeader.
-function normalizeAuthUser(user) {
-    if (!user) return null;
-
-    return {
-        ...user,
-        avatarUrl: user.avatar?.url || "",
-    };
+// Store only a change notification. The HttpOnly cookie remains the session source.
+function notifyOtherTabs() {
+    try {
+        localStorage.setItem(SESSION_EVENT, `${Date.now()}-${Math.random()}`);
+    } catch {
+        // Focus checks still work when browser storage is unavailable.
+    }
 }
 
-// ================== AUTHENTICATION PROVIDER ==================
+function normalizeAuthUser(user) {
+    return user ? { ...user, avatarUrl: user.avatar?.url || "" } : null;
+}
+
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [authError, setAuthError] = useState("");
-
-    // Prevent older responses from overwriting newer authentication state.
     const sessionRequestId = useRef(0);
+    const backgroundRequest = useRef(false);
 
-    // ================== CLEAR LOCAL SESSION ==================
     const clearSession = useCallback(() => {
         sessionRequestId.current += 1;
-
         setUser(null);
         setAuthError("");
         setLoading(false);
     }, []);
 
-    // ================== GLOBAL SESSION ERROR HANDLING ==================
-    useEffect(() => {
-        // Tag requests with the current authentication state version.
-        // This property stays in Axios configuration, not HTTP headers.
-        const requestInterceptor = api.interceptors.request.use((config) => {
-            config.authRequestId = sessionRequestId.current;
-
-            return config;
-        });
-
-        const responseInterceptor = api.interceptors.response.use(
-            (response) => response,
-            (error) => {
-                const config = error.config;
-
-                const isCurrentRequest =
-                    config?.authRequestId === sessionRequestId.current;
-
-                if (
-                    error.response?.status === 401 &&
-                    config &&
-                    !config.skipSessionHandling &&
-                    isCurrentRequest
-                ) {
-                    clearSession();
-                }
-
-                // Let the calling page handle its error message.
-                return Promise.reject(error);
-            }
-        );
-
-        return () => {
-            api.interceptors.request.eject(requestInterceptor);
-            api.interceptors.response.eject(responseInterceptor);
-        };
-    }, [clearSession]);
-
-    // ================== RESTORE SESSION ==================
-    const refreshUser = useCallback(async () => {
+    // Background checks do not unmount a form or discard unsaved input.
+    const refreshUser = useCallback(async (options = {}) => {
+        const silent = options?.silent === true;
         const requestId = ++sessionRequestId.current;
-
-        setLoading(true);
-        setAuthError("");
-
+        if (!silent) {
+            setLoading(true);
+            setAuthError("");
+        }
         try {
-            const { data } = await api.get("/auth/me", {
-                skipSessionHandling: true,
-            });
-
-            if (requestId === sessionRequestId.current) {
-                setUser(normalizeAuthUser(data.user));
-            }
+            const { data } = await api.get("/auth/me", { skipSessionHandling: true });
+            if (requestId !== sessionRequestId.current) return;
+            setUser(normalizeAuthUser(data.user));
+            setAuthError("");
         } catch (error) {
-            if (requestId !== sessionRequestId.current) {
-                return;
-            }
-
-            setUser(null);
-
+            if (requestId !== sessionRequestId.current) return;
             const status = error.response?.status;
-
-            // A missing or expired login is a normal guest state.
-            if (status === 401) {
+            if (status === 401 || status === 403) {
+                setUser(null);
+                // An inactive account must not trap the browser on a disabled login form.
                 setAuthError("");
-            } else if (status === 403) {
-                setAuthError(
-                    error.response?.data?.message ||
-                    "Your account is not allowed to access this service."
-                );
-            } else {
-                setAuthError(
-                    "Unable to check your session. Please try again."
-                );
+            } else if (!silent) {
+                setUser(null);
+                setAuthError("Unable to check your session. Please try again.");
             }
         } finally {
-            if (requestId === sessionRequestId.current) {
-                setLoading(false);
-            }
+            if (requestId === sessionRequestId.current) setLoading(false);
         }
     }, []);
 
-    // ================== INITIAL SESSION CHECK ==================
+    // A stale request must not clear a newer login session.
+    useEffect(() => {
+        const requestId = api.interceptors.request.use((config) => {
+            config.authRequestId = sessionRequestId.current;
+            return config;
+        });
+        const responseId = api.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                const config = error.config;
+                if (
+                    config &&
+                    !config.skipSessionHandling &&
+                    config.authRequestId === sessionRequestId.current
+                ) {
+                    if (error.response?.status === 401) clearSession();
+                    // A 403 can mean either account deactivation or an ordinary permission failure.
+                    // Recheck the session instead of logging out every forbidden request.
+                    if (error.response?.status === 403) refreshUser({ silent: true });
+                }
+                return Promise.reject(error);
+            }
+        );
+        return () => {
+            api.interceptors.request.eject(requestId);
+            api.interceptors.response.eject(responseId);
+        };
+    }, [clearSession, refreshUser]);
+
     useEffect(() => {
         refreshUser();
-
         return () => {
-            // Ignore a pending session response after cleanup.
             sessionRequestId.current += 1;
         };
     }, [refreshUser]);
 
-    // ================== LOGIN ==================
-    const login = useCallback(async (credentials) => {
-        const { data } = await api.post("/auth/login", credentials, {
-            skipSessionHandling: true,
-        });
-
-        sessionRequestId.current += 1;
-
-        setUser(normalizeAuthUser(data.user));
-        setAuthError("");
-        setLoading(false);
-
-        return data;
-    }, []);
-
-    // ================== SIGNUP ==================
-    const signup = useCallback(async (details) => {
-        const { data } = await api.post("/auth/signup", details, {
-            skipSessionHandling: true,
-        });
-
-        sessionRequestId.current += 1;
-
-        setUser(normalizeAuthUser(data.user));
-        setAuthError("");
-        setLoading(false);
-
-        return data;
-    }, []);
-
-    // ================== UPDATE SHARED PROFILE STATE ==================
-    // Call only after the backend confirms a successful profile update.
-    // This immediately refreshes the header name and avatar.
-    const updateUserProfile = useCallback((profile) => {
-        if (!profile?._id) return;
-
-        setUser((currentUser) => {
-            // Never update another authenticated user's local state.
-            if (
-                !currentUser ||
-                String(currentUser._id) !== String(profile._id)
-            ) {
-                return currentUser;
-            }
-
-            return normalizeAuthUser({
-                ...currentUser,
-                name: profile.name ?? currentUser.name,
-                email: profile.email ?? currentUser.email,
-                phone: profile.phone ?? currentUser.phone,
-                avatar: profile.avatar ?? currentUser.avatar,
-            });
-        });
-    }, []);
-
-    // ================== LOGOUT ==================
-    const logout = useCallback(async () => {
-        try {
-            await api.post("/auth/logout", null, {
-                skipSessionHandling: true,
-            });
-        } catch (error) {
-            // A missing or expired session is already logged out.
-            // Network and other errors remain visible to the caller.
-            if (error.response?.status !== 401) {
-                throw error;
+    // Synchronize login/logout/profile changes across tabs without exposing account data.
+    useEffect(() => {
+        async function checkSession() {
+            if (document.visibilityState !== "visible" || backgroundRequest.current) return;
+            backgroundRequest.current = true;
+            try {
+                await refreshUser({ silent: true });
+            } finally {
+                backgroundRequest.current = false;
             }
         }
+        function onStorage(event) {
+            if (event.key === SESSION_EVENT) checkSession();
+        }
+        window.addEventListener("focus", checkSession);
+        window.addEventListener("storage", onStorage);
+        document.addEventListener("visibilitychange", checkSession);
+        return () => {
+            window.removeEventListener("focus", checkSession);
+            window.removeEventListener("storage", onStorage);
+            document.removeEventListener("visibilitychange", checkSession);
+        };
+    }, [refreshUser]);
 
+    const authenticate = useCallback(async (endpoint, details) => {
+        const { data } = await api.post(endpoint, details, { skipSessionHandling: true });
+        sessionRequestId.current += 1;
+        setUser(normalizeAuthUser(data.user));
+        setAuthError("");
+        setLoading(false);
+        notifyOtherTabs();
+        return data;
+    }, []);
+
+    const login = useCallback(
+        (credentials) => authenticate("/auth/login", credentials),
+        [authenticate]
+    );
+    const signup = useCallback((details) => authenticate("/auth/signup", details), [authenticate]);
+
+    // Only merge a server-confirmed profile belonging to the current account.
+    const updateUserProfile = useCallback((profile) => {
+        if (!profile?._id) return;
+        setUser((current) => {
+            if (!current || String(current._id) !== String(profile._id)) return current;
+            const fields = [
+                "name",
+                "email",
+                "phone",
+                "avatar",
+                "qualification",
+                "experience",
+                "skills",
+                "mustChangePassword",
+            ];
+            const changes = Object.fromEntries(
+                fields.filter((key) => profile[key] !== undefined).map((key) => [key, profile[key]])
+            );
+            return normalizeAuthUser({ ...current, ...changes });
+        });
+        notifyOtherTabs();
+    }, []);
+
+    const logout = useCallback(async () => {
+        try {
+            await api.post("/auth/logout", null, { skipSessionHandling: true });
+        } catch (error) {
+            if (error.response?.status !== 401) throw error;
+        }
         clearSession();
+        notifyOtherTabs();
     }, [clearSession]);
 
-    // ================== SHARED CONTEXT VALUE ==================
-    const value = {
-        user,
-        loading,
-        authError,
-        isAuthenticated: Boolean(user),
-        login,
-        signup,
-        logout,
-        refreshUser,
-        updateUserProfile,
-    };
-
     return (
-        <AuthContext.Provider value={value}>
+        <AuthContext.Provider
+            value={{
+                user,
+                loading,
+                authError,
+                isAuthenticated: Boolean(user),
+                login,
+                signup,
+                logout,
+                refreshUser,
+                updateUserProfile,
+            }}
+        >
             {children}
         </AuthContext.Provider>
     );
 }
 
-// ================== AUTHENTICATION HOOK ==================
 export function useAuth() {
     const context = useContext(AuthContext);
-
-    if (!context) {
-        throw new Error("useAuth must be used inside AuthProvider.");
-    }
-
+    if (!context) throw new Error("useAuth must be used inside AuthProvider.");
     return context;
 }

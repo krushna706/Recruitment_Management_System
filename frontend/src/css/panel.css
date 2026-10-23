@@ -1087,11 +1087,7 @@
     color: #ffffff;
 
     background:
-        radial-gradient(
-            ellipse at 95% 10%,
-            rgb(116 160 255 / 25%),
-            transparent 45%
-        ),
+        radial-gradient(ellipse at 95% 10%, rgb(116 160 255 / 25%), transparent 45%),
         linear-gradient(115deg, #14284f 0%, #1b3f83 65%, #275cd0 100%);
 
     box-shadow: 0 10px 28px rgb(27 63 131 / 12%);
@@ -1839,17 +1835,11 @@
     border-color: var(--panel-border);
 }
 
-.panel-layout
-    .panel-field
-    .MuiOutlinedInput-root:hover
-    .MuiOutlinedInput-notchedOutline {
+.panel-layout .panel-field .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
     border-color: #aabbd8;
 }
 
-.panel-layout
-    .panel-field
-    .MuiOutlinedInput-root.Mui-focused
-    .MuiOutlinedInput-notchedOutline {
+.panel-layout .panel-field .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
     border-color: var(--panel-primary);
 }
 
@@ -1985,10 +1975,7 @@
     width: 25%;
 }
 
-.applications-table
-    .MuiTableBody-root
-    .MuiTableRow-root:last-child
-    .MuiTableCell-root {
+.applications-table .MuiTableBody-root .MuiTableRow-root:last-child .MuiTableCell-root {
     border-bottom: 0;
 }
 
@@ -2263,13 +2250,7 @@
     border: 1px solid #dce5f6;
     border-radius: 16px;
 
-    background:
-        radial-gradient(
-            ellipse at 100% 0%,
-            rgb(38 93 245 / 7%),
-            transparent 60%
-        ),
-        #ffffff;
+    background: radial-gradient(ellipse at 100% 0%, rgb(38 93 245 / 7%), transparent 60%), #ffffff;
 
     box-shadow: 0 6px 24px rgb(24 36 59 / 3%);
 }
@@ -2952,11 +2933,7 @@
     height: 100px;
 
     background:
-        radial-gradient(
-            ellipse at 90% 0%,
-            rgb(147 179 255 / 35%),
-            transparent 65%
-        ),
+        radial-gradient(ellipse at 90% 0%, rgb(147 179 255 / 35%), transparent 65%),
         linear-gradient(115deg, #14284f, #2454b2);
 }
 
@@ -3176,10 +3153,7 @@
     color: #b42318;
 }
 
-.profile-page
-    .panel-field
-    .MuiOutlinedInput-root.Mui-error
-    .MuiOutlinedInput-notchedOutline {
+.profile-page .panel-field .MuiOutlinedInput-root.Mui-error .MuiOutlinedInput-notchedOutline {
     border-color: #b42318;
 }
 
@@ -3692,13 +3666,6 @@
 
 .admin-dashboard .panel-card-title {
     margin-bottom: 4px;
-    font-size: 18px;
-    line-height: 26px;
-}
-
-.admin-dashboard .panel-card-description {
-    font-size: 13px;
-    line-height: 21px;
 }
 
 /* =========================================================
@@ -3722,11 +3689,7 @@
     color: #ffffff;
 
     background:
-        radial-gradient(
-            ellipse at 95% 0%,
-            rgb(120 161 255 / 25%),
-            transparent 50%
-        ),
+        radial-gradient(ellipse at 95% 0%, rgb(120 161 255 / 25%), transparent 50%),
         linear-gradient(115deg, #14284f, #1c4188 70%, #285ac4);
 
     box-shadow: 0 10px 28px rgb(27 63 131 / 10%);
@@ -3965,18 +3928,14 @@
     margin: 0 0 8px;
 
     color: var(--panel-muted);
-    font-size: 13px;
     font-weight: 500;
-    line-height: 22px;
 }
 
 .admin-overview-copy > strong {
     display: block;
 
     color: var(--panel-text);
-    font-size: 32px;
     font-weight: 700;
-    line-height: 1.2;
     letter-spacing: -0.8px;
     font-variant-numeric: tabular-nums;
 }
@@ -3985,8 +3944,6 @@
     margin: 8px 0 0;
 
     color: var(--panel-muted);
-    font-size: 12px;
-    line-height: 20px;
 }
 
 .admin-overview-arrow {
@@ -4102,7 +4059,6 @@
 
 .admin-status-card-top > strong {
     color: var(--panel-text);
-    font-size: 28px;
     font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.6px;
@@ -4113,17 +4069,13 @@
     margin: 0 0 4px;
 
     color: var(--panel-text);
-    font-size: 14px;
     font-weight: 600;
-    line-height: 23px;
 }
 
 .admin-status-card p {
     margin: 0;
 
     color: var(--panel-muted);
-    font-size: 12px;
-    line-height: 20px;
 }
 
 /* ===== STATUS COUNTS: RESPONSIVE ===== */
@@ -4182,10 +4134,7 @@
     border-bottom: 1px solid var(--panel-border);
     color: #52627d;
     background: #edf2fc;
-
-    font-size: 12px;
     font-weight: 600;
-    line-height: 20px;
 }
 
 .admin-applications-table td {
@@ -4241,36 +4190,26 @@
     margin: 0 0 3px;
 
     color: var(--panel-text);
-    font-size: 14px;
     font-weight: 600;
-    line-height: 21px;
 }
 
 .admin-candidate p {
     margin: 0 0 2px;
 
     color: #455773;
-    font-size: 12px;
-    line-height: 19px;
 }
 
 .admin-candidate > div > span {
     color: var(--panel-muted);
-    font-size: 11px;
-    line-height: 18px;
 }
 
 .admin-applications-table time {
     color: var(--panel-muted);
-    font-size: 12px;
-    line-height: 20px;
     white-space: nowrap;
 }
 
 .admin-applications-table .panel-status {
     padding: 4px 8px;
-    font-size: 11px;
-    line-height: 19px;
 }
 
 .admin-visually-hidden {
@@ -4357,10 +4296,7 @@
 
 .admin-activity-item h3 {
     margin: 0 0 4px;
-
-    font-size: 13px;
     font-weight: 600;
-    line-height: 22px;
 }
 
 .admin-activity-item h3 a {
@@ -4376,8 +4312,6 @@
     margin: 0;
 
     color: var(--panel-muted);
-    font-size: 12px;
-    line-height: 21px;
 }
 
 .admin-activity-item time {
@@ -4385,8 +4319,6 @@
     margin-top: 6px;
 
     color: #65748b;
-    font-size: 11px;
-    line-height: 19px;
 }
 
 @media (max-width: 575.98px) {
@@ -5092,9 +5024,7 @@
     box-shadow: 0 0 0 3px rgb(38 93 245 / 7%);
 }
 
-.manage-jobs
-    .MuiOutlinedInput-root.Mui-focused
-    .MuiOutlinedInput-notchedOutline {
+.manage-jobs .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
     border-color: var(--mj-primary);
 }
 
@@ -6976,4 +6906,80 @@
     .admin-profile .mj-form-actions {
         grid-template-columns: 1fr;
     }
+}
+
+/* ================== SHARED PROFILE AND PANEL LAYOUT ================== */
+.panel-loading-state {
+    padding: 32px;
+    text-align: center;
+}
+.panel-space-top.MuiButton-root,
+.panel-space-top.MuiAlert-root {
+    margin-top: 16px;
+}
+.panel-space-bottom.MuiButton-root,
+.panel-space-bottom.MuiAlert-root {
+    margin-bottom: 16px;
+}
+:is(.admin-profile, .profile-page) .profile-photo-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+:is(.admin-profile, .profile-page) .profile-photo-button.MuiButton-root,
+:is(.admin-profile, .profile-page) .profile-photo-button.MuiAlert-root {
+    font-size: 11px;
+    text-transform: none;
+}
+:is(.admin-profile, .profile-page) .profile-photo-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+:is(.admin-profile, .profile-page) .profile-photo-filename {
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+:is(.admin-profile, .profile-page) .profile-photo-error {
+    color: #b91c1c;
+    font-size: 12px;
+    margin-top: 8px;
+}
+:is(.admin-profile, .profile-page) .profile-photo-hint {
+    display: block;
+    margin-top: 6px;
+}
+:is(.admin-profile, .profile-page) .profile-security-column {
+    display: grid;
+    gap: 24px;
+    align-content: start;
+}
+:is(.admin-profile, .profile-page) .profile-password-fields {
+    display: grid;
+    gap: 18px;
+}
+:is(.admin-profile, .profile-page) .profile-upload-control {
+    margin-bottom: 12px;
+}
+:is(.admin-profile, .profile-page) .profile-upload-note {
+    font-size: 12px;
+    margin: 4px 0;
+}
+:is(.admin-profile, .profile-page) .profile-upload-hint {
+    font-size: 11px;
+    margin: 4px 0;
+    color: #718096;
+}
+.panel-dashboard-loading {
+    padding: 40px;
+    text-align: center;
+}
+.panel-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }

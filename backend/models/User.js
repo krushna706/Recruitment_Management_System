@@ -40,7 +40,6 @@ const resumeSchema = new Schema(
     }
 );
 
-
 // ================== PASSWORD RESET SCHEMA ==================
 // Store only secure OTP and reset-verification metadata.
 // Never store the actual 6-digit OTP.
@@ -99,7 +98,6 @@ const passwordResetSchema = new Schema(
         _id: false,
     }
 );
-
 
 // ================== USER SCHEMA ==================
 const userSchema = new Schema(
@@ -211,15 +209,15 @@ const userSchema = new Schema(
                 {
                     type: String,
                     trim: true,
-                    maxlength: 100,
+                    maxlength: 60,
                 },
             ],
             default: [],
             validate: {
                 validator: function (skills) {
-                    return skills.length <= 50;
+                    return skills.length <= 15;
                 },
-                message: "A maximum of 50 skills is allowed.",
+                message: "A maximum of 15 skills is allowed.",
             },
         },
 
@@ -228,7 +226,6 @@ const userSchema = new Schema(
             default: null,
         },
 
-        
         // ================== PROFILE IMAGE ==================
         // Store Cloudinary image URL and public ID.
         // Default avatar is handled by the frontend.
@@ -246,7 +243,6 @@ const userSchema = new Schema(
                 select: false,
             },
         },
-
 
         // ================== ACCOUNT ACTIVITY ==================
         // Update only after successful authentication.
@@ -286,7 +282,6 @@ const userSchema = new Schema(
                 if (result.avatar) {
                     delete result.avatar.publicId;
                 }
-
 
                 return result;
             },

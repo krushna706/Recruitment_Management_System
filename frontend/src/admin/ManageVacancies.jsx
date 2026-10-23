@@ -1,18 +1,6 @@
+import { getErrorMessage } from "../utils/dataFormat";
 import { useEffect, useRef, useState } from "react";
-import {
-    Alert,
-    Button,
-    Chip,
-    MenuItem,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TextField,
-} from "@mui/material";
+import { Alert, Button, Chip, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField } from "@mui/material";
 import { toast } from "react-toastify";
 
 import api from "../services/api";
@@ -81,11 +69,6 @@ function normalizeVacancy(source) {
     };
 }
 
-// ================== ERROR MESSAGE ==================
-function getErrorMessage(error, fallback) {
-    return error.response?.data?.message || fallback;
-}
-
 // ================== FRONTEND VALIDATION ==================
 // Backend Joi validation remains authoritative.
 function validateVacancy(form) {
@@ -128,8 +111,7 @@ function validateVacancy(form) {
 
     Object.entries(FIELD_LIMITS).forEach(([field, limit]) => {
         if (form[field].trim().length > limit) {
-            errors[field] =
-                `${FIELD_LABELS[field]} cannot exceed ${limit} characters.`;
+            errors[field] = `${FIELD_LABELS[field]} cannot exceed ${limit} characters.`;
         }
     });
 
@@ -167,6 +149,7 @@ function ManageVacancies() {
     const [form, setForm] = useState({ ...EMPTY_FORM });
     const [errors, setErrors] = useState({});
     const [editingId, setEditingId] = useState(null);
+    const [editingVersion, setEditingVersion] = useState(null);
     const [editLoading, setEditLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -238,10 +221,7 @@ function ManageVacancies() {
 
                 if (controller.signal.aborted) return;
 
-                const lastPage = Math.max(
-                    0,
-                    data.pagination.totalPages - 1
-                );
+                const lastPage = Math.max(0, data.pagination.totalPages - 1);
 
                 if (page > lastPage) {
                     setPage(lastPage);
@@ -258,10 +238,7 @@ function ManageVacancies() {
                 setTotal(0);
                 setCounts(null);
                 setListError(
-                    getErrorMessage(
-                        error,
-                        "Vacancies could not be loaded. Please try again."
-                    )
+                    getErrorMessage(error, "Vacancies could not be loaded. Please try again.")
                 );
             } finally {
                 if (!controller.signal.aborted) {
@@ -273,13 +250,7 @@ function ManageVacancies() {
         fetchVacancies();
 
         return () => controller.abort();
-    }, [
-        page,
-        rowsPerPage,
-        debouncedSearch,
-        statusFilter,
-        revision,
-    ]);
+    }, [page, rowsPerPage, debouncedSearch, statusFilter, revision]);
 
     // ================== OVERVIEW CARDS ==================
     const metrics = [
@@ -322,17 +293,14 @@ function ManageVacancies() {
             [name]: value,
         }));
 
-        setErrors((previous) =>
-            name === "status"
-                ? {}
-                : { ...previous, [name]: "" }
-        );
+        setErrors((previous) => (name === "status" ? {} : { ...previous, [name]: "" }));
     }
 
     function clearForm() {
         setForm({ ...EMPTY_FORM });
         setErrors({});
         setEditingId(null);
+        setEditingVersion(null);
     }
 
     function resetForm() {
@@ -343,9 +311,7 @@ function ManageVacancies() {
 
     // ================== FORM FOCUS ==================
     function focusForm() {
-        const reduceMotion = window.matchMedia(
-            "(prefers-reduced-motion: reduce)"
-        ).matches;
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
         formRef.current?.scrollIntoView({
             behavior: reduceMotion ? "auto" : "smooth",
@@ -380,17 +346,13 @@ function ManageVacancies() {
             if (controller.signal.aborted || !mountedRef.current) return;
 
             setForm(getFormValues(data.vacancy));
+            setEditingVersion(data.vacancy.version);
             setEditingId(String(data.vacancy.id || data.vacancy._id));
             setErrors({});
         } catch (error) {
             if (controller.signal.aborted || !mountedRef.current) return;
 
-            toast.error(
-                getErrorMessage(
-                    error,
-                    "Vacancy details could not be loaded."
-                )
-            );
+            toast.error(getErrorMessage(error, "Vacancy details could not be loaded."));
         } finally {
             editBusyRef.current = false;
 
@@ -419,28 +381,22 @@ function ManageVacancies() {
         }
 
         const payload = Object.fromEntries(
-            Object.entries(getFormValues(form)).map(([key, value]) => [
-                key,
-                value.trim(),
-            ])
+            Object.entries(getFormValues(form)).map(([key, value]) => [key, value.trim()])
         );
+
+        if (isEditing) payload.version = editingVersion;
 
         savingRef.current = true;
         setSaving(true);
 
         try {
             const response = isEditing
-                ? await api.put(
-                      `/jobs/admin/vacancies/${encodeURIComponent(editingId)}`,
-                      payload
-                  )
+                ? await api.put(`/jobs/admin/vacancies/${encodeURIComponent(editingId)}`, payload)
                 : await api.post("/jobs/admin/vacancies", payload);
 
             if (!mountedRef.current) return;
 
-            toast.success(
-                response.data.message || "Vacancy saved successfully."
-            );
+            toast.success(response.data.message || "Vacancy saved successfully.");
 
             clearForm();
             setSearch("");
@@ -451,8 +407,7 @@ function ManageVacancies() {
         } catch (error) {
             if (!mountedRef.current) return;
 
-            const uncertainResult =
-                !error.response || error.response.status >= 500;
+            const uncertainResult = !error.response || error.response.status >= 500;
 
             toast.error(
                 uncertainResult
@@ -523,10 +478,7 @@ function ManageVacancies() {
 
             <section className="mj-metrics" aria-label="Vacancy overview">
                 {metrics.map((metric) => (
-                    <article
-                        key={metric.label}
-                        className={`mj-metric mj-tone-${metric.tone}`}
-                    >
+                    <article key={metric.label} className={`mj-metric mj-tone-${metric.tone}`}>
                         <div className="mj-metric-top">
                             <span className="mj-metric-label">{metric.label}</span>
 
@@ -552,9 +504,7 @@ function ManageVacancies() {
                         <span className="mj-header-icon" aria-hidden="true">
                             <i
                                 className={
-                                    isEditing
-                                        ? "fa-regular fa-pen-to-square"
-                                        : "fa-solid fa-plus"
+                                    isEditing ? "fa-regular fa-pen-to-square" : "fa-solid fa-plus"
                                 }
                             />
                         </span>
@@ -603,30 +553,24 @@ function ManageVacancies() {
                                 />
 
                                 <TextField
-                                    {...field(
-                                        "department",
-                                        optionalLabel("Department"),
-                                        {
-                                            required: publishing,
-                                            placeholder: "e.g. Engineering",
-                                        }
-                                    )}
+                                    {...field("department", optionalLabel("Department"), {
+                                        required: publishing,
+                                        placeholder: "e.g. Engineering",
+                                    })}
                                 />
 
                                 <TextField
-                                    {...field(
-                                        "type",
-                                        optionalLabel("Job type"),
-                                        {
-                                            required: publishing,
-                                        }
-                                    )}
+                                    {...field("type", optionalLabel("Job type"), {
+                                        required: publishing,
+                                    })}
                                     select
                                 >
                                     <MenuItem value="">Not selected</MenuItem>
 
                                     {JOB_TYPES.map((type) => (
-                                        <MenuItem key={type} value={type}>{type}</MenuItem>
+                                        <MenuItem key={type} value={type}>
+                                            {type}
+                                        </MenuItem>
                                     ))}
                                 </TextField>
 
@@ -637,30 +581,24 @@ function ManageVacancies() {
                                     select
                                 >
                                     {WORK_MODES.map((mode) => (
-                                        <MenuItem key={mode} value={mode}>{mode}</MenuItem>
+                                        <MenuItem key={mode} value={mode}>
+                                            {mode}
+                                        </MenuItem>
                                     ))}
                                 </TextField>
 
                                 <TextField
-                                    {...field(
-                                        "experience",
-                                        optionalLabel("Experience"),
-                                        {
-                                            required: publishing,
-                                            placeholder: "e.g. 0–2 years",
-                                        }
-                                    )}
+                                    {...field("experience", optionalLabel("Experience"), {
+                                        required: publishing,
+                                        placeholder: "e.g. 0–2 years",
+                                    })}
                                 />
 
                                 <TextField
-                                    {...field(
-                                        "location",
-                                        optionalLabel("Location"),
-                                        {
-                                            required: publishing,
-                                            placeholder: "e.g. Bhubaneswar, Odisha",
-                                        }
-                                    )}
+                                    {...field("location", optionalLabel("Location"), {
+                                        required: publishing,
+                                        placeholder: "e.g. Bhubaneswar, Odisha",
+                                    })}
                                 />
 
                                 <TextField
@@ -670,7 +608,9 @@ function ManageVacancies() {
                                     select
                                 >
                                     {STATUSES.map((status) => (
-                                        <MenuItem key={status} value={status}>{status}</MenuItem>
+                                        <MenuItem key={status} value={status}>
+                                            {status}
+                                        </MenuItem>
                                     ))}
                                 </TextField>
                             </div>
@@ -682,19 +622,15 @@ function ManageVacancies() {
                             description="Explain the role and include any additional candidate requirements."
                         >
                             <TextField
-                                {...field(
-                                    "description",
-                                    optionalLabel("Vacancy description"),
-                                    {
-                                        required: publishing,
-                                        placeholder:
-                                            "Describe the role and responsibilities.\n\n" +
-                                            "Include education, skills, salary and other requirements here.",
-                                        helperText:
-                                            `${form.description.length}/20000 characters. ` +
-                                            "Include additional requirements here when needed.",
-                                    }
-                                )}
+                                {...field("description", optionalLabel("Vacancy description"), {
+                                    required: publishing,
+                                    placeholder:
+                                        "Describe the role and responsibilities.\n\n" +
+                                        "Include education, skills, salary and other requirements here.",
+                                    helperText:
+                                        `${form.description.length}/20000 characters. ` +
+                                        "Include additional requirements here when needed.",
+                                })}
                                 multiline
                                 minRows={6}
                             />
@@ -708,8 +644,7 @@ function ManageVacancies() {
 
                     <footer className="mj-form-footer">
                         <p>
-                            <span>*</span>{" "}
-                            {publishing ? "Required to publish" : "Required to save"}
+                            <span>*</span> {publishing ? "Required to publish" : "Required to save"}
                         </p>
 
                         <div className="mj-form-actions">
@@ -793,7 +728,9 @@ function ManageVacancies() {
                         <MenuItem value="All">All statuses</MenuItem>
 
                         {STATUSES.map((status) => (
-                            <MenuItem key={status} value={status}>{status}</MenuItem>
+                            <MenuItem key={status} value={status}>
+                                {status}
+                            </MenuItem>
                         ))}
                     </TextField>
                 </div>
@@ -833,7 +770,9 @@ function ManageVacancies() {
                                                 <Button
                                                     color="inherit"
                                                     size="small"
-                                                    onClick={() => setRevision((value) => value + 1)}
+                                                    onClick={() =>
+                                                        setRevision((value) => value + 1)
+                                                    }
                                                 >
                                                     Retry
                                                 </Button>
@@ -861,7 +800,9 @@ function ManageVacancies() {
 
                                                 <div>
                                                     <strong>{vacancy.title}</strong>
-                                                    <p>{vacancy.department || "Department not set"}</p>
+                                                    <p>
+                                                        {vacancy.department || "Department not set"}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -870,7 +811,9 @@ function ManageVacancies() {
                                             <span className="mj-cell-primary">
                                                 {vacancy.location || "Not set"}
                                             </span>
-                                            <span className="mj-cell-secondary">{vacancy.mode}</span>
+                                            <span className="mj-cell-secondary">
+                                                {vacancy.mode}
+                                            </span>
                                         </TableCell>
 
                                         <TableCell>
@@ -923,7 +866,9 @@ function ManageVacancies() {
                                             </span>
 
                                             <h3>
-                                                {hasFilters ? "No matching vacancies" : "Build your team"}
+                                                {hasFilters
+                                                    ? "No matching vacancies"
+                                                    : "Build your team"}
                                             </h3>
 
                                             <p>
@@ -942,10 +887,7 @@ function ManageVacancies() {
                 <TablePagination
                     component="div"
                     count={total}
-                    page={Math.min(
-                        page,
-                        Math.max(0, Math.ceil(total / rowsPerPage) - 1)
-                    )}
+                    page={Math.min(page, Math.max(0, Math.ceil(total / rowsPerPage) - 1))}
                     onPageChange={(_, nextPage) => setPage(nextPage)}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={(event) => {

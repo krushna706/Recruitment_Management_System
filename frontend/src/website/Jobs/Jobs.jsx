@@ -23,17 +23,9 @@ function getPostedLabel(dateString) {
 
     const now = new Date();
 
-    const postedDay = Date.UTC(
-        posted.getFullYear(),
-        posted.getMonth(),
-        posted.getDate()
-    );
+    const postedDay = Date.UTC(posted.getFullYear(), posted.getMonth(), posted.getDate());
 
-    const currentDay = Date.UTC(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate()
-    );
+    const currentDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
 
     const days = Math.floor((currentDay - postedDay) / 86400000);
 
@@ -71,24 +63,12 @@ function Jobs() {
     const employmentType = searchParams.get("employmentType") || "";
     const workMode = searchParams.get("workMode") || "";
 
-    const filterKey = JSON.stringify([
-        designation,
-        location,
-        experience,
-        employmentType,
-        workMode,
-    ]);
+    const filterKey = JSON.stringify([designation, location, experience, employmentType, workMode]);
 
     // A new filter starts from the first page.
-    const currentPage = pagination.filterKey === filterKey
-        ? pagination.page
-        : 1;
+    const currentPage = pagination.filterKey === filterKey ? pagination.page : 1;
 
-    const requestKey = JSON.stringify([
-        filterKey,
-        currentPage,
-        refreshKey,
-    ]);
+    const requestKey = JSON.stringify([filterKey, currentPage, refreshKey]);
 
     const isCurrentResult = result.requestKey === requestKey;
     const isLoading = loading || !isCurrentResult;
@@ -98,9 +78,7 @@ function Jobs() {
     const pageCount = isCurrentResult ? result.totalPages : 0;
     const startIndex = (currentPage - 1) * PAGE_SIZE;
 
-    const hasFilters = Boolean(
-        designation || location || experience || employmentType || workMode
-    );
+    const hasFilters = Boolean(designation || location || experience || employmentType || workMode);
 
     // ================== FETCH PUBLISHED JOBS ==================
     useEffect(() => {
@@ -160,9 +138,10 @@ function Jobs() {
                     jobs: [],
                     total: 0,
                     totalPages: 0,
-                    error: typeof message === "string" && message.trim()
-                        ? message
-                        : "Jobs could not be loaded. Please try again.",
+                    error:
+                        typeof message === "string" && message.trim()
+                            ? message
+                            : "Jobs could not be loaded. Please try again.",
                 });
             } finally {
                 if (!controller.signal.aborted) {
@@ -206,13 +185,9 @@ function Jobs() {
     function clearFilters() {
         const nextParams = new URLSearchParams(searchParams);
 
-        [
-            "designation",
-            "location",
-            "experience",
-            "employmentType",
-            "workMode",
-        ].forEach((name) => nextParams.delete(name));
+        ["designation", "location", "experience", "employmentType", "workMode"].forEach((name) =>
+            nextParams.delete(name)
+        );
 
         setPagination({ filterKey: "", page: 1 });
 
@@ -266,27 +241,24 @@ function Jobs() {
                 <div className="website-shell about-hero-inner">
                     <nav className="about-breadcrumb" aria-label="Breadcrumb">
                         <ol>
-                            <li><Link to="/">Home</Link></li>
+                            <li>
+                                <Link to="/">Home</Link>
+                            </li>
                             <li aria-current="page">Jobs</li>
                         </ol>
                     </nav>
 
                     <div className="about-hero-content">
-                        <p className="website-section-label">
-                            FIND YOUR OPPORTUNITY
-                        </p>
+                        <p className="website-section-label">FIND YOUR OPPORTUNITY</p>
 
-                        <h1
-                            id="jobs-page-title"
-                            className="website-section-title"
-                        >
+                        <h1 id="jobs-page-title" className="website-section-title">
                             Your skills. Your ambitions.
                             <span>Your next opportunity.</span>
                         </h1>
 
                         <p className="website-section-description jobs-banner-description">
-                            Discover roles that match your experience, interests
-                            and the way you want to work.
+                            Discover roles that match your experience, interests and the way you
+                            want to work.
                         </p>
                     </div>
                 </div>
@@ -310,9 +282,7 @@ function Jobs() {
                                 size="small"
                                 label={filter.label}
                                 value={filter.value}
-                                onChange={(event) =>
-                                    updateFilter(filter.name, event.target.value)
-                                }
+                                onChange={(event) => updateFilter(filter.name, event.target.value)}
                                 className="website-text-field"
                             >
                                 <MenuItem value="">All</MenuItem>
@@ -323,12 +293,9 @@ function Jobs() {
                                     </MenuItem>
                                 ))}
 
-                                {filter.value &&
-                                    !filter.options.includes(filter.value) && (
-                                        <MenuItem value={filter.value}>
-                                            {filter.value}
-                                        </MenuItem>
-                                    )}
+                                {filter.value && !filter.options.includes(filter.value) && (
+                                    <MenuItem value={filter.value}>{filter.value}</MenuItem>
+                                )}
                             </TextField>
                         ))}
 
@@ -352,15 +319,9 @@ function Jobs() {
             >
                 <div className="website-shell jobs-results-fluid">
                     <div className="jobs-results-header">
-                        <p className="website-section-label">
-                            EXPLORE OPPORTUNITIES
-                        </p>
+                        <p className="website-section-label">EXPLORE OPPORTUNITIES</p>
 
-                        <h2
-                            id="jobs-results-title"
-                            className="website-section-title"
-                            tabIndex={-1}
-                        >
+                        <h2 id="jobs-results-title" className="website-section-title" tabIndex={-1}>
                             Find a role
                             <span> that fits you.</span>
                         </h2>
@@ -372,10 +333,7 @@ function Jobs() {
 
                     {isLoading ? (
                         <div className="rms-jobs-empty jobs-empty">
-                            <i
-                                className="fa-solid fa-spinner fa-spin"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
                             <h3>Loading jobs...</h3>
                             <p>Please wait while we fetch the latest openings.</p>
                         </div>
@@ -387,9 +345,7 @@ function Jobs() {
                                     type="button"
                                     color="inherit"
                                     size="small"
-                                    onClick={() =>
-                                        setRefreshKey((previous) => previous + 1)
-                                    }
+                                    onClick={() => setRefreshKey((previous) => previous + 1)}
                                 >
                                     Retry
                                 </Button>
@@ -410,9 +366,7 @@ function Jobs() {
                                             className="rms-job-card jobs-position-card"
                                         >
                                             <div className="jobs-card-topline">
-                                                <p className="rms-job-company">
-                                                    {job.company}
-                                                </p>
+                                                <p className="rms-job-company">{job.company}</p>
 
                                                 <time
                                                     className="jobs-posted"
@@ -429,10 +383,7 @@ function Jobs() {
 
                                             <div className="jobs-title-row">
                                                 <h3 className="rms-job-title">
-                                                    <Link
-                                                        to={detailsPath}
-                                                        title={job.title}
-                                                    >
+                                                    <Link to={detailsPath} title={job.title}>
                                                         {job.title}
                                                     </Link>
                                                 </h3>
@@ -458,9 +409,7 @@ function Jobs() {
                                                         Experience
                                                     </dt>
 
-                                                    <dd>
-                                                        {job.experience || "Not specified"}
-                                                    </dd>
+                                                    <dd>{job.experience || "Not specified"}</dd>
                                                 </div>
 
                                                 <div>
@@ -472,9 +421,7 @@ function Jobs() {
                                                         Salary
                                                     </dt>
 
-                                                    <dd>
-                                                        {job.salary || "Not disclosed"}
-                                                    </dd>
+                                                    <dd>{job.salary || "Not disclosed"}</dd>
                                                 </div>
                                             </dl>
 
@@ -523,10 +470,7 @@ function Jobs() {
                         </>
                     ) : (
                         <div className="rms-jobs-empty jobs-empty">
-                            <i
-                                className="fa-solid fa-magnifying-glass"
-                                aria-hidden="true"
-                            />
+                            <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
 
                             <h3>
                                 {hasFilters
