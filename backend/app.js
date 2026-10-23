@@ -108,7 +108,7 @@ app.use(cookieParser());
 
 // ================== TEMPORARY PROXY CHECK ==================
 // Uncomment this block to verify client IP and proxy hops after deployment.
-// Open /api/health?proxyCheck=1 and inspect the server logs.
+// Open https://hiresetu-ar94.onrender.com/api/health?proxyCheck=1 and inspect the server logs.
 // Current Render setup was tested with TRUST_PROXY_HOPS=3.
 // Verify again for future hosting setups; do not assume the same hop count.
 // Keep this diagnostic block commented out after verification.
