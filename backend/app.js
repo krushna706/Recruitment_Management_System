@@ -106,6 +106,20 @@ app.use(express.json({ limit: "100kb" }));
 // ================== COOKIE PARSING ==================
 app.use(cookieParser());
 
+// ================== TEMPORARY PROXY CHECK ==================
+app.use("/api/health", (req, res, next) => {
+    if (req.query.proxyCheck === "1") {
+        console.log("Proxy check:", {
+            trustProxy: app.get("trust proxy"),
+            detectedIp: req.ip,
+            socketIp: req.socket.remoteAddress,
+            forwardedFor: req.get("x-forwarded-for"),
+        });
+    }
+
+    next();
+});
+
 // ================== HEALTH CHECK ==================
 app.get("/api/health", (req, res) => {
     res.status(200).json({
