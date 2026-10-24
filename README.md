@@ -358,22 +358,6 @@ The proxy hop count was checked for this deployment and should be verified again
 
 The demo runs on a free Render instance, so the first visit after inactivity may take longer to load.
 
-## Testing
-
-Backend APIs were tested using Postman. The public website, candidate panel and admin panel were also tested manually, both locally and after deployment.
-
-The checks covered:
-
-- Authentication and password recovery.
-- Job and vacancy management.
-- Application submission and duplicate prevention.
-- Resume uploads, viewing and downloading.
-- Application status updates.
-- Contact enquiries.
-- Session persistence, direct page refresh and responsive layouts.
-
-These checks were manual and API-based; they do not represent a complete automated test suite.
-
 
 ## Author
 
