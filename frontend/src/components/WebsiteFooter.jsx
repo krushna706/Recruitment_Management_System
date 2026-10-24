@@ -93,7 +93,7 @@ function WebsiteFooter() {
 
                 <div className="website-footer-bottom">
                     <p>© {currentYear} Recruitment Practice Project.</p>
-                    <p>Learning project · Not affiliated with Naukri.</p>
+                    <p>Made By - Krushna Chandra Mohanty</p>
                 </div>
             </div>
         </footer>
