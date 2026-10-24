@@ -60,18 +60,18 @@ Client recruitment is handled by the consultancy's admins; client companies do n
 
 | Area | Technologies |
 | --- | --- |
-| Frontend - React, Vite, React Router 
-| User Interface - Material UI, Bootstrap, CSS, Font Awesome 
-| API Requests - Axios 
-| Notifications - React Toastify 
-| Backend - Node.js, Express 
-| Database - MongoDB Atlas, Mongoose 
-| Authentication - JWT, HttpOnly cookies, bcrypt 
-| Validation - Joi 
-| File Uploads and Storage - Multer, Cloudinary 
-| Email - Brevo 
-| Deployment - Render 
-| API Testing - Postman 
+| Frontend | React, Vite, React Router |
+| User Interface | Material UI, Bootstrap, CSS, Font Awesome |
+| API Requests | Axios |
+| Notifications | React Toastify |
+| Backend | Node.js, Express |
+| Database | MongoDB Atlas, Mongoose |
+| Authentication | JWT, HttpOnly cookies, bcrypt |
+| Validation | Joi |
+| File Uploads and Storage | Multer, Cloudinary |
+| Email | Brevo |
+| Deployment | Render |
+| API Testing | Postman |
 
 ## Application Workflow
 
