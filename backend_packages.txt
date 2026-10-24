@@ -55,3 +55,10 @@ npm run dev                                                  # Preferred for dev
 # Press Ctrl+C to stop
 
 npm start                                                    # Preferred for production server startup
+
+
+# ================== DEMO DATA SETUP ==================
+# Run these commands from the project root when demo data is needed.
+
+node backend/scripts/seedDemoData.js             # Validate demo data without saving it.
+node backend/scripts/seedDemoData.js --apply     # Insert demo data and upload sample resumes after validation succeeds.

@@ -1,0 +1,779 @@
+{
+    "jobs": [
+        {
+            "openingType": "client",
+            "company": "Demo Northstar Digital",
+            "title": "MERN Stack Developer",
+            "department": "Engineering",
+            "skills": [
+                "JavaScript",
+                "React",
+                "Node.js",
+                "MongoDB"
+            ],
+            "location": "Bengaluru",
+            "type": "Full Time",
+            "mode": "Hybrid",
+            "experience": "1-3 years",
+            "salary": "INR 6-9 LPA",
+            "openings": 2,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our engineering team in Bengaluru and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a MERN Stack Developer with Demo Northstar Digital.\n\nAbout the role\nWork with the engineering team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply JavaScript skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in JavaScript,React,Node.js,MongoDB. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": true
+        },
+        {
+            "openingType": "client",
+            "company": "Demo CedarWorks",
+            "title": "Frontend Developer",
+            "department": "Engineering",
+            "skills": [
+                "React",
+                "CSS",
+                "Accessibility"
+            ],
+            "location": "Pune",
+            "type": "Full Time",
+            "mode": "Remote",
+            "experience": "1-3 years",
+            "salary": "INR 5-8 LPA",
+            "openings": 3,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our engineering team in Pune and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Frontend Developer with Demo CedarWorks.\n\nAbout the role\nWork with the engineering team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply React skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in React,CSS,Accessibility. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": true
+        },
+        {
+            "openingType": "client",
+            "company": "Demo Horizon Commerce",
+            "title": "Backend Developer",
+            "department": "Engineering",
+            "skills": [
+                "Node.js",
+                "Express",
+                "MongoDB"
+            ],
+            "location": "Hyderabad",
+            "type": "Full Time",
+            "mode": "Hybrid",
+            "experience": "1-3 years",
+            "salary": "INR 6-10 LPA",
+            "openings": 4,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our engineering team in Hyderabad and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Backend Developer with Demo Horizon Commerce.\n\nAbout the role\nWork with the engineering team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply Node.js skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in Node.js,Express,MongoDB. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": true
+        },
+        {
+            "openingType": "client",
+            "company": "Demo BlueHarbor Services",
+            "title": "QA Engineer",
+            "department": "Quality Assurance",
+            "skills": [
+                "API Testing",
+                "Postman",
+                "Test Planning"
+            ],
+            "location": "Bhubaneswar",
+            "type": "Full Time",
+            "mode": "On-site",
+            "experience": "1-3 years",
+            "salary": "INR 4-6 LPA",
+            "openings": 2,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our quality assurance team in Bhubaneswar and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a QA Engineer with Demo BlueHarbor Services.\n\nAbout the role\nWork with the quality assurance team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply API Testing skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in API Testing,Postman,Test Planning. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": true
+        },
+        {
+            "openingType": "client",
+            "company": "Demo MapleBridge Solutions",
+            "title": "UI/UX Designer",
+            "department": "Design",
+            "skills": [
+                "Figma",
+                "Prototyping",
+                "User Research"
+            ],
+            "location": "Bengaluru",
+            "type": "Full Time",
+            "mode": "Hybrid",
+            "experience": "1-3 years",
+            "salary": "INR 5-7 LPA",
+            "openings": 3,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our design team in Bengaluru and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a UI/UX Designer with Demo MapleBridge Solutions.\n\nAbout the role\nWork with the design team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply Figma skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in Figma,Prototyping,User Research. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": true
+        },
+        {
+            "openingType": "client",
+            "company": "Demo Northstar Digital",
+            "title": "Sales Executive",
+            "department": "Sales",
+            "skills": [
+                "Lead Generation",
+                "CRM",
+                "Negotiation"
+            ],
+            "location": "Pune",
+            "type": "Full Time",
+            "mode": "On-site",
+            "experience": "1-3 years",
+            "salary": "INR 3-5 LPA",
+            "openings": 4,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our sales team in Pune and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Sales Executive with Demo Northstar Digital.\n\nAbout the role\nWork with the sales team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply Lead Generation skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in Lead Generation,CRM,Negotiation. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": true
+        },
+        {
+            "openingType": "client",
+            "company": "Demo CedarWorks",
+            "title": "Business Development Executive",
+            "department": "Sales",
+            "skills": [
+                "Client Communication",
+                "Prospecting",
+                "Sales"
+            ],
+            "location": "Bhubaneswar",
+            "type": "Full Time",
+            "mode": "On-site",
+            "experience": "1-3 years",
+            "salary": "INR 3-6 LPA",
+            "openings": 2,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our sales team in Bhubaneswar and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Business Development Executive with Demo CedarWorks.\n\nAbout the role\nWork with the sales team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply Client Communication skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in Client Communication,Prospecting,Sales. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": false
+        },
+        {
+            "openingType": "client",
+            "company": "Demo Horizon Commerce",
+            "title": "HR Executive",
+            "department": "Human Resources",
+            "skills": [
+                "Recruitment",
+                "Onboarding",
+                "Excel"
+            ],
+            "location": "Hyderabad",
+            "type": "Full Time",
+            "mode": "Hybrid",
+            "experience": "1-3 years",
+            "salary": "INR 3-5 LPA",
+            "openings": 3,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our human resources team in Hyderabad and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a HR Executive with Demo Horizon Commerce.\n\nAbout the role\nWork with the human resources team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply Recruitment skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in Recruitment,Onboarding,Excel. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": false
+        },
+        {
+            "openingType": "client",
+            "company": "Demo BlueHarbor Services",
+            "title": "Accounts Executive",
+            "department": "Finance",
+            "skills": [
+                "Accounting",
+                "Excel",
+                "Reconciliation"
+            ],
+            "location": "Kolkata",
+            "type": "Full Time",
+            "mode": "On-site",
+            "experience": "1-3 years",
+            "salary": "INR 3-5 LPA",
+            "openings": 4,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our finance team in Kolkata and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Accounts Executive with Demo BlueHarbor Services.\n\nAbout the role\nWork with the finance team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply Accounting skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in Accounting,Excel,Reconciliation. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": false
+        },
+        {
+            "openingType": "client",
+            "company": "Demo MapleBridge Solutions",
+            "title": "Operations Coordinator",
+            "department": "Operations",
+            "skills": [
+                "Scheduling",
+                "Reporting",
+                "Excel"
+            ],
+            "location": "Bhubaneswar",
+            "type": "Full Time",
+            "mode": "On-site",
+            "experience": "1-3 years",
+            "salary": "INR 3-4 LPA",
+            "openings": 2,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our operations team in Bhubaneswar and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Operations Coordinator with Demo MapleBridge Solutions.\n\nAbout the role\nWork with the operations team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply Scheduling skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in Scheduling,Reporting,Excel. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": false
+        },
+        {
+            "openingType": "client",
+            "company": "Demo Northstar Digital",
+            "title": "Customer Support Associate",
+            "department": "Customer Support",
+            "skills": [
+                "Communication",
+                "Ticketing",
+                "Problem Solving"
+            ],
+            "location": "Pune",
+            "type": "Full Time",
+            "mode": "Remote",
+            "experience": "1-3 years",
+            "salary": "INR 2-4 LPA",
+            "openings": 3,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our customer support team in Pune and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Customer Support Associate with Demo Northstar Digital.\n\nAbout the role\nWork with the customer support team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply Communication skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in Communication,Ticketing,Problem Solving. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Published",
+            "featured": false
+        },
+        {
+            "openingType": "client",
+            "company": "Demo CedarWorks",
+            "title": "Digital Marketing Executive",
+            "department": "Marketing",
+            "skills": [
+                "SEO",
+                "Content Writing",
+                "Analytics"
+            ],
+            "location": "Bengaluru",
+            "type": "Full Time",
+            "mode": "Hybrid",
+            "experience": "1-3 years",
+            "salary": "INR 3-5 LPA",
+            "openings": 4,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our marketing team in Bengaluru and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Digital Marketing Executive with Demo CedarWorks.\n\nAbout the role\nWork with the marketing team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply SEO skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in SEO,Content Writing,Analytics. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Draft",
+            "featured": false
+        },
+        {
+            "openingType": "client",
+            "company": "Demo Horizon Commerce",
+            "title": "Data Analyst",
+            "department": "Analytics",
+            "skills": [
+                "SQL",
+                "Excel",
+                "Power BI"
+            ],
+            "location": "Hyderabad",
+            "type": "Full Time",
+            "mode": "Hybrid",
+            "experience": "1-3 years",
+            "salary": "INR 5-8 LPA",
+            "openings": 2,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our analytics team in Hyderabad and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Data Analyst with Demo Horizon Commerce.\n\nAbout the role\nWork with the analytics team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply SQL skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in SQL,Excel,Power BI. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Draft",
+            "featured": false
+        },
+        {
+            "openingType": "client",
+            "company": "Demo BlueHarbor Services",
+            "title": "Technical Support Engineer",
+            "department": "Support",
+            "skills": [
+                "Troubleshooting",
+                "Networking",
+                "Documentation"
+            ],
+            "location": "Kolkata",
+            "type": "Full Time",
+            "mode": "On-site",
+            "experience": "1-3 years",
+            "salary": "INR 4-6 LPA",
+            "openings": 3,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our support team in Kolkata and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Technical Support Engineer with Demo BlueHarbor Services.\n\nAbout the role\nWork with the support team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply Troubleshooting skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in Troubleshooting,Networking,Documentation. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Closed",
+            "featured": false
+        },
+        {
+            "openingType": "client",
+            "company": "Demo MapleBridge Solutions",
+            "title": "Content Writer",
+            "department": "Marketing",
+            "skills": [
+                "Writing",
+                "Editing",
+                "SEO"
+            ],
+            "location": "Bhubaneswar",
+            "type": "Full Time",
+            "mode": "Remote",
+            "experience": "1-3 years",
+            "salary": "INR 3-4 LPA",
+            "openings": 4,
+            "qualification": "Bachelor's degree or equivalent relevant experience",
+            "shortDescription": "Join our marketing team in Bhubaneswar and grow through practical projects and collaborative work.",
+            "description": "This fictional demo opening is for a Content Writer with Demo MapleBridge Solutions.\n\nAbout the role\nWork with the marketing team to deliver reliable outcomes for customers and colleagues.\n\nResponsibilities\n- Apply Writing skills to everyday assignments.\n- Plan priorities with your manager and provide clear progress updates.\n- Review work for accuracy and document repeatable processes.\n- Collaborate with colleagues to resolve issues and improve delivery.\n\nWhat we offer\nStructured onboarding, regular feedback and opportunities to take ownership of meaningful work.",
+            "requirements": "Relevant practical experience in Writing,Editing,SEO. Clear written and spoken communication, attention to detail and willingness to learn. Share examples of your previous work during the interview.",
+            "status": "Closed",
+            "featured": false
+        },
+        {
+            "openingType": "internal",
+            "title": "Talent Acquisition Executive",
+            "department": "Human Resources",
+            "location": "Bhubaneswar",
+            "type": "Full Time",
+            "mode": "On-site",
+            "experience": "1-3 years",
+            "skills": [
+                "Sourcing",
+                "Screening",
+                "Communication"
+            ],
+            "description": "Fictional demo vacancy: Talent Acquisition Executive.\n\nHelp HireSetu coordinate recruitment and day-to-day operations. Work closely with recruiters and client-facing colleagues.\n\nResponsibilities\n- Maintain accurate records and communicate progress.\n- Coordinate schedules and follow up on assigned activities.\n- Support the team with reporting and documentation.\n\nRequirements\nA graduate qualification, clear communication and familiarity with Sourcing, Screening, Communication. Fresh perspectives and a service-focused approach are welcome.",
+            "status": "Published",
+            "featured": false
+        },
+        {
+            "openingType": "internal",
+            "title": "HR Operations Executive",
+            "department": "Human Resources",
+            "location": "Bhubaneswar",
+            "type": "Full Time",
+            "mode": "On-site",
+            "experience": "1-3 years",
+            "skills": [
+                "Onboarding",
+                "Excel",
+                "Documentation"
+            ],
+            "description": "Fictional demo vacancy: HR Operations Executive.\n\nHelp HireSetu coordinate recruitment and day-to-day operations. Work closely with recruiters and client-facing colleagues.\n\nResponsibilities\n- Maintain accurate records and communicate progress.\n- Coordinate schedules and follow up on assigned activities.\n- Support the team with reporting and documentation.\n\nRequirements\nA graduate qualification, clear communication and familiarity with Onboarding, Excel, Documentation. Fresh perspectives and a service-focused approach are welcome.",
+            "status": "Published",
+            "featured": false
+        },
+        {
+            "openingType": "internal",
+            "title": "Business Development Associate",
+            "department": "Sales",
+            "location": "Bhubaneswar",
+            "type": "Full Time",
+            "mode": "On-site",
+            "experience": "1-3 years",
+            "skills": [
+                "Sales",
+                "CRM",
+                "Communication"
+            ],
+            "description": "Fictional demo vacancy: Business Development Associate.\n\nHelp HireSetu coordinate recruitment and day-to-day operations. Work closely with recruiters and client-facing colleagues.\n\nResponsibilities\n- Maintain accurate records and communicate progress.\n- Coordinate schedules and follow up on assigned activities.\n- Support the team with reporting and documentation.\n\nRequirements\nA graduate qualification, clear communication and familiarity with Sales, CRM, Communication. Fresh perspectives and a service-focused approach are welcome.",
+            "status": "Published",
+            "featured": false
+        },
+        {
+            "openingType": "internal",
+            "title": "Recruitment Intern",
+            "department": "Human Resources",
+            "location": "Bhubaneswar",
+            "type": "Internship",
+            "mode": "On-site",
+            "experience": "Fresher",
+            "skills": [
+                "Research",
+                "Communication",
+                "Excel"
+            ],
+            "description": "Fictional demo vacancy: Recruitment Intern.\n\nHelp HireSetu coordinate recruitment and day-to-day operations. Work closely with recruiters and client-facing colleagues.\n\nResponsibilities\n- Maintain accurate records and communicate progress.\n- Coordinate schedules and follow up on assigned activities.\n- Support the team with reporting and documentation.\n\nRequirements\nA graduate qualification, clear communication and familiarity with Research, Communication, Excel. Fresh perspectives and a service-focused approach are welcome.",
+            "status": "Draft",
+            "featured": false
+        },
+        {
+            "openingType": "internal",
+            "title": "Office Operations Coordinator",
+            "department": "Operations",
+            "location": "Bhubaneswar",
+            "type": "Full Time",
+            "mode": "On-site",
+            "experience": "1-3 years",
+            "skills": [
+                "Scheduling",
+                "Excel",
+                "Coordination"
+            ],
+            "description": "Fictional demo vacancy: Office Operations Coordinator.\n\nHelp HireSetu coordinate recruitment and day-to-day operations. Work closely with recruiters and client-facing colleagues.\n\nResponsibilities\n- Maintain accurate records and communicate progress.\n- Coordinate schedules and follow up on assigned activities.\n- Support the team with reporting and documentation.\n\nRequirements\nA graduate qualification, clear communication and familiarity with Scheduling, Excel, Coordination. Fresh perspectives and a service-focused approach are welcome.",
+            "status": "Closed",
+            "featured": false
+        }
+    ],
+    "candidates": [
+        {
+            "name": "Aarav Sharma",
+            "email": "hiresetu.demo.01@example.com",
+            "phone": "9000000101",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "JavaScript",
+                "React",
+                "Node.js",
+                "MongoDB"
+            ],
+            "address": "Bengaluru"
+        },
+        {
+            "name": "Ananya Das",
+            "email": "hiresetu.demo.02@example.com",
+            "phone": "9000000102",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "React",
+                "CSS",
+                "Accessibility"
+            ],
+            "address": "Pune"
+        },
+        {
+            "name": "Rohan Mehta",
+            "email": "hiresetu.demo.03@example.com",
+            "phone": "9000000103",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "Node.js",
+                "Express",
+                "MongoDB"
+            ],
+            "address": "Hyderabad"
+        },
+        {
+            "name": "Priya Nair",
+            "email": "hiresetu.demo.04@example.com",
+            "phone": "9000000104",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "API Testing",
+                "Postman",
+                "Test Planning"
+            ],
+            "address": "Bhubaneswar"
+        },
+        {
+            "name": "Aditya Rao",
+            "email": "hiresetu.demo.05@example.com",
+            "phone": "9000000105",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "Figma",
+                "Prototyping",
+                "User Research"
+            ],
+            "address": "Bengaluru"
+        },
+        {
+            "name": "Sneha Patel",
+            "email": "hiresetu.demo.06@example.com",
+            "phone": "9000000106",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "Lead Generation",
+                "CRM",
+                "Negotiation"
+            ],
+            "address": "Pune"
+        },
+        {
+            "name": "Vikram Sen",
+            "email": "hiresetu.demo.07@example.com",
+            "phone": "9000000107",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "Client Communication",
+                "Prospecting",
+                "Sales"
+            ],
+            "address": "Bhubaneswar"
+        },
+        {
+            "name": "Ishita Roy",
+            "email": "hiresetu.demo.08@example.com",
+            "phone": "9000000108",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "Recruitment",
+                "Onboarding",
+                "Excel"
+            ],
+            "address": "Hyderabad"
+        },
+        {
+            "name": "Arjun Mishra",
+            "email": "hiresetu.demo.09@example.com",
+            "phone": "9000000109",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "Accounting",
+                "Excel",
+                "Reconciliation"
+            ],
+            "address": "Kolkata"
+        },
+        {
+            "name": "Neha Sahu",
+            "email": "hiresetu.demo.10@example.com",
+            "phone": "9000000110",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "Scheduling",
+                "Reporting",
+                "Excel"
+            ],
+            "address": "Bhubaneswar"
+        },
+        {
+            "name": "Karan Verma",
+            "email": "hiresetu.demo.11@example.com",
+            "phone": "9000000111",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "Communication",
+                "Ticketing",
+                "Problem Solving"
+            ],
+            "address": "Pune"
+        },
+        {
+            "name": "Meera Iyer",
+            "email": "hiresetu.demo.12@example.com",
+            "phone": "9000000112",
+            "qualification": "Bachelor’s degree",
+            "experience": "2 years",
+            "skills": [
+                "SEO",
+                "Content Writing",
+                "Analytics"
+            ],
+            "address": "Bengaluru"
+        }
+    ],
+    "applications": [
+        [
+            0,
+            0,
+            "Submitted"
+        ],
+        [
+            1,
+            1,
+            "Under Review"
+        ],
+        [
+            2,
+            2,
+            "Shortlisted"
+        ],
+        [
+            3,
+            3,
+            "Interview"
+        ],
+        [
+            4,
+            4,
+            "Selected"
+        ],
+        [
+            5,
+            5,
+            "Rejected"
+        ],
+        [
+            6,
+            6,
+            "Submitted"
+        ],
+        [
+            7,
+            7,
+            "Under Review"
+        ],
+        [
+            8,
+            8,
+            "Shortlisted"
+        ],
+        [
+            9,
+            9,
+            "Interview"
+        ],
+        [
+            10,
+            10,
+            "Selected"
+        ],
+        [
+            11,
+            14,
+            "Under Review"
+        ],
+        [
+            0,
+            1,
+            "Interview"
+        ],
+        [
+            1,
+            0,
+            "Selected"
+        ],
+        [
+            2,
+            3,
+            "Rejected"
+        ],
+        [
+            3,
+            2,
+            "Submitted"
+        ],
+        [
+            4,
+            1,
+            "Under Review"
+        ],
+        [
+            5,
+            6,
+            "Shortlisted"
+        ],
+        [
+            6,
+            5,
+            "Interview"
+        ],
+        [
+            7,
+            15,
+            "Selected"
+        ],
+        [
+            8,
+            16,
+            "Rejected"
+        ],
+        [
+            9,
+            19,
+            "Submitted"
+        ],
+        [
+            10,
+            17,
+            "Under Review"
+        ],
+        [
+            11,
+            4,
+            "Shortlisted"
+        ],
+        [
+            0,
+            2,
+            "Selected"
+        ]
+    ],
+    "enquiries": [
+        {
+            "name": "Aarav Sharma",
+            "email": "enquiry.demo.1@example.com",
+            "phone": "9000000101",
+            "subject": "Hiring support for a sales team",
+            "message": "Demo enquiry: Hiring support for a sales team. Please share the relevant process and next steps. I would appreciate guidance from your recruitment team."
+        },
+        {
+            "name": "Ananya Das",
+            "email": "enquiry.demo.2@example.com",
+            "phone": "9000000102",
+            "subject": "Recruitment partnership enquiry",
+            "message": "Demo enquiry: Recruitment partnership enquiry. Please share the relevant process and next steps. I would appreciate guidance from your recruitment team."
+        },
+        {
+            "name": "Rohan Mehta",
+            "email": "enquiry.demo.3@example.com",
+            "phone": "9000000103",
+            "subject": "Application status clarification",
+            "message": "Demo enquiry: Application status clarification. Please share the relevant process and next steps. I would appreciate guidance from your recruitment team."
+        },
+        {
+            "name": "Priya Nair",
+            "email": "enquiry.demo.4@example.com",
+            "phone": "9000000104",
+            "subject": "Careers opening enquiry",
+            "message": "Demo enquiry: Careers opening enquiry. Please share the relevant process and next steps. I would appreciate guidance from your recruitment team."
+        },
+        {
+            "name": "Aditya Rao",
+            "email": "enquiry.demo.5@example.com",
+            "phone": "9000000105",
+            "subject": "Resume format guidance",
+            "message": "Demo enquiry: Resume format guidance. Please share the relevant process and next steps. I would appreciate guidance from your recruitment team."
+        },
+        {
+            "name": "Sneha Patel",
+            "email": "enquiry.demo.6@example.com",
+            "phone": "9000000106",
+            "subject": "Interview scheduling assistance",
+            "message": "Demo enquiry: Interview scheduling assistance. Please share the relevant process and next steps. I would appreciate guidance from your recruitment team."
+        },
+        {
+            "name": "Vikram Sen",
+            "email": "enquiry.demo.7@example.com",
+            "phone": "9000000107",
+            "subject": "Finance hiring requirement",
+            "message": "Demo enquiry: Finance hiring requirement. Please share the relevant process and next steps. I would appreciate guidance from your recruitment team."
+        },
+        {
+            "name": "Ishita Roy",
+            "email": "enquiry.demo.8@example.com",
+            "phone": "9000000108",
+            "subject": "Technical recruitment support",
+            "message": "Demo enquiry: Technical recruitment support. Please share the relevant process and next steps. I would appreciate guidance from your recruitment team."
+        }
+    ]
+}
