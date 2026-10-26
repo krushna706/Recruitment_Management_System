@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { formatDate, getErrorMessage } from "../utils/dataFormat";
 import { openPrivateResume } from "../utils/fileAccess";
 
@@ -73,6 +76,8 @@ function Detail({ label, value }) {
 
 // ================== MANAGE USERS PAGE ==================
 function ManageUsers() {
+    usePageSEO(seoPages.manageUsers);
+    
     // ================== MONGODB USERS ==================
     const [users, setUsers] = useState([]);
     const [counts, setCounts] = useState(INITIAL_COUNTS);

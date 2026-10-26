@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { getErrorMessage } from "../utils/dataFormat";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Chip, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField } from "@mui/material";
@@ -140,6 +143,8 @@ function FormSection({ number, title, description, children }) {
 
 // ================== MANAGE VACANCIES ==================
 function ManageVacancies() {
+    usePageSEO(seoPages.manageVacancies);
+    
     const [vacancies, setVacancies] = useState([]);
     const [counts, setCounts] = useState(null);
     const [total, setTotal] = useState(0);

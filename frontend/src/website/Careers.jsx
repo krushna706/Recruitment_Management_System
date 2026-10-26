@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { useEffect, useState } from "react";
 import { Alert, Button, Pagination } from "@mui/material";
 import { Link } from "react-router-dom";
@@ -21,6 +24,8 @@ function getSummary(value = "") {
 
 // ================== CAREERS PAGE ==================
 export default function Careers() {
+        usePageSEO(seoPages.careers);
+
     const [positions, setPositions] = useState([]);
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(0);

@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { formatFileSize, normalizeSkills, getErrorMessage as getApiError } from "../utils/dataFormat";
 import { openPrivateResume } from "../utils/fileAccess";
 
@@ -1145,6 +1148,8 @@ function ProfileForm({ user }) {
 
 // ================== EXPORT ==================
 function Profile({ user: propUser }) {
+    usePageSEO(seoPages.userProfile);
+    
     const { user: authUser } = useAuth();
     const outletContext = useOutletContext();
 

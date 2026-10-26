@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -87,6 +90,8 @@ const organizationPrinciples = [
 ];
 
 function About() {
+    usePageSEO(seoPages.about);
+    
     const [selectedPurpose, setSelectedPurpose] = useState("vision");
     const [hoveredPurpose, setHoveredPurpose] = useState(null);
 

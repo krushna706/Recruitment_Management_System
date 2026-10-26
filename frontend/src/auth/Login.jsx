@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { TextField, InputAdornment, IconButton, Button } from "@mui/material";
@@ -88,6 +91,8 @@ function getLoginErrorMessage(error) {
 
 // ================== LOGIN PAGE ==================
 function Login() {
+    usePageSEO(seoPages.login);
+    
     const location = useLocation();
     const { user, loading, authError, refreshUser, login } = useAuth();
 

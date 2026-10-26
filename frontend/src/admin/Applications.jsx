@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { formatDate, formatFileSize, getErrorMessage, getInitials } from "../utils/dataFormat";
 import { openPrivateResume } from "../utils/fileAccess";
 import { useEffect, useRef, useState } from "react";
@@ -59,6 +62,8 @@ function Detail({ label, children }) {
 
 // ================== APPLICATIONS PAGE ==================
 function Applications() {
+    usePageSEO(seoPages.manageApplications);
+    
     const [applications, setApplications] = useState([]);
     const [counts, setCounts] = useState(null);
     const [total, setTotal] = useState(0);

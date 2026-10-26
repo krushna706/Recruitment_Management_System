@@ -1,3 +1,6 @@
+import usePageSEO from "../../hooks/usePageSEO";
+import { seoPages } from "../../config/seoConfig";
+
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Alert, Button, MenuItem, Pagination, TextField } from "@mui/material";
@@ -38,6 +41,8 @@ function getPostedLabel(dateString) {
 
 // ================== JOBS PAGE ==================
 function Jobs() {
+    usePageSEO(seoPages.jobs);
+
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [pagination, setPagination] = useState({

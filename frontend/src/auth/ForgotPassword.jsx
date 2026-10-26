@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -96,6 +99,8 @@ function PasswordVisibility({ visible, onToggle, label }) {
 
 // ================== FORGOT PASSWORD PAGE ==================
 function ForgotPassword() {
+    usePageSEO(seoPages.forgotPassword);
+    
     const navigate = useNavigate();
     const { refreshUser } = useAuth();
     const submitLock = useRef(false);

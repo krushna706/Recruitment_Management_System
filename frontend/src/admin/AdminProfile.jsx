@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { formatDate, getErrorMessage as getApiError } from "../utils/dataFormat";
 
 import { useEffect, useRef, useState } from "react";
@@ -862,6 +865,8 @@ function AdminProfileContent({ user, userId }) {
 
 // ================== ADMIN PROFILE EXPORT ==================
 function AdminProfile({ user: propUser }) {
+    usePageSEO(seoPages.adminProfile);
+    
     const { user: authUser } = useAuth();
     const outletContext = useOutletContext();
 

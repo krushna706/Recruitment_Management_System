@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { formatDate } from "../utils/dataFormat";
 import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
@@ -67,6 +70,8 @@ const initialDashboard = {
 
 // ================== USER DASHBOARD ==================
 function Dashboard({ user }) {
+    usePageSEO(seoPages.userDashboard);
+    
     const outletContext = useOutletContext();
 
     // Use the authenticated account, never a hardcoded demo user.

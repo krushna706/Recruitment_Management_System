@@ -1,3 +1,7 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
+
 import { formatDate, formatFileSize } from "../utils/dataFormat";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -28,6 +32,16 @@ function ApplicationDetails({ id }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [refreshKey, setRefreshKey] = useState(0);
+
+    
+    usePageSEO({
+        ...seoPages.applicationStatus,
+
+        title: application?.jobSnapshot?.title
+            ? `Application Status - ${application.jobSnapshot.title}`
+            : seoPages.applicationStatus.title,
+    });
+
 
     // ================== FETCH APPLICATION ==================
     // The backend verifies ownership using the logged-in user's account.

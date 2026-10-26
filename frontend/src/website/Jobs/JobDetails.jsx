@@ -1,3 +1,6 @@
+import usePageSEO from "../../hooks/usePageSEO";
+import { seoPages } from "../../config/seoConfig";
+
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Alert, Button } from "@mui/material";
@@ -80,6 +83,30 @@ function JobDetailsContent({ id, user }) {
     const [relatedLoading, setRelatedLoading] = useState(false);
     const [relatedError, setRelatedError] = useState("");
     const [relatedRefreshKey, setRelatedRefreshKey] = useState(0);
+
+    
+    usePageSEO({
+        ...seoPages.jobDetails,
+
+        title: job
+            ? `${job.title}${job.company ? ` at ${job.company}` : ""}`
+            : seoPages.jobDetails.title,
+
+        description: job?.shortDescription ||
+            seoPages.jobDetails.description,
+
+        keywords: job
+            ? [
+                  job.title,
+                  job.company,
+                  job.location,
+                  ...(job.skills || []),
+              ].filter(Boolean).join(", ")
+            : seoPages.jobDetails.keywords,
+
+        noIndex: notFound,
+    });
+
 
     // ================== PAGE POSITION ==================
     useEffect(() => {

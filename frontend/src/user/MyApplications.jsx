@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, InputAdornment, MenuItem, Pagination, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from "@mui/material";
@@ -112,6 +115,8 @@ function ApplicationDetailsLink({ application, mobile = false }) {
 
 // ================== MY APPLICATIONS ==================
 function MyApplications() {
+    usePageSEO(seoPages.myApplications);
+    
     const [search, setSearch] = useState("");
     const [filters, setFilters] = useState({
         search: "",

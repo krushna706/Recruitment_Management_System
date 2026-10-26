@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { formatDate, getErrorMessage, getInitials } from "../utils/dataFormat";
 
 import { useEffect, useState } from "react";
@@ -25,6 +28,8 @@ function ContactDetail({ label, value }) {
 
 // ================== MANAGE ENQUIRIES PAGE ==================
 function ManageEnquiries() {
+    usePageSEO(seoPages.manageEnquiries);
+    
     // ================== ENQUIRY DATA ==================
     const [enquiries, setEnquiries] = useState([]);
     const [counts, setCounts] = useState(INITIAL_COUNTS);

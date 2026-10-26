@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, CircularProgress, TextField } from "@mui/material";
@@ -92,6 +95,8 @@ function getApiError(error) {
 
 // ================== CONTACT PAGE ==================
 export default function Contact() {
+    usePageSEO(seoPages.contact);
+    
     const [values, setValues] = useState(initialValues);
     const [errors, setErrors] = useState({});
 

@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { formatDate, getInitials } from "../utils/dataFormat";
 import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
@@ -34,6 +37,8 @@ function getTimestamp(value) {
 
 // ================== ADMIN DASHBOARD ==================
 function Dashboard({ user }) {
+    usePageSEO(seoPages.adminDashboard);
+    
     const outletContext = useOutletContext();
     const currentUser = user ?? outletContext?.user;
     const firstName = currentUser?.name?.trim().split(/\s+/)[0];

@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { getErrorMessage } from "../utils/dataFormat";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Chip, FormControlLabel, MenuItem, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField } from "@mui/material";
@@ -205,6 +208,8 @@ function FormSection({ number, title, description, children }) {
 
 // ================== MANAGE JOBS ==================
 function ManageJobs() {
+    usePageSEO(seoPages.manageJobs);
+    
     const [jobs, setJobs] = useState([]);
     const [counts, setCounts] = useState(null);
     const [total, setTotal] = useState(0);

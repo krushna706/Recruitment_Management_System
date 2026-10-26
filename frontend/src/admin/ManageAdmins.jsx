@@ -1,3 +1,6 @@
+import usePageSEO from "../hooks/usePageSEO";
+import { seoPages } from "../config/seoConfig";
+
 import { formatDate, getErrorMessage as getApiError } from "../utils/dataFormat";
 
 import { useEffect, useRef, useState } from "react";
@@ -101,6 +104,8 @@ function AdminDetail({ label, value }) {
 
 // ================== MANAGE ADMINS PAGE ==================
 function ManageAdmins({ user: propUser }) {
+    usePageSEO(seoPages.manageAdmins);
+    
     const navigate = useNavigate();
     const outletContext = useOutletContext();
 

@@ -1,3 +1,6 @@
+import usePageSEO from "../../hooks/usePageSEO";
+import { seoPages } from "../../config/seoConfig";
+
 import { normalizeSkills } from "../../utils/dataFormat";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -774,6 +777,32 @@ function JobApplyContent({ id, user, openingType }) {
     const [refreshKey, setRefreshKey] = useState(0);
 
     const isInternal = openingType === "internal";
+
+    
+    usePageSEO({
+        ...seoPages.jobApply,
+
+        title: job
+            ? `Apply for ${job.title}`
+            : isInternal
+              ? "Apply for a HireSetu Career"
+              : seoPages.jobApply.title,
+
+        description: job
+            ? `Submit your application for ${job.title}${job.company ? ` at ${job.company}` : ""} through HireSetu.`
+            : seoPages.jobApply.description,
+
+        keywords: job
+            ? [
+                  job.title,
+                  job.company,
+                  "job application",
+                  "HireSetu",
+              ].filter(Boolean).join(", ")
+            : seoPages.jobApply.keywords,
+    });
+
+    
     const browsePath = isInternal ? "/careers" : "/jobs";
     const browseLabel = isInternal ? "Browse Careers" : "Browse Jobs";
 
